@@ -178,14 +178,14 @@ Oh! A console window that just opens for a few seconds! Nothing much to see... h
 I have an idea! Let's look at the memory and see how it looks like! Maybe we can see something special there!  
 First, let's place a breakpoint by double-clicking on the left of the line number, you should see something like this.  
 
-![Breakpoint](../img/breakpoint.PNG)
+![Breakpoint](../img/breakpoint.png)
 
 I placed my breakpoint just after reading all the bytes from the file, so I can look at that array in memory and see what is loaded in it.  
 Now let's click run again!  
 In the auto window, I can see the first few bytes! It is reading "IWAD" in the first 4 bytes! WOW! It is working! I never thought this day would come!  
 Come on! Pull yourself together there is still more to do!  
 
-![Debug](../img/debug.PNG)
+![Debug](../img/debug.png)
 
 ## Reading the header
 The header has a total of 12 bytes (0x00 to 0x0b), this 12-bytes is divided to 3 groups, first 4 bytes is the WAD type and usually it is either "IWAD" or "PWAD", IWAD Should be official WAD released officially by ID Software, "PWAD" should be used by Mods. In other words, it is just a way to identify if this WAD file is an official release or is it made by modders. Note the string is not NULL terminated so be careful!  
