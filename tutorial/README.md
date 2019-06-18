@@ -1,7 +1,7 @@
 __Author:__ Amro Ibrahim  
 __Reviewer:__ DOOMReboot [twitter](https://twitter.com/DOOMreboot), [web](http://www.movax13h.com)  
 
-# Day 002 - Basic Map Data
+# Week 002 - Basic Map Data
 Now that we can read a WAD file, let’s try to make use of the data we read. Maybe it would be nice to see if we can read any of the Mission (world/level) data and if we could put it to some use. The Mission Lumps can be somewhat complex and tricky. So, we will have to go step by step to build our knowledge and confidence. So, as our first small step let’s build something like the Automap feature. If you are not aware of what is an automap it is a bird's eye, 2D view of the map. For now, let’s see what is inside the Mission Lump.  
   
 ## Map Anatomy  
