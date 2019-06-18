@@ -88,7 +88,7 @@ For now, I have plans to just store the vertexes and linedefs in a vector, so we
 Let’s also update WADLoader and WADReader to help us achieve reading this two new information.
   
 ## Coding
-Coding this should be like what we did on day 001, just add few more structures then populate them with the data from the WAD.   
+Coding this should be like what we did on week 001, just add few more structures then populate them with the data from the WAD.   
 Starting by adding a new class and will be passing the name of the map.  
   
 ``` cpp
@@ -299,7 +299,7 @@ Those values can be compared by the hex view in slade, where you can right click
   
 Comparing both with the address of the WAD that is loaded in memory  
   
-![Debug](../img/debug.png)  
+![Debug](../img/debug.PNG)  
 
 One final thing for today, we have seen all those vertexes numbers, is there an easy way to plot those without actually writing the code, I don’t want to invest time then find out we were not working in the right direction.  
 For sure someone out there implemented graph plotter. Surely I googled "draw points on a graph" and first result was a website called [Plot Points - Desmos](https://www.desmos.com/calculator), you can paste from your clipboard with multiple points and it should draw them for you. We will need to format as flowing "(x, y)". That is easy just let’s change our print function to do that for us.  

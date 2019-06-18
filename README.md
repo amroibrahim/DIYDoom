@@ -1,6 +1,6 @@
 # HandmadeDoom
 This is a personal project, in an attempt to understand how Doom engine works.
 
-[Day 000 - Introduction](../Day000/tutorial)  
-[Day 001 - WAD Files](../Day001/tutorial)  
-[Day 002 - Basic Map Data](../Day002/tutorial)  
+[Week 000 - Introduction](../Week000/tutorial)  
+[Week 001 - WAD Files](../Week001/tutorial)  
+[Week 002 - Basic Map Data](../Week002/tutorial)  
