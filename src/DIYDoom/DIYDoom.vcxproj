@@ -153,11 +153,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DIYDoom.cpp" />
+    <ClCompile Include="Map.cpp" />
     <ClCompile Include="WADLoader.cpp" />
     <ClCompile Include="WADReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataTypes.h" />
+    <ClInclude Include="Map.h" />
     <ClInclude Include="WADLoader.h" />
     <ClInclude Include="WADReader.h" />
   </ItemGroup>

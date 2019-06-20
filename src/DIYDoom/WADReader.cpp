@@ -53,3 +53,23 @@ void WADReader::ReadDirectoryData(const uint8_t *pWADData, int offset, Directory
     directory.LumpName[7] = pWADData[offset + 15];
     directory.LumpName[8] = '\0';
 }
+
+void WADReader::ReadVertexData(const uint8_t *pWADData, int offset, Vertex &vertex)
+{
+    //0x00 to 0x01
+    vertex.XPosition = Read2Bytes(pWADData, offset);
+
+    //0x02 to 0x03
+    vertex.YPosition = Read2Bytes(pWADData, offset + 2);
+}
+
+void WADReader::ReadLinedefData(const uint8_t *pWADData, int offset, Linedef &linedef)
+{
+    linedef.StartVertex = Read2Bytes(pWADData, offset);
+    linedef.EndVertex = Read2Bytes(pWADData, offset + 2);
+    linedef.Flags = Read2Bytes(pWADData, offset + 4);
+    linedef.LineType = Read2Bytes(pWADData, offset + 6);
+    linedef.SectorTag = Read2Bytes(pWADData, offset + 8);
+    linedef.FrontSidedef = Read2Bytes(pWADData, offset + 10);
+    linedef.BackSidedef = Read2Bytes(pWADData, offset + 12);
+}
