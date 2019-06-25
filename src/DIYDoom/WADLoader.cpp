@@ -4,13 +4,18 @@
 
 using namespace std;
 
-WADLoader::WADLoader(string sWADFilePath) : m_WADData(NULL), m_sWADFilePath(sWADFilePath)
+WADLoader::WADLoader() : m_WADData(NULL)
 {
 }
 
 WADLoader::~WADLoader()
 {
     delete[] m_WADData;
+}
+
+void WADLoader::SetWADFilePath(std::string sWADFilePath)
+{
+    m_sWADFilePath = sWADFilePath;
 }
 
 bool WADLoader::LoadWAD()
@@ -92,27 +97,27 @@ bool WADLoader::ReadDirectories()
     return true;
 }
 
-bool WADLoader::LoadMapData(Map &map)
+bool WADLoader::LoadMapData(Map *pMap)
 {
-    if (!ReadMapVertex(map))
+    if (!ReadMapVertex(pMap))
     {
-        cout << "Error: Failed to load map vertex data MAP: " << map.GetName() << endl;
+        cout << "Error: Failed to load map vertex data MAP: " << pMap->GetName() << endl;
         return false;
     }
 
-    if (!ReadMapLinedef(map))
+    if (!ReadMapLinedef(pMap))
     {
-        cout << "Error: Failed to load map linedef data MAP: " << map.GetName() << endl;
+        cout << "Error: Failed to load map linedef data MAP: " << pMap->GetName() << endl;
         return false;
     }
     return true;
 }
 
-int WADLoader::FindMapIndex(Map &map)
+int WADLoader::FindMapIndex(Map *pMap)
 {
     for (int i = 0; i < m_WADDirectories.size(); ++i)
     {
-        if (m_WADDirectories[i].LumpName == map.GetName())
+        if (m_WADDirectories[i].LumpName == pMap->GetName())
         {
             return i;
         }
@@ -121,9 +126,9 @@ int WADLoader::FindMapIndex(Map &map)
     return -1;
 }
 
-bool WADLoader::ReadMapVertex(Map &map)
+bool WADLoader::ReadMapVertex(Map *pMap)
 {
-    int iMapIndex = FindMapIndex(map);
+    int iMapIndex = FindMapIndex(pMap);
 
     if (iMapIndex == -1)
     {
@@ -140,24 +145,26 @@ bool WADLoader::ReadMapVertex(Map &map)
     int iVertexSizeInBytes = sizeof(Vertex);
     int iVertexesCount = m_WADDirectories[iMapIndex].LumpSize / iVertexSizeInBytes;
 
+
+
     Vertex vertex;
     for (int i = 0; i < iVertexesCount; ++i)
     {
         m_Reader.ReadVertexData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iVertexSizeInBytes, vertex);
 
-        map.AddVertex(vertex);
+        pMap->AddVertex(vertex);
 
-        cout << vertex.XPosition << endl;
-        cout << vertex.YPosition << endl;
+        //cout << vertex.XPosition << endl;
+        //cout << vertex.YPosition << endl;
         std::cout << std::endl;
     }
 
     return true;
 }
 
-bool WADLoader::ReadMapLinedef(Map &map)
+bool WADLoader::ReadMapLinedef(Map *pMap)
 {
-    int iMapIndex = FindMapIndex(map);
+    int iMapIndex = FindMapIndex(pMap);
 
     if (iMapIndex == -1)
     {
@@ -180,17 +187,16 @@ bool WADLoader::ReadMapLinedef(Map &map)
     {
         m_Reader.ReadLinedefData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iLinedefSizeInBytes, linedef);
 
-        map.AddLinedef(linedef);
+        pMap->AddLinedef(linedef);
 
-        cout << linedef.StartVertex << endl;
-        cout << linedef.EndVertex << endl;
-        cout << linedef.Flags << endl;
-        cout << linedef.LineType << endl;
-        cout << linedef.SectorTag << endl;
-        cout << linedef.FrontSidedef << endl;
-        cout << linedef.BackSidedef << endl;
-
-        std::cout << std::endl;
+        //cout << linedef.StartVertex << endl;
+        //cout << linedef.EndVertex << endl;
+        //cout << linedef.Flags << endl;
+        //cout << linedef.LineType << endl;
+        //cout << linedef.SectorTag << endl;
+        //cout << linedef.FrontSidedef << endl;
+        //cout << linedef.BackSidedef << endl;
+        //std::cout << std::endl;
     }
 
     return true;

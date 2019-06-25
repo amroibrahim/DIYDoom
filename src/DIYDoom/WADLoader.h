@@ -12,18 +12,19 @@
 class WADLoader
 {
 public:
-    WADLoader(std::string sWADFilePath);
+    WADLoader();
+    void SetWADFilePath(std::string sWADFilePath);
     bool LoadWAD();
-    bool LoadMapData(Map &map);
+    bool LoadMapData(Map *pMap);
 
     ~WADLoader();
 
 protected:
     bool OpenAndLoad();
     bool ReadDirectories();
-    bool ReadMapVertex(Map &map);
-    bool ReadMapLinedef(Map &map);
-    int FindMapIndex(Map &map);
+    bool ReadMapVertex(Map *pMap);
+    bool ReadMapLinedef(Map *pMap);
+    int FindMapIndex(Map *pMap);
 
     std::string m_sWADFilePath;
     std::ifstream m_WADFile;

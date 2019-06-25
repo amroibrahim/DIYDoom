@@ -107,10 +107,13 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>D:\SDKs\SDL2_2.0.9\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\SDKs\SDL2_2.0.9\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -152,6 +155,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DoomEngine.cpp" />
+    <ClCompile Include="Game.cpp" />
     <ClCompile Include="DIYDoom.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="WADLoader.cpp" />
@@ -159,6 +164,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataTypes.h" />
+    <ClInclude Include="DoomEngine.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="WADLoader.h" />
     <ClInclude Include="WADReader.h" />

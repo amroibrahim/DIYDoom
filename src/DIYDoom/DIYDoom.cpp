@@ -1,15 +1,19 @@
 #include <iostream>
 
-#include "WADLoader.h"
-#include "Map.h"
+#include "Game.h"
 
-int main()
+int main(int argc, char* argv[])
 {
-    WADLoader wadloader("D:\\SDKs\\Assets\\Doom\\DOOM.WAD");
-    wadloader.LoadWAD();
+    Game game;
+    game.Init();
 
-    Map map("E1M1");
-    wadloader.LoadMapData(map);
+    while (!game.IsOver())
+    {
+        game.ProcessInput();
+        game.Update();
+        game.Render();
+        game.Delay();
+    }
 
     return 0;
 }
