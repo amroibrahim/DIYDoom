@@ -156,7 +156,7 @@ bool WADLoader::ReadMapVertex(Map *pMap)
 
         //cout << vertex.XPosition << endl;
         //cout << vertex.YPosition << endl;
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
 
     return true;

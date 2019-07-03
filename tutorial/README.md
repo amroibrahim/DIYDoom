@@ -1,260 +1,188 @@
 __Author:__ Amro Ibrahim  
-__Reviewer:__ DOOMReboot [twitter](https://twitter.com/DOOMreboot), [web](http://www.movax13h.com)  
+__Reviewer:__ Alexander Shrayner [GitHub](https://github.com/koolean88)  
 
-# Week 003 - Adding SDL
-Now that we have read some data from the WAD, we need to draw something on the screen, after all we are trying to make a game.  
-The console windows are nice but it is text based (it can be hacked to draw graphics), but we need a window were we can draw some graphics. We can use windows APIs but that will add windows as a dependency for us, which I don’t want. This is where SDL comes in play.  
+# Week 004 - Draw Automap
+Finally, it is time to draw something! Let's try and see if we can implement a simple automap.
+Just before we start, this is not the same way orginal DOOM draws its automap, the one released with orginal game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap drawn all the walls, so we can get an idea what is going on, and validate our knowlage about the map.  
+A quick recap, the maps have two core components, vertex, and a Linedef. Vertexes are just corners, and linedefs are walls. All we need is just convert the 2D data to a 2D image.  
+Let's draw that data and see if we get a top view of the map. If you need more information about reading the map data head back to Week002.  
 
-## SDL  
-SDL is a cross platform library to provide a hardware, and OS abstraction for multimedia components. In the previous Weeks, we would could have used SDL in opening and reading the WAD file, and endian conversion.  
-For now, we will use SDL to create a window and draw some graphics.  
+## Goals
+1. Draw the loaded map.  
 
-## Goals  
-*  Create a new Game class  
-*  Create DoomEngine class to cleanup and organize functionality  
-*  Create a window  
-*  Cleanup code to pass around some objects using pointers  
-
-## Design    
-First let’s start by adding Game class that would wrap the game's major steps in simple functions.  
-Adding DoomEngine that would hold game objects and aware of the game internals.  
-Update DIYDoom.cpp to create and call the Game class, to create a game loop.  
+## Design
+Simply update the map class to render the vertex and linedef! 
+Note: You will notice that I drew dicrectly to the renderer, usually you have a buffer you draw to then just paste the to renderer. That would be much faster, but I love starting simple and when needed just change it.
 
 ## Coding
-First you will need to download SDL libraries which can be found [here](https://www.libsdl.org/)  
-at the time of writing SDL2 v2.0.9 is the latest stable version, remember to download the Development Libraries version in my case "SDL2-devel-2.0.9-VC.zip". Unzip this anywhere you like but keep things organized. I have a SDKs directory on D drive where I keep all my SDKs.  
-![SDK](../img/sdlfolder.PNG)  
-
-You will need to note where include and lib directories are.  
-Now let’s go to our project and update the settings to see and use the SDL library right click on DIYDoom project and select Properties.    
-![Properties](../img/properties.PNG)  
-
-Under C/C++, edit the Additional include directories and add where the SDL "include" folder located.  
-
-![Include](../img/include.PNG)  
-
-Now under Linker, edit Additional Library Directories and add where the SDL "lib". If you look in those folders the libraries are under x64 and x86 folders, so make sure you have the correct path.  
-
-![Lib1](../img/lib1.PNG)  
-
-Finally, under Linker > Input, edit Additional Dependencies and add SDL2main.lib, SDL2.lib.  
-
-![Lib2](../img/lib2.PNG)  
-
-### DoomEngine Class  
-DoomEngine class will be a class that knows the internals of our Doom clone. It will keep track of the player, the game status, what map is loaded etc. The list will grow as we implement more of the game.  
+So we have previously seen the list of vertexes. If you look to that list you know that there is a lot of negative numbers. We need to shift those number to be positive, after all our screen resolution we chose 320 x 200. We need to shift number to be in that range.  
+So to achieve this I will use simple math, I will find the min point value while adding vertexes, then just invert the singe of that value and add it to each point X value, and same for Y. Let's look at a simple example.  
   
-``` cpp
-class DoomEngine
-{
-public:
-    DoomEngine();
-    ~DoomEngine();
-
-    virtual void Render(SDL_Renderer *pRenderer); // Draw something to show on screen
-    virtual void KeyPressed(SDL_Event &event); // Which keys are pressed?
-    virtual void KeyReleased(SDL_Event &event); // Which keys are released?
-    virtual void Quit(); // Close and shutdown the game
-    virtual void Update();
-
-    virtual bool IsOver(); // Did the game end?
-    virtual bool Init(); // Initialize game object
-
-    virtual int GetRenderWidth();
-    virtual int GetRenderHeight();
-    virtual int GetTimePerFrame();
-
-    virtual std::string GetName(); 
-    virtual std::string GetWADFileName();
-
-protected:
-    int m_iRenderWidth;
-    int m_iRenderHeight;
-
-    bool m_bIsOver;
-
-    WADLoader m_WADLoader; // Now the game engine will own the loader
-    Map *m_pMap; // Also the map will be owned by the engine.
-};
+```
+Point A (3, -5)
+Point B (6, 7)
 ```
   
-We will not go through every function implementation, you can have a look at the source code to have an idea what was added, but let’s have look at some of them.  
-DoomEngine constructor  
+If we plot them we will see something like this  
+![plot1](../img/plot1.PNG)  
+  
+Now we want to shift those point to be in the positive domain  
+So the min value in X is 3, and min Value in Y is -5  
+so from each X from point A and B we subtract -3  
+and from each Y in point A and B we add 5  
+so Updating those points will look like this 
+  
+``` 
+Point A (0, 0)  
+Point B (3, 12)  
+```
+  
+![Plot2](../img/plot2.PNG)  
+  
+With that simple logic, let's try to keep track of our min, max values and put them to use.
+Oh, one more thing! We will for sure need to scale this map by a factor, so let's add a variable for that too.  
+So let's add those variables in Map.h  
   
 ``` cpp
-// For now, lets match doom default resolution
-// and then stretch this to the final window 
-// And let’s create an instance of the map
-DoomEngine::DoomEngine() : m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200)
+int m_XMin;
+int m_XMax;
+int m_YMin;
+int m_YMax;
+int m_iAutoMapScaleFactor;
+```
+  
+and initialize them in the constructor  
+
+``` cpp
+// For the Scaling factor, let's set it for 15 
+Map::Map(std::string sName) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15) 
 {
-    m_pMap = new Map("E1M1");
 }
 ```
   
-Init function is very simple, call the WADLoader to load the WAD file.  
+Now, all we need is to update those values as we get in each vertex, so let's update AddVertex.  
   
 ``` cpp
-std::string DoomEngine::GetWADFileName()
+void Map::AddVertex(Vertex &v)
 {
-    return "D:\\SDKs\\Assets\\Doom\\DOOM.WAD";
-}
+    m_Vertexes.push_back(v);
 
-bool DoomEngine::Init()
-{
-    m_WADLoader.SetWADFilePath(GetWADFileName());
-    m_WADLoader.LoadWAD();    
-    m_WADLoader.LoadMapData(m_pMap);
-    return true;
-}
-```
-  
-And also, just lets clear the Window we want to draw with black for now  
-  
-``` cpp
-void DoomEngine::Render(SDL_Renderer *pRenderer)
-{
-    SDL_SetRenderDrawColor(pRenderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(pRenderer);
-}
-```
-  
-### Game Class and Game Loop
-So, we need to add a basic game loop that would do some basic functionally for our game. Let’s start with a basic one for now (we tune that at later point when we need to).  
-So, our simple game loop will follow this simple logic.  
-  
-1. Read input  
-2. Update our world  
-3. Display the new updated world  
-4. Lock the refresh rate to max 60 per sec (by waiting)  
-  
-Let’s create some functions that represent this high level functionality to our Game class
-  
-``` cpp
-class Game
-{
-public:
-    Game();
-    virtual ~Game();
-
-    void ProcessInput(); // Read user input
-    void Render(); // Draw on the screen
-    void Update(); // Update the world
-    void Delay(); // A function that would just wait for an amount of time
-
-    bool IsOver(); // Check if game is over
-    bool Init(); // Initialize our objects
-
-protected:
-    int m_iWindowWidth;
-    int m_iWindowHeight;
-
-    SDL_Window *m_pWindow; // The windows we will create
-    SDL_Renderer *m_pRenderer; // Were we will render our frames
-    DoomEngine *m_pDoomEngine; // This is an object that knows more details about game internal
-};
-```
-  
-Let’s implement those functions to achieve what their name claim.  
-Let’s start with the init function. This function should initialize the SDL library, create a Window, and a renderer!  
-If you've noticed, the window size differs from the renderer resolution.  
-This keeps display resolution independent from internal game resolution. I have set the logical (whatever we render) to be on a 320*200 resolution, to match the original game design.  
-  
-``` cpp
-bool Game::Init()
-{
-    //Initialize SDL
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+    if (m_XMin > v.XPosition)
     {
-        std::cout << "SDL failed to initialize! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        m_XMin = v.XPosition;
     }
-
-    // Create a window with a specific size, here you can set whatever resolution you prefer.
-    m_pWindow = SDL_CreateWindow(m_pDoomEngine->GetName().c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_iWindowWidth, m_iWindowHeight, SDL_WINDOW_SHOWN);
-    if (m_pWindow == nullptr)
+    else if (m_XMax < v.XPosition)
     {
-        std::cout << "SDL failed to create window! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        m_XMax = v.XPosition;
     }
 
-    m_pRenderer = SDL_CreateRenderer(m_pWindow, -1, SDL_RENDERER_SOFTWARE);
-    if (m_pRenderer == nullptr)
+    if (m_YMin > v.YPosition)
     {
-        std::cout << "SDL failed to create renderer! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        m_YMin = v.YPosition;
     }
-
-    SDL_SetRenderDrawColor(m_pRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-
-    if (!m_pDoomEngine->Init())
+    else if (m_YMax < v.YPosition)
     {
-        std::cout << m_pDoomEngine->GetName() << " failed to initialize!" << std::endl;
-        return false;
+        m_YMax = v.YPosition;
     }
-
-    // Sets the logical size of the screen, that means we can draw on a specific render size then, SDL will 
-    // automatically stretch it to the window size. This will make the development independent from window resolution
-    if (SDL_RenderSetLogicalSize(m_pRenderer, m_pDoomEngine->GetRenderWidth(), m_pDoomEngine->GetRenderHeight()) != 0)
-    {
-        std::cout << "SDL failed to set logical size! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
-    }
-
-    return true;
 }
 ```
   
-one more function I would like to go over in Game class is ProcessInput  
+Cool! now we have all the number we need! let's try to just draw the map and see what we get, let's update the map header to with a new automap render function.  
   
 ``` cpp
-// All what process input need to do is just forward the events to the 
-// DoomEngine to take appropriate action
-void Game::ProcessInput()
+void RenderAutoMap(SDL_Renderer *pRenderer);
+```
+  
+Before we implement this we need to find out how to draw a line on the screen! It turns out the SDL has a RenderDrawLine function that takes two points and draw a line between them.  
+  
+``` cpp
+void Map::RenderAutoMap(SDL_Renderer *pRenderer)
 {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        {
-            switch (event.type)
-            {
-            case SDL_KEYDOWN:
-                m_pDoomEngine->KeyPressed(event);
-                break;
+    int iXShift = -m_XMin; // Invert the min X value
+    int iYShift = -m_YMin; // Invert the min Y value
 
-            case SDL_KEYUP:
-                m_pDoomEngine->KeyReleased(event);
-                break;
+    SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-            case SDL_QUIT:
-                m_pDoomEngine->Quit();
-                break;
-            }
-        }
+    for (Linedef &l : m_Linedef)
+    {
+        Vertex vStart = m_Vertexes[l.StartVertex]; // Read the first point
+        Vertex vEnd = m_Vertexes[l.EndVertex]; // Read the second point
+
+        //Draw a line between those 2 points and scale it down by a factor
+        SDL_RenderDrawLine(pRenderer,
+            (vStart.XPosition + iXShift) / m_iAutoMapScaleFactor,
+            (vStart.YPosition + iYShift) / m_iAutoMapScaleFactor,
+            (vEnd.XPosition + iXShift) / m_iAutoMapScaleFactor,
+            (vEnd.YPosition + iYShift) / m_iAutoMapScaleFactor);
     }
 }
 ```
 
-With Game class being created our main function needs to call those function.  
+Let's give this a try! and see what we get.  
+WOW! WOW! WOW!  
+  
+![E1M1](../img/e1m1.PNG)  
+  
+That is E1M1, but.... it is flipped!  
+Actually is it flipped because the map was drawn in Cartesian coordinate, and we are drawing it on screen coordinates.  
+Cartesian coordinates  
+
+<img src="../img/cartesian.png" width="300">
+
+Screen corordinates start from the top left corner, X increase as you go left, and Y increase as you go down.
+Screen coordinates  
+
+<img src="../img/screen.png" width="300">
+
+In simple words the Y-axis is flipped!  
+A quick fix is to invert the Y access as shown in the code below. Remember that the screen is 200 in hight and that it ranges from 0 to 199.  
+We can use the function ```SDL_RenderGetLogicalSize``` to get the current render view size.  
 
 ``` cpp
-Game game;
-game.Init();
-
-while (!game.IsOver()) // Did the user quite?
+void Map::RenderAutoMap(SDL_Renderer *pRenderer)
 {
-    game.ProcessInput(); // Read the user input
-    game.Update();  // Update all our objects in memory (characters, map, etc.)
-    game.Render();  // Create and display a new image to screen
-    game.Delay();   // let’s try to lock the refresh rate to 60 frames for now
+    int iXShift = -m_XMin;
+    int iYShift = -m_YMin;
+
+    int iRenderXSize;
+    int iRenderYSize;
+
+    // Read what is the resolution we are using
+    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
+    
+    --iRenderXSize; // remember it is 0 to 319 and not to 320
+    --iRenderYSize; // remember it is 0 to 199 and not to 200
+
+    SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    for (Linedef &l : m_Linedef)
+    {
+        Vertex vStart = m_Vertexes[l.StartVertex];
+        Vertex vEnd = m_Vertexes[l.EndVertex];
+
+        SDL_RenderDrawLine(pRenderer,
+            (vStart.XPosition + iXShift) / m_iAutoMapScaleFactor,
+            iRenderYSize - (vStart.YPosition + iYShift) / m_iAutoMapScaleFactor,
+            (vEnd.XPosition + iXShift) / m_iAutoMapScaleFactor,
+            iRenderYSize - (vEnd.YPosition + iYShift) / m_iAutoMapScaleFactor);
+    }
 }
 ```
+  
+![E1M1](../img/e1m1_2.PNG)  
+  
+Looks good now!  
+  
+## Other Notes  
+This might be a little advanced but I would like to leave a note here :)
+We can't render the automap using the ML_MAPPED flag yet! It is not set by default, it gets set only if the wall is seen by the player. It would give the feeling that the automap is being built as the player is exploring the level.  
+Looking at Chocolate Doom code, it gets set when the function R_StoreWallRange gets called (we will dig deep into that don't worry), and when the automap gets drawn when the function AM_drawWalls the following check is done "if (cheating || (lines[i].flags & ML_MAPPED))"
+so the automap wall will be drawn only if it was seen by player or if you are cheating :).
 
-When you run this all you will get is an empty window. Now we are ready to draw something!  
-
-![Window](../img/window.png)  
-
+One Sad thing I never knew about the automap as a kid :(, it would have made my life really easy, actualy I never owned the full game as a kid, all I had was the shareware!
+  
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[SDL Wiki](https://wiki.libsdl.org/FrontPage)  
-[Lazy Foo SDL tutorials](http://lazyfoo.net/SDL_tutorials/)  
+[SDL DrawLine](https://wiki.libsdl.org/SDL_RenderDrawLine)

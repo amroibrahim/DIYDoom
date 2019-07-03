@@ -4,7 +4,8 @@
 
 enum EMAPLUMPSINDEX
 {
-    eTHINGS = 1,
+    eName,
+    eTHINGS,
     eLINEDEFS,
     eSIDEDDEFS,
     eVERTEXES,
