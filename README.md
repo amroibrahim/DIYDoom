@@ -5,3 +5,4 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 001 - WAD Files](../Week001/tutorial)  
 [Week 002 - Basic Map Data](../Week002/tutorial)  
 [Week 003 - Adding SDL](../Week003/tutorial)  
+[Week 004 - Automap](../Week004/tutorial)  
