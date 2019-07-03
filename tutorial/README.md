@@ -1,9 +1,9 @@
 __Author:__ Amro Ibrahim  
-__Reviewer:__ Alexander Shrayner [GitHub](https://github.com/koolean88)  
+__Reviewer:__ Alexander Shrayner, DOOMReboot [(twitter)](https://twitter.com/DOOMreboot)  
 
 # Week 004 - Draw Automap
-Finally, it is time to draw something! Let's try and see if we can implement a simple automap.
-Just before we start, this is not the same way orginal DOOM draws its automap, the one released with orginal game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap drawn all the walls, so we can get an idea what is going on, and validate our knowlage about the map.  
+Finally, it is time to draw something! Let's try and see if we can implement a simple automap.  
+Before we start, this is not the same way orginal DOOM draws its automap, the one released with orginal game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap drawn all the walls, so we can get an idea what is going on, and validate our knowlage about the map.  
 A quick recap, the maps have two core components, vertex, and a Linedef. Vertexes are just corners, and linedefs are walls. All we need is just convert the 2D data to a 2D image.  
 Let's draw that data and see if we get a top view of the map. If you need more information about reading the map data head back to Week002.  
 
