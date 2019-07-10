@@ -1,157 +1,177 @@
-__Author:__ Amro Ibrahim  
-__Reviewer:__ Alexander Shrayner, DOOMReboot [(twitter)](https://twitter.com/DOOMreboot)  
-
-# Week 004 - Automap
-Finally, it is time to draw something! Let's try and see if we can implement a simple automap.  
-Before we start, this is not the same way orginal DOOM draws its automap, the one released with orginal game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap drawn all the walls, so we can get an idea what is going on, and validate our knowlage about the map.  
-A quick recap, the maps have two core components, vertex, and a Linedef. Vertexes are just corners, and linedefs are walls. All we need is just convert the 2D data to a 2D image.  
-Let's draw that data and see if we get a top view of the map. If you need more information about reading the map data head back to Week002.  
-
+# Week 005 - Player and Things
+Before we start looking into any rendering we will need to know where the player is looking to render what he is looking at. So let's focus on where the player spawns on a map.  
+The player is a "Thing"! Player spawn location is specified in the Things lump of the map.  
+  
 ## Goals
-1. Draw the loaded map.  
-
+1. Load the Things lump.  
+2. Create a player class.  
+3. Add the player to automap.  
+  
 ## Design
-Simply update the map class to render the vertex and linedef! 
-Note: You will notice that I drew dicrectly to the renderer, usually you have a buffer you draw to then just paste the to renderer. That would be much faster, but I love starting simple and when needed just change it.
+Adding a new Player class and refactor code.  
 
 ## Coding
-So we have previously seen the list of vertexes. If you look to that list you know that there is a lot of negative numbers. We need to shift those number to be positive, after all our screen resolution we chose 320 x 200. We need to shift number to be in that range.  
-So to achieve this I will use simple math, I will find the min point value while adding vertexes, then just invert the singe of that value and add it to each point X value, and same for Y. Let's look at a simple example.  
-  
-```
-Point A (3, -5)
-Point B (6, 7)
-```
-  
-If we plot them we will see something like this  
-![plot1](../img/plot1.PNG)  
-  
-Now we want to shift those point to be in the positive domain  
-So the min value in X is 3, and min Value in Y is -5  
-so from each X from point A and B we subtract -3  
-and from each Y in point A and B we add 5  
-so Updating those points will look like this 
-  
-``` 
-Point A (0, 0)  
-Point B (3, 12)  
-```
-  
-![Plot2](../img/plot2.PNG)  
-  
-With that simple logic, let's try to keep track of our min, max values and put them to use.
-Oh, one more thing! We will for sure need to scale this map by a factor, so let's add a variable for that too.  
-So let's add those variables in Map.h  
-  
-``` cpp
-int m_XMin;
-int m_XMax;
-int m_YMin;
-int m_YMax;
-int m_iAutoMapScaleFactor;
-```
-  
-and initialize them in the constructor  
+Let's start by adding the player class. All we need to keep track of now is the player location and angle he is looking at, in other words, some Setters and Getters. Doom supports up to four players in CO-OP, and uses the player number as there ID. So player 1 will have ID 1, player 2 will have ID 2 and so on. Our focus now will mainly be on player 1.  
 
 ``` cpp
-// For the Scaling factor, let's set it for 15 
-Map::Map(std::string sName) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15) 
+class Player
 {
+public:
+    Player(int iID);
+    ~Player();
+
+    void SetXPosition(int XPosition);
+    void SetYPosition(int YPosition);
+    void SetAngle(int Angle);
+
+    int GetID();
+    int GetXPosition();
+    int GetYPosition();
+    int GetAngle();
+
+    
+protected:
+    int m_iPlayerID;
+    int m_XPosition;
+    int m_YPosition;
+    int m_Angle;
+};
+```
+  
+One thing to note here is that some of those variables will at some point change type from int to a float.
+  
+Let's update the map class to be aware of the player so we will update the constructor to take a copy of the player and keep.
+  
+``` cpp
+Map::Map(std::string sName, Player *pPlayer)
+```
+
+Also, we will need to keep track of the things on the map, let's add another vector and a function that will help us add things in the map.
+
+``` cpp
+void AddThing(Thing &thing);
+...
+std::vector<Thing> m_Things;
+```
+
+With that out of the way, let's get serious!
+Let's look at the "Things" format.
+
+| Field Size | Data Type      | Content    |  
+|------------|----------------|------------| 
+|  0x00-0x01 | Signed short   | X Position |
+|  0x02-0x03 | Signed short   | Y Position |
+|  0x04-0x05 | Unsigned short | Angle      |
+|  0x06-0x07 | Unsigned short | Type       |
+|  0x08-0x09 | Unsigned short | Flags      |
+
+with this information in mind let's parse and extract this information. That should be a simple copy paste by now! (copy pasting code is a sign your coding can be refactored, but let's keep going for now).
+
+Let's add the Thing struct in DataTypes.h.
+
+``` cpp
+struct Thing
+{
+    int16_t XPosition;
+    int16_t YPosition;
+    uint16_t Angle;
+    uint16_t Type;
+    uint16_t Flags;
+};
+```
+
+Nothing new here, just the usual!
+
+``` cpp
+bool WADLoader::ReadMapThing(Map *pMap)
+{
+    int iMapIndex = FindMapIndex(pMap);
+
+    if (iMapIndex == -1)
+    {
+        return false;
+    }
+
+    iMapIndex += EMAPLUMPSINDEX::eTHINGS;
+
+    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "THINGS") != 0)
+    {
+        return false;
+    }
+
+    int iThingsSizeInBytes = sizeof(Thing);
+    int iThingsCount = m_WADDirectories[iMapIndex].LumpSize / iThingsSizeInBytes;
+
+    Thing thing;
+    for (int i = 0; i < iThingsCount; ++i)
+    {
+        m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
+
+        pMap->AddThing(thing);
+
+        //cout << thing.XPosition << endl;
+        //cout << thing.YPosition << endl;
+        //cout << thing.Angle << endl;
+        //cout << thing.Type << endl;
+        //cout << thing.Flags << endl;
+        //std::cout << std::endl;
+    }
+
+    return true;
 }
 ```
   
-Now, all we need is to update those values as we get in each vertex, so let's update AddVertex.  
+Also same here just reading the data!
   
 ``` cpp
-void Map::AddVertex(Vertex &v)
+void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
 {
-    m_Vertexes.push_back(v);
-
-    if (m_XMin > v.XPosition)
-    {
-        m_XMin = v.XPosition;
-    }
-    else if (m_XMax < v.XPosition)
-    {
-        m_XMax = v.XPosition;
-    }
-
-    if (m_YMin > v.YPosition)
-    {
-        m_YMin = v.YPosition;
-    }
-    else if (m_YMax < v.YPosition)
-    {
-        m_YMax = v.YPosition;
-    }
+    thing.XPosition = Read2Bytes(pWADData, offset);
+    thing.YPosition = Read2Bytes(pWADData, offset + 2);
+    thing.Angle = Read2Bytes(pWADData, offset + 4);
+    thing.Type = Read2Bytes(pWADData, offset + 6);
+    thing.Flags = Read2Bytes(pWADData, offset + 8);
 }
 ```
   
-Cool! now we have all the number we need! let's try to just draw the map and see what we get, let's update the map header to with a new automap render function.  
+Let's look at what we have read from the lump and match it with Slade3.
+  
+![Things](../img/things.PNG)  
+  
+All looks good!
+Now let's try and draw the player as a small dot on the automap.
+  
+I have done some refactoring to the drawing function, I have broken down RenderAutoMap to two smaller helper functions.
   
 ``` cpp
-void RenderAutoMap(SDL_Renderer *pRenderer);
+void RenderAutoMapPlayer(SDL_Renderer * pRenderer, int iXShift, int iYShift);
+void RenderAutoMapWalls(SDL_Renderer * pRenderer, int iXShift, int iYShift);
 ```
   
-Before we implement this we need to find out how to draw a line on the screen! It turns out the SDL has a RenderDrawLine function that takes two points and draw a line between them.  
+Now RenderAutoMap looks cleaner
   
-``` cpp
-void Map::RenderAutoMap(SDL_Renderer *pRenderer)
-{
-    int iXShift = -m_XMin; // Invert the min X value
-    int iYShift = -m_YMin; // Invert the min Y value
-
-    SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
-    for (Linedef &l : m_Linedef)
-    {
-        Vertex vStart = m_Vertexes[l.StartVertex]; // Read the first point
-        Vertex vEnd = m_Vertexes[l.EndVertex]; // Read the second point
-
-        //Draw a line between those 2 points and scale it down by a factor
-        SDL_RenderDrawLine(pRenderer,
-            (vStart.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            (vStart.YPosition + iYShift) / m_iAutoMapScaleFactor,
-            (vEnd.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            (vEnd.YPosition + iYShift) / m_iAutoMapScaleFactor);
-    }
-}
-```
-
-Let's give this a try! and see what we get.  
-WOW! WOW! WOW!  
-  
-![E1M1](../img/e1m1.PNG)  
-  
-That is E1M1, but.... it is flipped!  
-Actually is it flipped because the map was drawn in Cartesian coordinate, and we are drawing it on screen coordinates.  
-Cartesian coordinates  
-
-<img src="../img/cartesian.png" width="300">
-
-Screen corordinates start from the top left corner, X increase as you go left, and Y increase as you go down.
-Screen coordinates  
-
-<img src="../img/screen.png" width="300">
-
-In simple words the Y-axis is flipped!  
-A quick fix is to invert the Y access as shown in the code below. Remember that the screen is 200 in hight and that it ranges from 0 to 199.  
-We can use the function ```SDL_RenderGetLogicalSize``` to get the current render view size.  
-
 ``` cpp
 void Map::RenderAutoMap(SDL_Renderer *pRenderer)
 {
     int iXShift = -m_XMin;
     int iYShift = -m_YMin;
 
+    RenderAutoMapWalls(pRenderer, iXShift, iYShift);
+    RenderAutoMapPlayer(pRenderer, iXShift, iYShift);
+}
+``` 
+  
+Most of the code that was in RenderAutoMap was moved into this function so nothing new.
+  
+```cpp
+void Map::RenderAutoMapWalls(SDL_Renderer *pRenderer, int iXShift, int iYShift)
+{
     int iRenderXSize;
     int iRenderYSize;
 
-    // Read what is the resolution we are using
     SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
-    
-    --iRenderXSize; // remember it is 0 to 319 and not to 320
-    --iRenderYSize; // remember it is 0 to 199 and not to 200
+    --iRenderXSize;
+    --iRenderYSize;
 
     SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
@@ -168,21 +188,108 @@ void Map::RenderAutoMap(SDL_Renderer *pRenderer)
     }
 }
 ```
-  
-![E1M1](../img/e1m1_2.PNG)  
-  
-Looks good now!  
-  
-## Other Notes  
-This might be a little advanced but I would like to leave a note here :)
-We can't render the automap using the ML_MAPPED flag yet! It is not set by default, it gets set only if the wall is seen by the player. It would give the feeling that the automap is being built as the player is exploring the level.  
-Looking at Chocolate Doom code, it gets set when the function R_StoreWallRange gets called (we will dig deep into that don't worry), and when the automap gets drawn when the function AM_drawWalls the following check is done "if (cheating || (lines[i].flags & ML_MAPPED))"
-so the automap wall will be drawn only if it was seen by player or if you are cheating :).
 
-One Sad thing I never knew about the automap as a kid :(, it would have made my life really easy, actualy I never owned the full game as a kid, all I had was the shareware!
+Okay! Now let's render the player. Initially, I wanted to draw the player as a filled circle but there was no function to do so in SDL! So I tried the second best thing to draw a cluster of dots of size  3 x 3 to show the player. You could have done a 2 for-loops that draw the same, your free to do so it makes things easier.
+
+``` cpp
+void Map::RenderAutoMapPlayer(SDL_Renderer *pRenderer, int iXShift, int iYShift)
+{
+    int iRenderXSize;
+    int iRenderYSize;
+
+    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
+    --iRenderXSize;
+    --iRenderYSize;
+    // Let's draw player in Red
+    SDL_SetRenderDrawColor(pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+    
+    // Just draw on the 
+    pair<int, int> Direction[] = {
+        make_pair(-1, -1), make_pair(0, -1), make_pair(+1, -1), // Above row
+        make_pair(-1, 0), make_pair(0, 0), make_pair(+1, 0),    // Center Row
+        make_pair(-1, +1), make_pair(0, +1), make_pair(+1, +1)  // Bottom Row
+    };
+
+    for (int i = 0; i < 9; ++i)
+    {
+        SDL_RenderDrawPoint(pRenderer,
+            (m_pPlayer->GetXPosition() + iXShift) / m_iAutoMapScaleFactor + Direction[i].first,
+            iRenderYSize - (m_pPlayer->GetYPosition() + iYShift) / m_iAutoMapScaleFactor + Direction[i].second);
+    }
+}
+```
+
+Let's look at the cute player now!
+![Player](../img/player.PNG)  
   
+Map class also had a small optimization. If the map index is previously looked up from the lump it should be cached.
+Just add an integer to store the lump index, and initialize it with -1. Before any lookup just check if the index is valid (m_iLumpIndex > -1), if so just use that, if not look it up and update it. 
+  
+Map class 
+
+``` cpp
+void SetLumpIndex(int iIndex);
+...
+int m_iLumpIndex;
+```
+
+Now let's Update WADLoader to utilize that  
+
+``` cpp
+int WADLoader::FindMapIndex(Map *pMap)
+{
+    // Is the index previously found?
+    if (pMap->GetLumpIndex() > -1)
+    {
+        // Just return it and dont search
+        return pMap->GetLumpIndex();
+    }
+        
+    // Not found, we need to look it up
+    for (int i = 0; i < m_WADDirectories.size(); ++i)
+    {
+        if (m_WADDirectories[i].LumpName == pMap->GetName())
+        {
+            pMap->SetLumpIndex(i);
+            return i;
+        }
+    }
+
+    return -1;
+}
+```
+
+Other minor changes I did was add more logging so it is clear what is happening in the console window.  
+
+## Other Notes
+In Chocolate DOOM the function P_LoadThings in p_setup.c does load the things for a map. One itresting thing was the following  
+``` cpp 
+	// Do not spawn cool, new monsters if !commercial
+	if (gamemode != commercial)
+	{
+	    switch (SHORT(mt->type))
+	    {
+	      case 68:	// Arachnotron
+	      case 64:	// Archvile
+	      case 88:	// Boss Brain
+	      case 89:	// Boss Shooter
+	      case 69:	// Hell Knight
+	      case 67:	// Mancubus
+	      case 71:	// Pain Elemental
+	      case 65:	// Former Human Commando
+	      case 66:	// Revenant
+	      case 84:	// Wolf SS
+		spawn = false;
+		break;
+	    }
+	}
+```
+
+This code disable monstors to spawn from non-commercial version. So if your running a shareware version you will not have the full experince as retail/commercial release.
+
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[SDL DrawLine](https://wiki.libsdl.org/SDL_RenderDrawLine)
+[Doom Wiki](https://doomwiki.org/wiki/Thing)  
+[ZDoom Wiki](https://zdoom.org/wiki/Thing)  

@@ -99,15 +99,26 @@ bool WADLoader::ReadDirectories()
 
 bool WADLoader::LoadMapData(Map *pMap)
 {
+    std::cout << "Info: Parsing Map: " << pMap->GetName() << endl;
+
+    std::cout << "Info: Processing Map Vertex" << endl;
     if (!ReadMapVertex(pMap))
     {
         cout << "Error: Failed to load map vertex data MAP: " << pMap->GetName() << endl;
         return false;
     }
 
+    std::cout << "Info: Processing Map Linedef" << endl;
     if (!ReadMapLinedef(pMap))
     {
         cout << "Error: Failed to load map linedef data MAP: " << pMap->GetName() << endl;
+        return false;
+    }
+
+    std::cout << "Info: Processing Map Things" << endl;
+    if (!ReadMapThing(pMap))
+    {
+        cout << "Error: Failed to load map thing data MAP: " << pMap->GetName() << endl;
         return false;
     }
     return true;
@@ -115,10 +126,16 @@ bool WADLoader::LoadMapData(Map *pMap)
 
 int WADLoader::FindMapIndex(Map *pMap)
 {
+    if (pMap->GetLumpIndex() > -1)
+    {
+        return pMap->GetLumpIndex();
+    }
+
     for (int i = 0; i < m_WADDirectories.size(); ++i)
     {
         if (m_WADDirectories[i].LumpName == pMap->GetName())
         {
+            pMap->SetLumpIndex(i);
             return i;
         }
     }
@@ -196,6 +213,44 @@ bool WADLoader::ReadMapLinedef(Map *pMap)
         //cout << linedef.SectorTag << endl;
         //cout << linedef.FrontSidedef << endl;
         //cout << linedef.BackSidedef << endl;
+        //std::cout << std::endl;
+    }
+
+    return true;
+}
+
+bool WADLoader::ReadMapThing(Map *pMap)
+{
+    int iMapIndex = FindMapIndex(pMap);
+
+    if (iMapIndex == -1)
+    {
+        return false;
+    }
+
+    iMapIndex += EMAPLUMPSINDEX::eTHINGS;
+
+    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "THINGS") != 0)
+    {
+        return false;
+    }
+
+
+    int iThingsSizeInBytes = sizeof(Thing);
+    int iThingsCount = m_WADDirectories[iMapIndex].LumpSize / iThingsSizeInBytes;
+
+    Thing thing;
+    for (int i = 0; i < iThingsCount; ++i)
+    {
+        m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
+
+        pMap->AddThing(thing);
+
+        //cout << thing.XPosition << endl;
+        //cout << thing.YPosition << endl;
+        //cout << thing.Angle << endl;
+        //cout << thing.Type << endl;
+        //cout << thing.Flags << endl;
         //std::cout << std::endl;
     }
 
