@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Map.h"
+#include "Player.h"
 #include "WADLoader.h"
 
 class DoomEngine
@@ -25,8 +26,8 @@ public:
     virtual int GetRenderHeight();
     virtual int GetTimePerFrame();
 
-    virtual std::string GetName();
     virtual std::string GetWADFileName();
+    virtual std::string GetName();
 
 protected:
     int m_iRenderWidth;
@@ -36,4 +37,5 @@ protected:
 
     WADLoader m_WADLoader;
     Map *m_pMap;
+    Player *m_pPlayer;
 };
