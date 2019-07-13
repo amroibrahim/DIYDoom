@@ -1,6 +1,3 @@
-__Author:__ Amro Ibrahim  
-__Reviewer:__ DOOMReboot [twitter](https://twitter.com/DOOMreboot), [web](http://www.movax13h.com)  
-
 # Week 001 - WAD Files  
 Before we do any coding, let's spend some time setting some goals and think through what we want to achieve.  
 Asa start let's see if we can read DOOM assets file. All DOOM assets and resources are in the WAD file.  
