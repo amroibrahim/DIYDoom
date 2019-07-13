@@ -1,6 +1,6 @@
 # Week 001 - WAD Files  
 Before we do any coding, let's spend some time setting some goals and think through what we want to achieve.  
-Asa start let's see if we can read DOOM assets file. All DOOM assets and resources are in the WAD file.  
+As a start let's see if we can read DOOM assets file. All DOOM assets and resources are in the WAD file.  
 
 ## What is a WAD file?  
 "Where is All my Data"? It is in the WAD! WAD is an archive of all the assets in DOOM (and DOOM based games) in one file.  
