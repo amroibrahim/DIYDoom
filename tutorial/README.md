@@ -177,7 +177,7 @@ Running with 80 as input:
 Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way, it is only our input that changes.  
 
 This is how BSP works, but instead of numbers it is splitting 2D or 3D space.  
-But, why does this algorithm work?  What is the logic behind it? The simpler answer is: after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
+But, why does this algorithm work?  What is the logic behind it? The simple answer is: after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
 The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got the that node, just move in the opposite direction and print those nodes.
 You will find some books discussing this as a hyprid Pre-Post order tree traversal, I personally find it a modified binary search algorithm.
 
