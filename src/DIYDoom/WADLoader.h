@@ -33,4 +33,3 @@ protected:
     uint8_t *m_WADData;
     WADReader m_Reader;
 };
-

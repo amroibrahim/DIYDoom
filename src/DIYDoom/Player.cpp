@@ -13,7 +13,6 @@ int Player::GetID()
     return m_iPlayerID;
 }
 
-
 int Player::GetXPosition()
 {
     return m_XPosition;

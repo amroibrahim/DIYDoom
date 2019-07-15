@@ -1,295 +1,240 @@
-# Week 005 - Player and Things
-Before we start looking into any rendering we will need to know where the player is looking to render what he is looking at. So let's focus on where the player spawns on a map.  
-The player is a "Thing"! Player spawn location is specified in the Things lump of the map.  
-  
+# Week 006 - Intro to DOOM BSP Traversal
+Probably you have heard that Doom rendering uses BSP (Binary Space Partition trees). Moving directly into BSP might be a big jump, so let's break things down a little.  
+
+The core of BSP is a binary trees data structure, so let's start from there.  
+
 ## Goals
-1. Load the Things lump.  
-2. Create a player class.  
-3. Add the player to automap.  
+1. Understanding Binary Trees.  
+2. Minor code cleanup and refactor.  
   
 ## Design
-Adding a new Player class and refactor code.  
+So today will be theory. 
 
-## Coding
-Let's start by adding the player class. All we need to keep track of now is the player location and angle he is looking at, in other words, some Setters and Getters. Doom supports up to four players in CO-OP, and uses the player number as there ID. So player 1 will have ID 1, player 2 will have ID 2 and so on. Our focus now will mainly be on player 1.  
+A "data structure" is how you organize data in memory. Choosing how to organize data could make all the difference for your project. A good example is how DOOM would have not been possible to run back in 1993 without the BSP implementation to store the map data (we get into details later).  
+
+So what makes a tree data-structure special? Let's think a bit and clarify a few things with examples.  
+So a binary tree has a parent node and two branches, a left and right child. Every time you look at a node you get the option to either traverse the left or the right child. It is as simple as that.  
+
+A simple tree would look like!  
+![Simple Tree](../img/simpletree.PNG) 
+
+and in code
 
 ``` cpp
-class Player
+class CTreeNode
 {
 public:
-    Player(int iID);
-    ~Player();
+    CTreeNode(int iData);
+    ~CTreeNode(void);
 
-    void SetXPosition(int XPosition);
-    void SetYPosition(int YPosition);
-    void SetAngle(int Angle);
-
-    int GetID();
-    int GetXPosition();
-    int GetYPosition();
-    int GetAngle();
-
-    
-protected:
-    int m_iPlayerID;
-    int m_XPosition;
-    int m_YPosition;
-    int m_Angle;
+    int m_iData;
+    CTreeNode* m_pLeft;
+    CTreeNode* m_pRight;
 };
 ```
-  
-One thing to note here is that some of those variables will at some point change type from int to a float.
-  
-Let's update the map class to be aware of the player so we will update the constructor to take a copy of the player and keep.
-  
-``` cpp
-Map::Map(std::string sName, Player *pPlayer)
-```
+_Not in source_
 
-Also, we will need to keep track of the things on the map, let's add another vector and a function that will help us add things in the map.
+With no constraints at all, you can just stuff data anywhere in the tree, and you will struggle to retrieve it since we don't know where to look for the data. (Ie., Should you look at the left children or right children?)
+This is where the "Binary search tree" comes into play. (Not every binary tree is a binary search tree).
+
+A binary search tree (AKA sorted binary tree) has its right child always less than its parent, and its left child equal or greater than its parent. With such a property, if you are looking up a number, then every time you make a choice at a sub-tree node you discard half of the tree. That makes trees powerful to look up values. Imagine a tree with one million nodes. You will need only twenty checks (in the worst case scenario) to find your data (Log(1,000,000) log here is base 2 because every node has 2 children). Compare this to a linear search which could take approximately one million checks to find your data.
+
+This is how we would implement recursive binary tree search algorithm:
 
 ``` cpp
-void AddThing(Thing &thing);
-...
-std::vector<Thing> m_Things;
-```
-
-With that out of the way, let's get serious!
-Let's look at the "Things" format.
-
-| Field Size | Data Type      | Content    |  
-|------------|----------------|------------| 
-|  0x00-0x01 | Signed short   | X Position |
-|  0x02-0x03 | Signed short   | Y Position |
-|  0x04-0x05 | Unsigned short | Angle      |
-|  0x06-0x07 | Unsigned short | Type       |
-|  0x08-0x09 | Unsigned short | Flags      |
-
-with this information in mind let's parse and extract this information. That should be a simple copy paste by now! (copy pasting code is a sign your coding can be refactored, but let's keep going for now).
-
-Let's add the Thing struct in DataTypes.h.
-
-``` cpp
-struct Thing
+void CBinarySearchTree::printFindNumber(CTreeNode* pNode, int iData)
 {
-    int16_t XPosition;
-    int16_t YPosition;
-    uint16_t Angle;
-    uint16_t Type;
-    uint16_t Flags;
-};
-```
+    // Is this a valid node?
+    if (!pNode)
+        return;
 
-Nothing new here, just the usual!
+    // Is this what I'm looking for?
+    if (pNode->m_iData == iData)
+    {
+       PrintData(pNode->m_iData);
+       return;
+    }
+
+    // I didn't find what I'm looking for :(, where should I look?
+    if (pNode->m_iData < iData)
+    {
+        printFindNumber(pNode->m_pRight, rStream, iData);
+    }
+    else
+    {
+        printFindNumber(pNode->m_pLeft, rStream, iData);
+    }
+}
+```
+_Not in source_
+
+So how does this algorithm work? It is simple, but let's break it down into steps.
+We first pass the root of the tree (the root node) to the function and then do the following:
+1. We validate we are on a valid node. If Yes, continue onward. If No, exit function as the element was not found in this subtree.
+2. Does the current node contain the data value we are looking for? If Yes, we have found our node and are done.  If not...
+3. Compare the element to the current node's data value. Go left or right, and go back to step 1.  
+
+Let's give a quick search example.  
+Given this tree  
+
+![BSP Sample](../img/bsptree.PNG) 
+  
+Searching for the value 30 using the above algorithm could be visualized like this:
+
+![BSP Sample](../img/treesearch.gif) 
+
+That was straight forward!  
+Now let's get this a little complex.  
+I need to change this algorithm to retrieve the closest number and not an exact number. With that given, we need to find another criteria to select a valid node.  One possible solution is to put my data leaf nodes and the parent's nodes just a guide for a range.  
+The tree is a custom built tree, my actual data is 10, 20, 30, 40, 50, 60, 70, 80. The rest of the tree (any number with 5 in its ones digit) was just added to help me in my search and is not part of the data I care about.   
+
+So let's replace this piece of code
 
 ``` cpp
-bool WADLoader::ReadMapThing(Map *pMap)
+if (pNode->m_iData == iData)
+```
+
+with this
+
+``` cpp
+if (!pNode->m_pRight && !pNode->m_pLeft)
+```
+
+With this change to the search condition, we are not looking for an equal value anymore, we are looking for a leaf node. What does that mean? The input values (the value to search for) will be our guide until we find a leaf node.    
+
+The tree hasn't changed, but now we have added a constraint that our data should be leaf nodes, and all other nodes are just a guide for us to go left or right.  
+The code should look like this now  
+
+``` cpp
+void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
 {
-    int iMapIndex = FindMapIndex(pMap);
+    if (!pNode)
+        return;
 
-    if (iMapIndex == -1)
+    if (!pNode->m_pRight && !pNode->m_pLeft)
     {
-        return false;
+        PrintData(pNode->m_iData);
     }
 
-    iMapIndex += EMAPLUMPSINDEX::eTHINGS;
-
-    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "THINGS") != 0)
+    if (pNode->m_iData < iData)
     {
-        return false;
+        printFindNumber(pNode->m_pRight, iData);
+    }
+    else
+    {
+        printFindNumber(pNode->m_pLeft, iData);
+    }
+}
+```
+_Not in source_
+
+If you re-run the code, with 30 as input, it will find it. Not only that, but it will also output 30 if you look for 31, 32, 33, and 34 because they are the closes value to 30. So, now we know that you dont have to know the exact value of what you're looking for, just a range will give you a correct value you're looking for.  
+
+Note: You might think "How is this related to DOOM?". The map is broken down to subsector, you have no idea which subsector the player is in, but you know the player position, we can use that to find out which subsector the player is in (if this sounds too complicated don't worry we will go in details and visualize this later).
+
+With this modified algorithm, we can do a nice trick, we can print (custom sort) the nodes. We can print the nodes from closer in range to further (or the other way around).  
+With a little modification, we can retrieve the closest numbers to the one I'm looking for, it is more of a custom kind of sorting.  
+
+
+``` cpp
+void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
+{
+    if (!pNode)
+        return;
+
+    if (!pNode->m_pRight && !pNode->m_pLeft)
+    {
+        PrintData(pNode->m_iData);
     }
 
-    int iThingsSizeInBytes = sizeof(Thing);
-    int iThingsCount = m_WADDirectories[iMapIndex].LumpSize / iThingsSizeInBytes;
-
-    Thing thing;
-    for (int i = 0; i < iThingsCount; ++i)
+    if (pNode->m_iData < iData)
     {
-        m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
-
-        pMap->AddThing(thing);
-
-        //cout << thing.XPosition << endl;
-        //cout << thing.YPosition << endl;
-        //cout << thing.Angle << endl;
-        //cout << thing.Type << endl;
-        //cout << thing.Flags << endl;
-        //std::cout << std::endl;
+        printFindNumber(pNode->m_pRight, iData);
+        printFindNumber(pNode->m_pLeft, iData);
     }
+    else
+    {
+        printFindNumber(pNode->m_pLeft, iData);
+        printFindNumber(pNode->m_pRight, iData);
+    }
+}
+```
+_Not in source_
 
+List (sort) all the data that is close to the number 30. Running this algorithm will output the following:
+30 , 40 , 20 , 10 , 50 , 60 , 70 , 80  
+
+Running with 70 as input would output:
+70 , 80 , 60 , 50 , 40 , 30 , 20 , 10  
+
+Running with 10 as input:
+10 , 20 , 30 , 40 , 50 , 60 , 70 , 80  
+
+Running with 80 as input: 
+80 , 70 , 60 , 50 , 40 , 30 , 20 , 10  
+
+Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way, it is only our input that changes.  
+
+This is how BSP works, but instead of numbers it is splitting 2D or 3D space.  
+But, why does this algorithm work?  What is the logic behind it? The simpler answer is: after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
+The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got the that node, just move in the opposite direction and print those nodes.
+You will find some books discussing this as a hyprid Pre-Post order tree traversal, I personally find it a modified binary search algorithm.
+
+## Coding
+There is no major code change, just some refactoring to make things a little easier for now.
+Update DoomEngine to store a copy for the Renderer, and remove player and map to Init function.
+
+``` cpp
+DoomEngine::DoomEngine(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200)
+{
+}
+```
+
+Update Init to create the player and the map
+
+``` cpp
+bool DoomEngine::Init()
+{
+    // Delay object creation to this point so renderer is initialized
+    m_pPlayer = new Player(1);
+    m_pMap = new Map(m_pRenderer, "E1M1", m_pPlayer);
+
+    m_WADLoader.SetWADFilePath(GetWADFileName());
+    m_WADLoader.LoadWAD();
+
+    m_WADLoader.LoadMapData(m_pMap);
     return true;
 }
 ```
-  
-Also same here just reading the data!
-  
+
+No need to pass "SDL_Renderer *pRenderer" anymore, the map has its own copy.  
+
 ``` cpp
-void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
+void DoomEngine::Render()
 {
-    thing.XPosition = Read2Bytes(pWADData, offset);
-    thing.YPosition = Read2Bytes(pWADData, offset + 2);
-    thing.Angle = Read2Bytes(pWADData, offset + 4);
-    thing.Type = Read2Bytes(pWADData, offset + 6);
-    thing.Flags = Read2Bytes(pWADData, offset + 8);
-}
-```
-  
-Let's look at what we have read from the lump and match it with Slade3.
-  
-![Things](../img/things.PNG)  
-  
-All looks good!
-Now let's try and draw the player as a small dot on the automap.
-  
-I have done some refactoring to the drawing function, I have broken down RenderAutoMap to two smaller helper functions.
-  
-``` cpp
-void RenderAutoMapPlayer(SDL_Renderer * pRenderer, int iXShift, int iYShift);
-void RenderAutoMapWalls(SDL_Renderer * pRenderer, int iXShift, int iYShift);
-```
-  
-Now RenderAutoMap looks cleaner
-  
-``` cpp
-void Map::RenderAutoMap(SDL_Renderer *pRenderer)
-{
-    int iXShift = -m_XMin;
-    int iYShift = -m_YMin;
-
-    RenderAutoMapWalls(pRenderer, iXShift, iYShift);
-    RenderAutoMapPlayer(pRenderer, iXShift, iYShift);
-}
-``` 
-  
-Most of the code that was in RenderAutoMap was moved into this function so nothing new.
-  
-```cpp
-void Map::RenderAutoMapWalls(SDL_Renderer *pRenderer, int iXShift, int iYShift)
-{
-    int iRenderXSize;
-    int iRenderYSize;
-
-    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
-    --iRenderXSize;
-    --iRenderYSize;
-
-    SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
-    for (Linedef &l : m_Linedef)
-    {
-        Vertex vStart = m_Vertexes[l.StartVertex];
-        Vertex vEnd = m_Vertexes[l.EndVertex];
-
-        SDL_RenderDrawLine(pRenderer,
-            (vStart.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            iRenderYSize - (vStart.YPosition + iYShift) / m_iAutoMapScaleFactor,
-            (vEnd.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            iRenderYSize - (vEnd.YPosition + iYShift) / m_iAutoMapScaleFactor);
-    }
+    SDL_SetRenderDrawColor(m_pRenderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_RenderClear(m_pRenderer);
+    m_pMap->RenderAutoMap();
 }
 ```
 
-Okay! Now let's render the player. Initially, I wanted to draw the player as a filled circle but there was no function to do so in SDL! So I tried the second best thing to draw a cluster of dots of size  3 x 3 to show the player. You could have done a 2 for-loops that draw the same, your free to do so it makes things easier.
+Adding a helper function RemapXToScreen, it is just to make things look cleaner and easier to read.  
 
 ``` cpp
-void Map::RenderAutoMapPlayer(SDL_Renderer *pRenderer, int iXShift, int iYShift)
+int Map::RemapXToScreen(int XMapPosition)
 {
-    int iRenderXSize;
-    int iRenderYSize;
-
-    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
-    --iRenderXSize;
-    --iRenderYSize;
-    // Let's draw player in Red
-    SDL_SetRenderDrawColor(pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-    
-    // Just draw on the 
-    pair<int, int> Direction[] = {
-        make_pair(-1, -1), make_pair(0, -1), make_pair(+1, -1), // Above row
-        make_pair(-1, 0), make_pair(0, 0), make_pair(+1, 0),    // Center Row
-        make_pair(-1, +1), make_pair(0, +1), make_pair(+1, +1)  // Bottom Row
-    };
-
-    for (int i = 0; i < 9; ++i)
-    {
-        SDL_RenderDrawPoint(pRenderer,
-            (m_pPlayer->GetXPosition() + iXShift) / m_iAutoMapScaleFactor + Direction[i].first,
-            iRenderYSize - (m_pPlayer->GetYPosition() + iYShift) / m_iAutoMapScaleFactor + Direction[i].second);
-    }
+    return (XMapPosition + (-m_XMin)) / m_iAutoMapScaleFactor;
 }
 ```
-
-Let's look at the cute player now!
-![Player](../img/player.PNG)  
-  
-Map class also had a small optimization. If the map index is previously looked up from the lump it should be cached.
-Just add an integer to store the lump index, and initialize it with -1. Before any lookup just check if the index is valid (m_iLumpIndex > -1), if so just use that, if not look it up and update it. 
-  
-Map class 
-
-``` cpp
-void SetLumpIndex(int iIndex);
-...
-int m_iLumpIndex;
-```
-
-Now let's Update WADLoader to utilize that  
-
-``` cpp
-int WADLoader::FindMapIndex(Map *pMap)
-{
-    // Is the index previously found?
-    if (pMap->GetLumpIndex() > -1)
-    {
-        // Just return it and dont search
-        return pMap->GetLumpIndex();
-    }
-        
-    // Not found, we need to look it up
-    for (int i = 0; i < m_WADDirectories.size(); ++i)
-    {
-        if (m_WADDirectories[i].LumpName == pMap->GetName())
-        {
-            pMap->SetLumpIndex(i);
-            return i;
-        }
-    }
-
-    return -1;
-}
-```
-
-Other minor changes I did was add more logging so it is clear what is happening in the console window.  
 
 ## Other Notes
-In Chocolate DOOM the function P_LoadThings in p_setup.c does load the things for a map. One itresting thing was the following  
-``` cpp 
-	// Do not spawn cool, new monsters if !commercial
-	if (gamemode != commercial)
-	{
-	    switch (SHORT(mt->type))
-	    {
-	      case 68:	// Arachnotron
-	      case 64:	// Archvile
-	      case 88:	// Boss Brain
-	      case 89:	// Boss Shooter
-	      case 69:	// Hell Knight
-	      case 67:	// Mancubus
-	      case 71:	// Pain Elemental
-	      case 65:	// Former Human Commando
-	      case 66:	// Revenant
-	      case 84:	// Wolf SS
-		spawn = false;
-		break;
-	    }
-	}
-```
-
-This code disable monstors to spawn from non-commercial version. So if your running a shareware version you will not have the full experince as retail/commercial release.
+Lots of things in computer science are just big words for small things ($25 term for a five cent concept) like cloud computer or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[Doom Wiki](https://doomwiki.org/wiki/Thing)  
-[ZDoom Wiki](https://zdoom.org/wiki/Thing)  
+[Binary tree](https://en.wikipedia.org/wiki/Binary_tree)  
+[Binary tree (stanford)](http://cslibrary.stanford.edu/110/BinaryTrees.html)  
+[Binary tree traversal](https://en.wikipedia.org/wiki/Tree_traversal)  
+

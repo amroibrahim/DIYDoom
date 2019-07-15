@@ -65,33 +65,21 @@ bool WADLoader::OpenAndLoad()
     m_WADFile.close();
 
     cout << "Info: Loading complete." << endl;
+
     return true;
 }
 
-
 bool WADLoader::ReadDirectories()
 {
-
     Header header;
     m_Reader.ReadHeaderData(m_WADData, 0, header);
-
-    //std::cout << header.WADType << std::endl;
-    //std::cout << header.DirectoryCount << std::endl;
-    //std::cout << header.DirectoryOffset << std::endl;
-    //std::cout << std::endl << std::endl;
 
     Directory directory;
 
     for (unsigned int i = 0; i < header.DirectoryCount; ++i)
     {
         m_Reader.ReadDirectoryData(m_WADData, header.DirectoryOffset + i * 16, directory);
-
         m_WADDirectories.push_back(directory);
-
-        //std::cout << directory.LumpOffset << std::endl;
-        //std::cout << directory.LumpSize << std::endl;
-        //std::cout << directory.LumpName << std::endl;
-        //std::cout << std::endl;
     }
 
     return true;
@@ -121,6 +109,7 @@ bool WADLoader::LoadMapData(Map *pMap)
         cout << "Error: Failed to load map thing data MAP: " << pMap->GetName() << endl;
         return false;
     }
+
     return true;
 }
 
@@ -162,18 +151,11 @@ bool WADLoader::ReadMapVertex(Map *pMap)
     int iVertexSizeInBytes = sizeof(Vertex);
     int iVertexesCount = m_WADDirectories[iMapIndex].LumpSize / iVertexSizeInBytes;
 
-
-
     Vertex vertex;
     for (int i = 0; i < iVertexesCount; ++i)
     {
         m_Reader.ReadVertexData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iVertexSizeInBytes, vertex);
-
         pMap->AddVertex(vertex);
-
-        //cout << vertex.XPosition << endl;
-        //cout << vertex.YPosition << endl;
-        //std::cout << std::endl;
     }
 
     return true;
@@ -195,7 +177,6 @@ bool WADLoader::ReadMapLinedef(Map *pMap)
         return false;
     }
 
-
     int iLinedefSizeInBytes = sizeof(Linedef);
     int iLinedefCount = m_WADDirectories[iMapIndex].LumpSize / iLinedefSizeInBytes;
 
@@ -203,17 +184,7 @@ bool WADLoader::ReadMapLinedef(Map *pMap)
     for (int i = 0; i < iLinedefCount; ++i)
     {
         m_Reader.ReadLinedefData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iLinedefSizeInBytes, linedef);
-
         pMap->AddLinedef(linedef);
-
-        //cout << linedef.StartVertex << endl;
-        //cout << linedef.EndVertex << endl;
-        //cout << linedef.Flags << endl;
-        //cout << linedef.LineType << endl;
-        //cout << linedef.SectorTag << endl;
-        //cout << linedef.FrontSidedef << endl;
-        //cout << linedef.BackSidedef << endl;
-        //std::cout << std::endl;
     }
 
     return true;
@@ -243,15 +214,7 @@ bool WADLoader::ReadMapThing(Map *pMap)
     for (int i = 0; i < iThingsCount; ++i)
     {
         m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
-
         pMap->AddThing(thing);
-
-        //cout << thing.XPosition << endl;
-        //cout << thing.YPosition << endl;
-        //cout << thing.Angle << endl;
-        //cout << thing.Type << endl;
-        //cout << thing.Flags << endl;
-        //std::cout << std::endl;
     }
 
     return true;

@@ -7,3 +7,4 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 003 - Adding SDL](../Week003/tutorial)  
 [Week 004 - Automap](../Week004/tutorial)  
 [Week 005 - Player and Things](../Week005/tutorial)  
+[Week 006 - Intro to DOOM BSP Traversal](../Week006/tutorial)  
