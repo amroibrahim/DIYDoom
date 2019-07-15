@@ -161,7 +161,8 @@ void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
 ```
 _Not in source_
 
-List (sort) all the data that is close to the number 30. Running this algorithm will output the following:  
+List (sort) all the data that is close to the number 30.  
+Running this algorithm will output the following:
 30 , 40 , 20 , 10 , 50 , 60 , 70 , 80  
 
 Running with 70 as input would output:
