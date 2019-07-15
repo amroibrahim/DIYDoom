@@ -162,16 +162,16 @@ void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
 _Not in source_
 
 List (sort) all the data that is close to the number 30.  
-Running this algorithm will output the following:
+Running this algorithm will output the following:  
 30 , 40 , 20 , 10 , 50 , 60 , 70 , 80  
 
-Running with 70 as input would output:
+Running with 70 as input:  
 70 , 80 , 60 , 50 , 40 , 30 , 20 , 10  
 
-Running with 10 as input:
+Running with 10 as input:  
 10 , 20 , 30 , 40 , 50 , 60 , 70 , 80  
 
-Running with 80 as input: 
+Running with 80 as input:   
 80 , 70 , 60 , 50 , 40 , 30 , 20 , 10  
 
 Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way, it is only our input that changes.  
