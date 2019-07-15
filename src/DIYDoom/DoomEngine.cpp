@@ -2,10 +2,8 @@
 
 using namespace std;
 
-DoomEngine::DoomEngine() : m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200)
+DoomEngine::DoomEngine(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200)
 {
-    m_pPlayer = new Player(1);
-    m_pMap = new Map("E1M1", m_pPlayer);
 }
 
 DoomEngine::~DoomEngine()
@@ -15,9 +13,12 @@ DoomEngine::~DoomEngine()
 
 bool DoomEngine::Init()
 {
+    // Delay object creation to this point so renderer is inistilized correctly
+    m_pPlayer = new Player(1);
+    m_pMap = new Map(m_pRenderer, "E1M1", m_pPlayer);
+
     m_WADLoader.SetWADFilePath(GetWADFileName());
     m_WADLoader.LoadWAD();
-
 
     m_WADLoader.LoadMapData(m_pMap);
     return true;
@@ -28,11 +29,11 @@ std::string DoomEngine::GetWADFileName()
     return "D:\\SDKs\\Assets\\Doom\\DOOM.WAD";
 }
 
-void DoomEngine::Render(SDL_Renderer *pRenderer)
+void DoomEngine::Render()
 {
-    SDL_SetRenderDrawColor(pRenderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(pRenderer);
-    m_pMap->RenderAutoMap(pRenderer);
+    SDL_SetRenderDrawColor(m_pRenderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_RenderClear(m_pRenderer);
+    m_pMap->RenderAutoMap();
 }
 
 void DoomEngine::KeyPressed(SDL_Event &event)

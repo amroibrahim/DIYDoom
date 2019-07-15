@@ -17,11 +17,9 @@ public:
     int GetYPosition();
     int GetAngle();
 
-
 protected:
     int m_iPlayerID;
     int m_XPosition;
     int m_YPosition;
     int m_Angle;
 };
-

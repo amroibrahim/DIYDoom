@@ -2,9 +2,11 @@
 
 using namespace std;
 
-Map::Map(std::string sName, Player *pPlayer) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15), m_iLumpIndex(-1), m_pPlayer(pPlayer)
+Map::Map(SDL_Renderer *pRenderer, std::string sName, Player *pPlayer) : m_pRenderer(pRenderer), m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15), m_iLumpIndex(-1), m_pPlayer(pPlayer)
 {
-
+    SDL_RenderGetLogicalSize(m_pRenderer, &m_iRenderXSize, &m_iRenderYSize);
+    --m_iRenderXSize;
+    --m_iRenderYSize;
 }
 
 Map::~Map()
@@ -56,26 +58,25 @@ string Map::GetName()
     return m_sName;
 }
 
-void Map::RenderAutoMap(SDL_Renderer *pRenderer)
+int Map::RemapXToScreen(int XMapPosition)
 {
-    int iXShift = -m_XMin;
-    int iYShift = -m_YMin;
-
-    RenderAutoMapWalls(pRenderer, iXShift, iYShift);
-    RenderAutoMapPlayer(pRenderer, iXShift, iYShift);
+    return (XMapPosition + (-m_XMin)) / m_iAutoMapScaleFactor;
 }
 
-void Map::RenderAutoMapPlayer(SDL_Renderer *pRenderer, int iXShift, int iYShift)
+int Map::RemapYToScreen(int YMapPosition)
 {
-    int iRenderXSize;
-    int iRenderYSize;
+    return m_iRenderYSize - (YMapPosition + (-m_YMin)) / m_iAutoMapScaleFactor;
+}
 
-    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
+void Map::RenderAutoMap()
+{
+    RenderAutoMapWalls();
+    RenderAutoMapPlayer();
+}
 
-    --iRenderXSize;
-    --iRenderYSize;
-
-    SDL_SetRenderDrawColor(pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+void Map::RenderAutoMapPlayer()
+{
+    SDL_SetRenderDrawColor(m_pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
 
     pair<int, int> Direction[] = {
         make_pair(-1, -1), make_pair(0, -1), make_pair(+1, -1),
@@ -85,34 +86,27 @@ void Map::RenderAutoMapPlayer(SDL_Renderer *pRenderer, int iXShift, int iYShift)
 
     for (int i = 0; i < 9; ++i)
     {
-        SDL_RenderDrawPoint(pRenderer,
-            (m_pPlayer->GetXPosition() + iXShift) / m_iAutoMapScaleFactor + Direction[i].first,
-            iRenderYSize - (m_pPlayer->GetYPosition() + iYShift) / m_iAutoMapScaleFactor + Direction[i].second);
+        SDL_RenderDrawPoint(m_pRenderer,
+            RemapXToScreen(m_pPlayer->GetXPosition()) + Direction[i].first,
+            RemapYToScreen(m_pPlayer->GetYPosition()) + Direction[i].second);
     }
 }
 
-void Map::RenderAutoMapWalls(SDL_Renderer *pRenderer, int iXShift, int iYShift)
+void Map::RenderAutoMapWalls()
 {
-    int iRenderXSize;
-    int iRenderYSize;
 
-    SDL_RenderGetLogicalSize(pRenderer, &iRenderXSize, &iRenderYSize);
-
-    --iRenderXSize;
-    --iRenderYSize;
-
-    SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(m_pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
     for (Linedef &l : m_Linedef)
     {
         Vertex vStart = m_Vertexes[l.StartVertex];
         Vertex vEnd = m_Vertexes[l.EndVertex];
 
-        SDL_RenderDrawLine(pRenderer,
-            (vStart.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            iRenderYSize - (vStart.YPosition + iYShift) / m_iAutoMapScaleFactor,
-            (vEnd.XPosition + iXShift) / m_iAutoMapScaleFactor,
-            iRenderYSize - (vEnd.YPosition + iYShift) / m_iAutoMapScaleFactor);
+        SDL_RenderDrawLine(m_pRenderer,
+            RemapXToScreen(vStart.XPosition),
+            RemapYToScreen(vStart.YPosition),
+            RemapXToScreen(vEnd.XPosition),
+            RemapYToScreen(vEnd.YPosition));
     }
 }
 
