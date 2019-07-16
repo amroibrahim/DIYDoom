@@ -161,23 +161,24 @@ void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
 ```
 _Not in source_
 
-List (sort) all the data that is close to the number 30. Running this algorithm will output the following:
+List (sort) all the data that is close to the number 30.  
+Running this algorithm will output the following:  
 30 , 40 , 20 , 10 , 50 , 60 , 70 , 80  
 
-Running with 70 as input would output:
+Running with 70 as input:  
 70 , 80 , 60 , 50 , 40 , 30 , 20 , 10  
 
-Running with 10 as input:
+Running with 10 as input:  
 10 , 20 , 30 , 40 , 50 , 60 , 70 , 80  
 
-Running with 80 as input: 
+Running with 80 as input:   
 80 , 70 , 60 , 50 , 40 , 30 , 20 , 10  
 
 Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way, it is only our input that changes.  
 
 This is how BSP works, but instead of numbers it is splitting 2D or 3D space.  
-But, why does this algorithm work?  What is the logic behind it? The simpler answer is: after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
-The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got the that node, just move in the opposite direction and print those nodes.
+But, why does this algorithm work?  What is the logic behind it? The simple answer is: after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
+The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got to that node, just move in the opposite direction and print those nodes.
 You will find some books discussing this as a hyprid Pre-Post order tree traversal, I personally find it a modified binary search algorithm.
 
 ## Coding
@@ -228,7 +229,7 @@ int Map::RemapXToScreen(int XMapPosition)
 ```
 
 ## Other Notes
-Lots of things in computer science are just big words for small things ($25 term for a five cent concept) like cloud computer or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
+Lots of things in computer science are just big words for small things ($25 term for a five cent concept) like cloud computing or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
 
 ## Source code
 [Source code](../src)  
