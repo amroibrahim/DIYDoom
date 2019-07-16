@@ -229,7 +229,7 @@ int Map::RemapXToScreen(int XMapPosition)
 ```
 
 ## Other Notes
-Lots of things in computer science are just big words for small things ($25 term for a five cent concept) like cloud computer or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
+Lots of things in computer science are just big words for small things ($25 term for a five cent concept) like cloud computing or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
 
 ## Source code
 [Source code](../src)  
