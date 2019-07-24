@@ -53,6 +53,11 @@ void Map::AddThing(Thing &thing)
     m_Things.push_back(thing);
 }
 
+void Map::AddNode(Node &node)
+{
+    m_Nodes.push_back(node);
+}
+
 string Map::GetName()
 {
     return m_sName;
@@ -66,12 +71,14 @@ int Map::RemapXToScreen(int XMapPosition)
 int Map::RemapYToScreen(int YMapPosition)
 {
     return m_iRenderYSize - (YMapPosition + (-m_YMin)) / m_iAutoMapScaleFactor;
+
 }
 
 void Map::RenderAutoMap()
 {
     RenderAutoMapWalls();
     RenderAutoMapPlayer();
+    RenderAutoMapNode();
 }
 
 void Map::RenderAutoMapPlayer()
@@ -108,6 +115,37 @@ void Map::RenderAutoMapWalls()
             RemapXToScreen(vEnd.XPosition),
             RemapYToScreen(vEnd.YPosition));
     }
+}
+
+void Map::RenderAutoMapNode()
+{
+    Node node = m_Nodes[m_Nodes.size() - 1];
+
+    SDL_Rect FrontRect = {
+        RemapXToScreen(node.FrontBoxLeft),
+        RemapYToScreen(node.FrontBoxTop),
+        RemapXToScreen(node.FrontBoxRight) - RemapXToScreen(node.FrontBoxLeft) + 1,
+        RemapYToScreen(node.FrontBoxBottom) - RemapYToScreen(node.FrontBoxTop) + 1
+    };
+
+    SDL_Rect BackRect = {
+        RemapXToScreen(node.BackBoxLeft),
+        RemapYToScreen(node.BackBoxTop),
+        RemapXToScreen(node.BackBoxRight) - RemapXToScreen(node.BackBoxLeft) + 1,
+        RemapYToScreen(node.BackBoxBottom) - RemapYToScreen(node.BackBoxTop) + 1
+    };
+
+    SDL_SetRenderDrawColor(m_pRenderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderDrawRect(m_pRenderer, &FrontRect);
+    SDL_SetRenderDrawColor(m_pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderDrawRect(m_pRenderer, &BackRect);
+
+    SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
+    SDL_RenderDrawLine(m_pRenderer,
+        RemapXToScreen(node.XPartition),
+        RemapYToScreen(node.YPartition),
+        RemapXToScreen(node.XPartition + node.ChangeXPartition),
+        RemapYToScreen(node.YPartition + node.ChangeYPartition));
 }
 
 void Map::SetLumpIndex(int iIndex)
