@@ -18,9 +18,11 @@ public:
     void AddVertex(Vertex &v);
     void AddLinedef(Linedef &l);
     void AddThing(Thing &thing);
+    void AddNode(Node &node);
     void RenderAutoMap();
     void RenderAutoMapPlayer();
     void RenderAutoMapWalls();
+    void RenderAutoMapNode();
     void SetLumpIndex(int iIndex);
 
 
@@ -34,6 +36,7 @@ protected:
     std::vector<Vertex> m_Vertexes;
     std::vector<Linedef> m_Linedef;
     std::vector<Thing> m_Things;
+    std::vector<Node> m_Nodes;
 
     int m_XMin;
     int m_XMax;

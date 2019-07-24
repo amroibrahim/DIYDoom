@@ -82,3 +82,24 @@ void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
     thing.Type = Read2Bytes(pWADData, offset + 6);
     thing.Flags = Read2Bytes(pWADData, offset + 8);
 }
+
+void WADReader::ReadNodesData(const uint8_t *pWADData, int offset, Node &node)
+{
+    node.XPartition = Read2Bytes(pWADData, offset);
+    node.YPartition = Read2Bytes(pWADData, offset + 2);
+    node.ChangeXPartition = Read2Bytes(pWADData, offset + 4);
+    node.ChangeYPartition = Read2Bytes(pWADData, offset + 6);
+
+    node.FrontBoxTop = Read2Bytes(pWADData, offset + 8);
+    node.FrontBoxBottom = Read2Bytes(pWADData, offset + 10);
+    node.FrontBoxLeft = Read2Bytes(pWADData, offset + 12);
+    node.FrontBoxRight = Read2Bytes(pWADData, offset + 14);
+
+    node.BackBoxTop = Read2Bytes(pWADData, offset + 16);
+    node.BackBoxBottom = Read2Bytes(pWADData, offset + 18);
+    node.BackBoxLeft = Read2Bytes(pWADData, offset + 20);
+    node.BackBoxRight = Read2Bytes(pWADData, offset + 22);
+
+    node.FrontChildID = Read2Bytes(pWADData, offset + 24);
+    node.BackChildID = Read2Bytes(pWADData, offset + 26);
+}

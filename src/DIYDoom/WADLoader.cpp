@@ -110,6 +110,14 @@ bool WADLoader::LoadMapData(Map *pMap)
         return false;
     }
 
+    std::cout << "Info: Processing Map Nodes" << endl;
+    if (!ReadMapNodes(pMap))
+    {
+        cout << "Error: Failed to load map node data MAP: " << pMap->GetName() << endl;
+        return false;
+
+    }
+
     return true;
 }
 
@@ -215,6 +223,36 @@ bool WADLoader::ReadMapThing(Map *pMap)
     {
         m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
         pMap->AddThing(thing);
+    }
+
+    return true;
+}
+
+bool WADLoader::ReadMapNodes(Map *pMap)
+{
+    int iMapIndex = FindMapIndex(pMap);
+
+    if (iMapIndex == -1)
+    {
+        return false;
+    }
+
+    iMapIndex += EMAPLUMPSINDEX::eNODES;
+
+    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "NODES") != 0)
+    {
+        return false;
+    }
+
+    int iNodesSizeInBytes = sizeof(Node);
+    int iNodesCount = m_WADDirectories[iMapIndex].LumpSize / iNodesSizeInBytes;
+
+    Node node;
+    for (int i = 0; i < iNodesCount; ++i)
+    {
+        m_Reader.ReadNodesData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iNodesSizeInBytes, node);
+
+        pMap->AddNode(node);
     }
 
     return true;

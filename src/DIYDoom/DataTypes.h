@@ -70,3 +70,24 @@ struct Thing
     uint16_t Type;
     uint16_t Flags;
 };
+
+struct Node
+{
+    int16_t XPartition;
+    int16_t YPartition;
+    int16_t ChangeXPartition;
+    int16_t ChangeYPartition;
+
+    int16_t FrontBoxTop;
+    int16_t FrontBoxBottom;
+    int16_t FrontBoxLeft;
+    int16_t FrontBoxRight;
+
+    int16_t BackBoxTop;
+    int16_t BackBoxBottom;
+    int16_t BackBoxLeft;
+    int16_t BackBoxRight;
+
+    uint16_t FrontChildID;
+    uint16_t BackChildID;
+};
