@@ -1,11 +1,11 @@
 # Week 007 - BSP Node
-BSP (binary space partitioning), is just a tree that breaks down a map too small pieces (sub-sectors) and stores them in a form of a tree nodes so it is easy to search for a sub-sector and look at neighboring sub-sectors. When the map is created by the designer it gets processed to generate its BSP tree before the map could be used in game. Lets have a high overview of how this BSP tree could be visualized.  
+BSP (binary space partitioning), is just a tree that breaks down a map into small pieces (sub-sectors) and stores them in a form of tree nodes so it is easy to search for a sub-sector and look at neighboring sub-sectors. When the map is created by the designer it gets processed to generate its BSP tree before the map could be used in game. Let's have a high overview of how this BSP tree could be visualized.  
 
 Let's take E1M1 as an example  
 
 ![E1M1](../img/BSP1.png)  
 
-A splitter is chosen, and then everything is on the the front or the back of that splitter (sometimes they also call it left and right, I decided not to go with this convention due to the fact that the left is not always the left and right is not always right. Left could be on the right and right could be on the left if you got confused your on the right track. Using left and right will get confusing so front and back is better so no assumptions in direction would be done).  
+A splitter is chosen, and then everything is on the the front or the back of that splitter (sometimes they also call it left and right, I decided not to go with this convention due to the fact that the left is not always the left and right is not always right. Left could be on the right and right could be on the left. If you got confused your on the right track. Using left and right will get confusing so front and back is better so no assumptions in direction would be done).  
 
 The front and back are based on the direction of the first vertex moving to the second vertex (mathematically called vector, the direction you go moving to the second point).  
 
@@ -27,9 +27,9 @@ This will go all the way until we have a "sub-sector" which is a convex polygon 
 The node structure in the WAD has a lot of data stored in it. A node is a sub-sector leaf node if the last bit is set to 1 (a leaf node, indicating that this node is a sub-sector and it will not have more children). 
 
 For now, we will not use this information, but it is critical to figure out the type of the node we are looking at.  
-Something to note here, you can see how developer back then would utilize every single bit they could, nowadays (and I'm doing that myself) just allocate memory left and right.  
+Something to note here, you can see how a developer back then would utilize every single bit they could, nowadays (and I'm doing that myself) just allocate memory left and right.  
 
-In my professional life, I have seen how much performance was impacted because developers was too lazy and was just copying variables over and over for function calls (An HTML parser that took 10 sec with passing variables by value over and over dropped down to 3 sec when the code was just changed to pass pointer around). Using too much memory will impact your application performance because it will be busy fetching data from memory.  
+In my professional life, I have seen how much performance was impacted because developers was too lazy and were just copying variables over and over for function calls (An HTML parser that took 10 sec with passing variables by value over and over dropped down to 3 sec when the code was just changed to pass pointer around). Using too much memory will impact your application performance because it will be busy fetching data from memory.  
 
 ## Goals
 1. Read the Node structure  
@@ -58,7 +58,7 @@ So let's get started
 
 A lot of data, but there is few interesting things to be noted here. 
 * The splitter is stored as a single point, then the delta in X and Y to the second point. This is an optimization which we will talk about when we start traversing the BSP node.
-* Why in the world would he need to store the front box and the Back box of a splitter? After digging a little bit into the code it is another brilliant optimization (sadly we will not use for now but we will cover how it works). On the other had this boxes are used in all those screen shoots to show the front and back of the splitter.
+* Why in the world would he need to store the front box and the Back box of a splitter? After digging a little bit into the code it is another brilliant optimization (sadly we will not use for now but we will cover how it works). On the other had these boxes are used in all those screen shoots to show the front and back of the splitter.
 
 ## Coding
 So nothing is new here, again just the same old task, reading the node data from the WAD.  
