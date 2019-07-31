@@ -78,7 +78,49 @@ void Map::RenderAutoMap()
 {
     RenderAutoMapWalls();
     RenderAutoMapPlayer();
-    RenderAutoMapNode();
+    RenderBSPNodes();
+}
+
+void Map::RenderBSPNodes()
+{
+    RenderBSPNodes(m_Nodes.size() - 1);
+}
+
+void Map::RenderBSPNodes(int iNodeID)
+{
+    // Masking all the bits exipt the last one
+    // to check if this is a subsector
+    if (iNodeID & SUBSECTORIDENTIFIER)
+    {
+        RenderSubsector(iNodeID & (~SUBSECTORIDENTIFIER));
+        return;
+    }
+
+    bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iNodeID);
+
+    if (isOnBack)
+    {
+        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
+    }
+    else
+    {
+        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
+    }
+}
+
+void Map::RenderSubsector(int iSubsectorID)
+{
+
+}
+
+bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)
+{
+    int dx = XPosition - m_Nodes[iNodeID].XPartition;
+    int dy = YPosition - m_Nodes[iNodeID].YPartition;
+
+    return (((dx * m_Nodes[iNodeID].ChangeYPartition) - (dy * m_Nodes[iNodeID].ChangeXPartition)) <= 0);
 }
 
 void Map::RenderAutoMapPlayer()
@@ -117,9 +159,9 @@ void Map::RenderAutoMapWalls()
     }
 }
 
-void Map::RenderAutoMapNode()
+void Map::RenderAutoMapNode(int iNodeID)
 {
-    Node node = m_Nodes[m_Nodes.size() - 1];
+    Node node = m_Nodes[iNodeID];
 
     SDL_Rect FrontRect = {
         RemapXToScreen(node.FrontBoxLeft),

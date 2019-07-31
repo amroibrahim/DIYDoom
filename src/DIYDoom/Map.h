@@ -20,17 +20,23 @@ public:
     void AddThing(Thing &thing);
     void AddNode(Node &node);
     void RenderAutoMap();
-    void RenderAutoMapPlayer();
-    void RenderAutoMapWalls();
-    void RenderAutoMapNode();
     void SetLumpIndex(int iIndex);
 
 
     int GetLumpIndex();
 
 protected:
+    void RenderAutoMapPlayer();
+    void RenderAutoMapWalls();
+    void RenderBSPNodes();
+    void RenderAutoMapNode(int iNodeID);
+    void RenderBSPNodes(int iNodeID);
+    void RenderSubsector(int iSubsectorID);
+
     int RemapXToScreen(int XMapPosition);
     int RemapYToScreen(int YMapPosition);
+
+    bool IsPointOnBackSide(int XPosition, int YPosition, int iNodeID);
 
     std::string m_sName;
     std::vector<Vertex> m_Vertexes;

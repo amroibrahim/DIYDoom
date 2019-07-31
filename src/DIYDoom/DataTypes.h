@@ -2,6 +2,12 @@
 
 #include <cstdint>
 
+// Subsector Identifier is the 16th bit which
+// indicate if the node ID is a subsector.
+// The node ID is stored as uint16
+// 0x8000 in binary 1000000000000000
+#define SUBSECTORIDENTIFIER 0x8000
+
 enum EMAPLUMPSINDEX
 {
     eName,

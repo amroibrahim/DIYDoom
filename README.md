@@ -9,3 +9,4 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 005 - Player and Things](../Week005/tutorial)  
 [Week 006 - Intro to DOOM BSP Traversal](../Week006/tutorial)  
 [Week 007 - BSP Node](../Week007/tutorial)  
+[Week 008 - Finding Walls and BSP Traversal](../Week008/tutorial)  
