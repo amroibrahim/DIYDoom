@@ -19,9 +19,10 @@ public:
     void AddLinedef(Linedef &l);
     void AddThing(Thing &thing);
     void AddNode(Node &node);
+    void AddSubsector(Subsector &subsector);
+    void AddSeg(Seg &seg);
     void RenderAutoMap();
     void SetLumpIndex(int iIndex);
-
 
     int GetLumpIndex();
 
@@ -40,9 +41,11 @@ protected:
 
     std::string m_sName;
     std::vector<Vertex> m_Vertexes;
-    std::vector<Linedef> m_Linedef;
+    std::vector<Linedef> m_Linedefs;
     std::vector<Thing> m_Things;
     std::vector<Node> m_Nodes;
+    std::vector<Subsector> m_Subsector;
+    std::vector<Seg> m_Segs;
 
     int m_XMin;
     int m_XMax;

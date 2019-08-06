@@ -15,7 +15,9 @@ public:
     void ReadVertexData(const uint8_t *pWADData, int offset, Vertex &vertex);
     void ReadLinedefData(const uint8_t *pWADData, int offset, Linedef &linedef);
     void ReadThingData(const uint8_t *pWADData, int offset, Thing &thing);
-    void ReadNodesData(const uint8_t *pWADData, int offset, Node &node);
+    void ReadNodeData(const uint8_t *pWADData, int offset, Node &node);
+    void ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector);
+    void ReadSegData(const uint8_t *pWADData, int offset, Seg &seg);
 
 protected:
     uint16_t Read2Bytes(const uint8_t *pWADData, int offset);
