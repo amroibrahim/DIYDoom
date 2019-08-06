@@ -1,5 +1,7 @@
 #include "Map.h"
 
+#include <stdlib.h> 
+
 using namespace std;
 
 Map::Map(SDL_Renderer *pRenderer, std::string sName, Player *pPlayer) : m_pRenderer(pRenderer), m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15), m_iLumpIndex(-1), m_pPlayer(pPlayer)
@@ -38,7 +40,7 @@ void Map::AddVertex(Vertex &v)
 
 void Map::AddLinedef(Linedef &l)
 {
-    m_Linedef.push_back(l);
+    m_Linedefs.push_back(l);
 }
 
 void Map::AddThing(Thing &thing)
@@ -56,6 +58,16 @@ void Map::AddThing(Thing &thing)
 void Map::AddNode(Node &node)
 {
     m_Nodes.push_back(node);
+}
+
+void Map::AddSubsector(Subsector &subsector)
+{
+    m_Subsector.push_back(subsector);
+}
+
+void Map::AddSeg(Seg &seg)
+{
+    m_Segs.push_back(seg);
 }
 
 string Map::GetName()
@@ -112,6 +124,21 @@ void Map::RenderBSPNodes(int iNodeID)
 
 void Map::RenderSubsector(int iSubsectorID)
 {
+    Subsector subsector = m_Subsector[iSubsectorID];
+    SDL_SetRenderDrawColor(m_pRenderer, rand() % 255, rand() % 255, rand() % 255, SDL_ALPHA_OPAQUE);
+
+    for (int i = 0; i < subsector.SegCount; i++)
+    {
+        Seg seg = m_Segs[subsector.FirstSegID + i];
+        SDL_RenderDrawLine(m_pRenderer,
+            RemapXToScreen(m_Vertexes[seg.StartVertexID].XPosition),
+            RemapYToScreen(m_Vertexes[seg.StartVertexID].YPosition),
+            RemapXToScreen(m_Vertexes[seg.EndVertexID].XPosition),
+            RemapYToScreen(m_Vertexes[seg.EndVertexID].YPosition));
+    }
+
+    //SDL_RenderPresent(m_pRenderer); 
+    //SDL_Delay(100);
 
 }
 
@@ -146,10 +173,10 @@ void Map::RenderAutoMapWalls()
 
     SDL_SetRenderDrawColor(m_pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
-    for (Linedef &l : m_Linedef)
+    for (Linedef &l : m_Linedefs)
     {
-        Vertex vStart = m_Vertexes[l.StartVertex];
-        Vertex vEnd = m_Vertexes[l.EndVertex];
+        Vertex vStart = m_Vertexes[l.StartVertexID];
+        Vertex vEnd = m_Vertexes[l.EndVertexID];
 
         SDL_RenderDrawLine(m_pRenderer,
             RemapXToScreen(vStart.XPosition),

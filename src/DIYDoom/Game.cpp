@@ -112,7 +112,6 @@ bool Game::IsOver()
     return m_pDoomEngine->IsOver();
 }
 
-
 void Game::Delay()
 {
     SDL_Delay(m_pDoomEngine->GetTimePerFrame());

@@ -59,8 +59,8 @@ struct Vertex
 
 struct Linedef
 {
-    uint16_t StartVertex;
-    uint16_t EndVertex;
+    uint16_t StartVertexID;
+    uint16_t EndVertexID;
     uint16_t Flags;
     uint16_t LineType;
     uint16_t SectorTag;
@@ -96,4 +96,20 @@ struct Node
 
     uint16_t FrontChildID;
     uint16_t BackChildID;
+};
+
+struct Subsector
+{
+    uint16_t SegCount;
+    uint16_t FirstSegID;
+};
+
+struct Seg
+{
+    uint16_t StartVertexID;
+    uint16_t EndVertexID;
+    uint16_t Angle;
+    uint16_t LinedefID;
+    uint16_t Direction; // 0 same as linedef, 1 opposite of linedef
+    uint16_t Offset; // distance along linedef to start of seg
 };

@@ -1,246 +1,163 @@
-__Author:__ Amro Ibrahim  
-__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+# Week 009 - Sector and Subsector  
+At this point there is no escape from understanding sectors, sub-sectors and segs! So let's start.  
+We know that a vertexes and linedefs form a walls (Week002).  
+Using vertexes and lindefs lets create a very simple room (top 2D view).   
+![Simple Room](../img/singleroom_2d.png)  
 
-# Week 008 - Finding Walls and BSP Traversal  
-This week things will start getting serious, our main goal is to render a 3D view of what the player is viewing. To accomplish this, we need to know few things  
-*  Where is the player on the map? We know this (Week005)  
-*  Which walls are around the player? We will be implementing this  
-*  Which of these walls are in the player's field of view? Later week  
-*  Render what the player is seeing. Later week  
+which in DOOM view would look like this    
 
-So with us knowing where the player is, the first step of the 3D rendering journey is to figure out which walls are closest to the player. If you have been a ID Software fan you mostly know by now how Wolfenstein 3D rendering works, and the big shift between Wolf3D and DOOM was the utilization of a BSP Tree (BSP was used in Wolf3D SNES version). 
-How things worked in Wolf 3D was using [ray casting](https://en.wikipedia.org/wiki/Ray_casting) technology. But using such a technology has a lot of limitations. This is where BSP trees comes in. BSP trees are used to help us know which walls are closest to the player. So let's get started.  
+![Simple Room 3D](../img/singleroom.png)  
 
-With all the info we have from the binary tree traversal it should be easy to understand this. The BSP traversal is based on the modified algorithm we discussed in Week007, with the only difference being that the map space is being split instead of numbers.  
+A sector is (usually) a closed area. It is formed by linedefs and sidefes (Sidedefs holds information about the walls texture. For now, we will keep texture  aside, so you don’t have to worry about sidedefs).  
+See the above simple room, it has same floor and ceiling height, texture light level, it is all the same sector.    
+A sector has the following properties:   
+* Floor height  
+* Ceiling height  
+* Floor texture  
+* Ceiling texture  
+* Light level  
+* Type  
 
-Here is how the root node can be visualized.  
+So if I want to make areas with different properties, let's say height, we would split that area into two sectors, sector for each height.  
 
-![Root Node](../img/BSP2.png) 
+So adding a single step to this simple room would need to update the map and split the sector to something like this (top 2D view).  
 
-Notice the small blue line that splits the map to front/back (or left and right)?  
-The front and back of a line are based on the direction of drawing the line. So that specific line is drawn from top to bottom, this makes the left side the front (green box), and the right box the back (the red box). Recursively, the front and the back of those boxes are split into smaller boxes, for example here is the front box in the above picture being split into smaller ones.  
+![Simple Room](../img/singlestep.png)  
 
-![Child Node](../img/BSP4.png)  
+which would render to  
 
-The map breaking down all the way to what is known as "sub-sector", for now, let's just think about a sub-sector as a small piece of map walls (we will look into details about sector and sub-sectors later).  
+![Simple Room](../img/singlestep_2d.png)  
 
-Here is an image to visualize how sub-sectors would look. All the pieces with the same color are part of the same sub-sector.
+Now, Imagen the power of this! You can keep adding sectors to make stairs, or bring the floor a little higher and ceiling a little lower, creating what would look like a window.  
 
-![Sub-sectors](../img/subsectors.png)  
+Now let’s move to sub-sector, a sector is broken down to small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlaping walls. This convex area are defined by segments of linedefs know as "seg".    
 
-I see BSP traversal as two stage actions
-1. Find which sub-sector the player is in
-2. What are the sub-sectors close to the sub-sector the playing is in?
+![Convex Segs](../img/subsectors.png)  
 
-But before we start there is one missing key part that we have not discussed yet! How in the world will I know if a player is in front or behind a splitter line? The answer is "cross product".   
+It is a very common that sub-sectors are represented as a polygon (a closed convex polygon), but the closed polygon part is not very acturate. Usually an extra side is added, and adding that extra line would help visualize which subsector the player is in. If you color segs you would end up with something like this  
 
-First, let's quickly go over a what a vector is.
-A vector is an object that has both a magnitude and a direction. We can visualize a vector as a line in a specific direction, where we know its length and magnitude. 
-  
-![Vector](../img/vector.png)  
-  
-In other words, a line that has a starting point and an end point. Given two points a and b, moving from a to b (where we know both magnitude and direction). If you remember, the splitter walls in the BSP nodes are actually vectors, they have a starting point and direction.  
-  
-Cross product is a mathematical operation on two vectors and the output is another vector. The output vector will also have magnitude and a direction. We can tell its direction if it is up or down based on the sign value of the cross product (we don't care much about the magnitude).    
+![Segs](../img/segs.png)   
 
-![Cross product](../img/crossproduct.gif)
+So in short, sub-sector is a group of Segs. Segs are just a complete or a segment of a linedef.   
 
-Notice in the above example that if vector b is on the left of a output vector points up, and when b the right of a output vector points down. We can use this to our advantage.  
+### Sub-sector Data Format  
+| Field Size | Data Type        | Content                                           |  
+|------------|------------------|---------------------------------------------------|  
+| 0x00-0x01  | Seg count        | The number of segs that compose this sub-segment  |  
+| 0x02-0x03  | First seg index  | The index of the first seg in the seg list        |  
 
-So lets create our two vectors
-1. Splitter V1 to the position of the player.  
-2. Splitter V1 to its V2.  
-  
-Finding cross products is easy once you have the two vectors.    
-For two 2D vector A=(Ax, Ay), B=(Bx, By) the cross product is  
-__A x B = Ax * By - Ay * Bx__  
-  
-![Cross product](../img/crossprod.png)  
+### Segs Data Format
+| Field Size | Data Type                                                  | Content                                 |  
+|------------|------------------------------------------------------------|-----------------------------------------|  
+| 0x00-0x01  | Starting vertex index                                      |                                         |  
+| 0x02-0x03  | Ending vertex index                                        |                                         |  
+| 0x04-0x05  | Angle                                                      |                                         |  
+| 0x06-0x07  | Linedef index                                              |                                         |  
+| 0x08-0x09  | Direction: 0 (same as linedef) or 1 (opposite of linedef)  |                                         |  
+| 0x0A-0x0B  | Offset: distance along linedef to start of seg             |                                         |  
 
-Keep in mind A X B = -B X A  
+## Goals  
+1. Code refactoring.  
+2. Load map sub-sectors.  
+3. Load map segs.  
+4. Color Sub-sectors on automap.  
 
-## Goals
-1. Traverse the BSP tree!  
-   
 ## Coding
-The other week we loaded all the nodes, which are stored in an array form with the root being the last node in the list. Now we need to find the player in this BSP tree. So, we start at the root and figure out whether to go left or right based on player location.  
-To figure out which node of those is a leaf node (a sub-sector node) the original DOOM code had a nice optimization, they used the last bit of the node ID as a flag.   
-  
-``` cpp
-// 0x8000 in binary 1000000000000000
-#define SUBSECTORIDENTIFIER 0x8000
-```  
+I have noticed I was not consistent in my variable/function naming, so I renamed:  
+* m_Linedef to m_Linedefs  
+* ReadMapVertex to ReadMapVertexes  
+* ReadMapLinedef to ReadMapLinedefs  
+* ReadMapVertex to ReadMapVertexes  
+* ReadNodesData to ReadNodeData  
+* Linedef StartVertex, StartVertexID  
+* Linedef EndVertex, EndVertexID  
 
-We will use bit masking to figure out if we are holding a sub-sector node, or just "guide" node,  
-and at each node we can simply use the cross product to decide whether to go left or right.  
-We just care about the direction (positive or negative to decide where to go).  
+We will not go into details, how to read those from the WAD file since we have done this many times by now, I will just list structs so it is easier to follow the code.  
 
 ``` cpp
-bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)
+struct Subsector
 {
-    int dx = XPosition - m_Nodes[iNodeID].XPartition; // Find X the point relative to the player 
-    int dy = YPosition - m_Nodes[iNodeID].YPartition; // Find y the point relative to the player 
+    uint16_t SegCount;
+    uint16_t FirstSegID;
+};
 
-    return (((dx * m_Nodes[iNodeID].ChangeYPartition) - (dy * m_Nodes[iNodeID].ChangeXPartition)) <= 0);
-}
+struct Seg
+{
+    uint16_t StartVertexID;
+    uint16_t EndVertexID;
+    uint16_t Angle;
+    uint16_t LinedefID;
+    uint16_t Direction; // 0 same as linedef, 1 opposite of linedef
+    uint16_t Offset; // distance along linedef to start of seg
+};
 ```
 
-Now let apply the tree search code we discussed in previous week, and call it passing in the root node!  
-
-``` cpp
-void Map::RenderBSPNodes(int iNodeID)
-{
-    // Masking all the bits except the last one
-    // to check if this is a subsector
-    if (iNodeID & SUBSECTORIDENTIFIER)
-    {
-        RenderSubsector(iNodeID & (~SUBSECTORIDENTIFIER));
-        return;
-    }
-
-    bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iNodeID);
-
-    if (isOnBack)
-    {
-        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
-    }
-    else
-    {
-        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
-    }
-}
-
-void Map::RenderBSPNodes()
-{
-    RenderBSPNodes(m_Nodes.size() - 1);
-}
-
-void Map::RenderSubsector(int iSubsectorID)
-{
-    // for now just let's keep this empty
-}
-```
-
-Animating the searching for the player  
-  
-![Player Search](../img/search.gif)  
-
-Sweeeet!  
-Now let's finish this off, by going through the rest of the tree to give us the custom sort we want (Week006)!
+So let's just jump in and color those beautiful sub-sectors, random colors will do  
 
 ```cpp
-void Map::RenderBSPNodes(int iNodeID)
+void Map::RenderSubsector(int iSubsectorID)
 {
-    // Masking all the bits except the last one
-    // to check if this is a subsector
-    if (iNodeID & SUBSECTORIDENTIFIER)
-    {
-        RenderSubsector(iNodeID & (~SUBSECTORIDENTIFIER));
-        return;
-    }
+    Subsector subsector = m_Subsector[iSubsectorID];
+    SDL_SetRenderDrawColor(m_pRenderer, rand() % 255, rand() % 255, rand() % 255, SDL_ALPHA_OPAQUE);
 
-    bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iNodeID);
-
-    if (isOnBack)
+    for (int i = 0; i < subsector.SegCount; i++)
     {
-        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
-        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
-    }
-    else
-    {
-        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
-        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
+        Seg seg = m_Segs[subsector.FirstSegID + i];
+        SDL_RenderDrawLine(m_pRenderer,
+            RemapXToScreen(m_Vertexes[seg.StartVertexID].XPosition),
+            RemapYToScreen(m_Vertexes[seg.StartVertexID].YPosition),
+            RemapXToScreen(m_Vertexes[seg.EndVertexID].XPosition),
+            RemapYToScreen(m_Vertexes[seg.EndVertexID].YPosition));
     }
 }
 ```
 
-Now, ```RenderSubsector``` will be called processing sub-sectors from near to far!  
+Let's run and see the magic!  
+
+![DIYDOOM](../img/diydoom.gif)
+
+That is nice! But I'm not thrilled, I'm kind of guy who like to see everything with my own eyes (still I don't believe everything I see!), this flickering map is cool but I really want to see the rendering orders of the segs in slow motion.  
+
+add this to the end of ``` void Map::RenderSubsector(int iSubsectorID)```  
+
+``` cpp
+    // This is a hacky code, so remember to comment it out!
+    SDL_RenderPresent(m_pRenderer); 
+    SDL_Delay(100);
+```
+
+Now let’s run and see what happens. 
+
+![Segs](../img/subsectorsslog.gif)  
+
+You can see that the front side of the root node gets completed first before moving to the backside. You can also see at any angle to the player the “walls” in front of the player if done before the further way!  
+
+Traversing the BSP tree gives us all the sub-sectors, with nearest to the player to further. So we will need to filter those to the ones that are just player field of view.  
 
 ## Other Notes
-Let's take a look at the original/Chocolate doom code that did the BSP traversal. You will find the implementation in ``` r_bsp.c ```, function ``` R_RenderBSPNode ```.  
-Let's peek at the struct that held the node data. 
+If you are tracing or comparing your code to original/chocolate doom, there are few things you need to keep in mind to make comparing your code easier. In the function ``` void R_RenderBSPNode (int bspnum) ``` you can comment out ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` so it would look like  
+
 ``` cpp
-//
-// BSP node.
-//
-typedef struct
-{
-    // Partition line.
-    fixed_t	x;
-    fixed_t	y;
-    fixed_t	dx;
-    fixed_t	dy;
-
-    // Bounding box for each child.
-    fixed_t	bbox[2][4];
-
-    // If NF_SUBSECTOR its a subsector.
-    unsigned short children[2];
-    
-} node_t;
-```
-  
-We could have defined our box boundaries as bbox was defined, but I found it was easier to be explicit about the naming and not to hide them under array indexes.   
-What was interesting was that children nodes were an array. As soon as I saw the code, I was wondering why it wasn't defined as two separate variables, back/front or left/right but it didn't take much time to know it was an optimization.   
-  
-``` cpp
-//
-// RenderBSPNode
-// Renders all subsectors below a given node,
-// traversing subtree recursively.
-// Just call with BSP root.
-void R_RenderBSPNode (int bspnum)
-{
-    node_t*	bsp;
-    int		side;
-
-    // Found a subsector?
-    if (bspnum & NF_SUBSECTOR)
-    {
-        // This condition was never hit, maybe it was 
-        // there to handle unexpected cases in custom maps
-        if (bspnum == -1)			
-            R_Subsector (0);
-        else
-            R_Subsector (bspnum&(~NF_SUBSECTOR));
-        return;
-    }
-        
-    bsp = &nodes[bspnum];
-    
     // Decide which side the viewpoint is on.
     // Cross product happens here, but there is some
     // optimization that makes it even avoid the multiplication
     side = R_PointOnSide (viewx, viewy, bsp);  
 
-    // Recursively divide front space.
     R_RenderBSPNode (bsp->children[side]); 
-
-    // Possibly divide back space.
-    if (R_CheckBBox (bsp->bbox[side^1]))	
-        R_RenderBSPNode (bsp->children[side^1]);
-}
+    R_RenderBSPNode (bsp->children[side^1]);
 ```
 
-What is happening here? Where is the condition to check which side the player is on and traverse based on that? hmmm...  
-Nice trick! I got it! So the function ```R_PointOnSide (viewx, viewy, bsp);``` returns 0 or 1 (true or false) which is used to select either the child at index 0 or index 1 ```R_RenderBSPNode (bsp->children[side]);```. Now to go to the other branch we just call ```R_RenderBSPNode (bsp->children[side^1]);```.
-What happened here is a good utilization of X-OR operation.  
+This will remove the optimization and will force the traversal though the BSP tree. This should not impact rendering output, it just makes comparing the output from chocolate DOOM and your code easier.  
 
-| A | B | A XOR B |  
-|---|---|---------|  
-| 0 | 0 | 0       |  
-| 0 | 1 | 1       |  
-| 1 | 0 | 1       |  
-| 1 | 1 | 0       |  
-
-So you always get to invert the case when calling ```R_RenderBSPNode (bsp->children[side^1]);```. So, no "if" statement is needed to determine the code path, which will make the code perform faster (better branch predictor for the CPU).  
-The function ```R_CheckBBox (bsp->bbox[side^1])``` is another optimization that saves going though nodes that are not in the player FOV (maybe something we could look at and implement later).  
+It is amazing how much impact on performance that optimization is, I did some testing with E1M1 and playing being in spawn area.  
+ * Without ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` all the sub-sectors gets traversed 477 sub-sectors.  
+ * With the change, only 32 sub-sector traversed! You only traversed 6% of the BSP tree!  
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[3D Math Primer for Graphics and Game Development](https://www.amazon.com/Math-Primer-Graphics-Game-Development-ebook/dp/B008KZU548/ref=sr_1_1?keywords=3d+Math+primer&qid=1564421411&s=gateway&sr=8-1)  
-[Cross product Wikipedia](https://en.wikipedia.org/wiki/Cross_product)  
-[Cross product Math is fun](https://www.mathsisfun.com/algebra/vectors-cross-product.html)  
-
+[Doom Wiki Sector](https://doomwiki.org/wiki/Sector)  
+[Doom Wiki Seg](https://doomwiki.org/wiki/Seg)  
+[Doom Wiki Subsector](https://doomwiki.org/wiki/Subsector)  
+[Fandom Rendering](https://doom.fandom.com/wiki/Doom_rendering_engine)  

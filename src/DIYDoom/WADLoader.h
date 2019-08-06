@@ -22,10 +22,12 @@ public:
 protected:
     bool OpenAndLoad();
     bool ReadDirectories();
-    bool ReadMapVertex(Map *pMap);
-    bool ReadMapLinedef(Map *pMap);
-    bool ReadMapThing(Map *pMap);
+    bool ReadMapVertexes(Map *pMap);
+    bool ReadMapLinedefs(Map *pMap);
+    bool ReadMapThings(Map *pMap);
     bool ReadMapNodes(Map *pMap);
+    bool ReadMapSubsectors(Map *pMap);
+    bool ReadMapSegs(Map *pMap);
 
     int FindMapIndex(Map *pMap);
 

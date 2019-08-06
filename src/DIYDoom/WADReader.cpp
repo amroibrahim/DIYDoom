@@ -65,8 +65,8 @@ void WADReader::ReadVertexData(const uint8_t *pWADData, int offset, Vertex &vert
 
 void WADReader::ReadLinedefData(const uint8_t *pWADData, int offset, Linedef &linedef)
 {
-    linedef.StartVertex = Read2Bytes(pWADData, offset);
-    linedef.EndVertex = Read2Bytes(pWADData, offset + 2);
+    linedef.StartVertexID = Read2Bytes(pWADData, offset);
+    linedef.EndVertexID = Read2Bytes(pWADData, offset + 2);
     linedef.Flags = Read2Bytes(pWADData, offset + 4);
     linedef.LineType = Read2Bytes(pWADData, offset + 6);
     linedef.SectorTag = Read2Bytes(pWADData, offset + 8);
@@ -83,7 +83,7 @@ void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
     thing.Flags = Read2Bytes(pWADData, offset + 8);
 }
 
-void WADReader::ReadNodesData(const uint8_t *pWADData, int offset, Node &node)
+void WADReader::ReadNodeData(const uint8_t *pWADData, int offset, Node &node)
 {
     node.XPartition = Read2Bytes(pWADData, offset);
     node.YPartition = Read2Bytes(pWADData, offset + 2);
@@ -102,4 +102,21 @@ void WADReader::ReadNodesData(const uint8_t *pWADData, int offset, Node &node)
 
     node.FrontChildID = Read2Bytes(pWADData, offset + 24);
     node.BackChildID = Read2Bytes(pWADData, offset + 26);
+}
+
+void WADReader::ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector)
+{
+    subsector.SegCount = Read2Bytes(pWADData, offset);
+    subsector.FirstSegID = Read2Bytes(pWADData, offset + 2);
+}
+
+void WADReader::ReadSegData(const uint8_t *pWADData, int offset, Seg &seg)
+{
+    seg.StartVertexID = Read2Bytes(pWADData, offset);
+    seg.EndVertexID = Read2Bytes(pWADData, offset + 2);
+    seg.Angle = Read2Bytes(pWADData, offset + 4);
+    seg.LinedefID = Read2Bytes(pWADData, offset + 6);
+    seg.Direction = Read2Bytes(pWADData, offset + 8);
+    seg.Offset = Read2Bytes(pWADData, offset + 10);
+
 }

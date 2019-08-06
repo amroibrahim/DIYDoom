@@ -89,35 +89,47 @@ bool WADLoader::LoadMapData(Map *pMap)
 {
     std::cout << "Info: Parsing Map: " << pMap->GetName() << endl;
 
-    std::cout << "Info: Processing Map Vertex" << endl;
-    if (!ReadMapVertex(pMap))
+    std::cout << "Info: Processing Map Vertexes" << endl;
+    if (!ReadMapVertexes(pMap))
     {
-        cout << "Error: Failed to load map vertex data MAP: " << pMap->GetName() << endl;
+        cout << "Error: Failed to load map vertexex data MAP: " << pMap->GetName() << endl;
         return false;
     }
 
-    std::cout << "Info: Processing Map Linedef" << endl;
-    if (!ReadMapLinedef(pMap))
+    std::cout << "Info: Processing Map Linedefs" << endl;
+    if (!ReadMapLinedefs(pMap))
     {
-        cout << "Error: Failed to load map linedef data MAP: " << pMap->GetName() << endl;
+        cout << "Error: Failed to load map linedefs data MAP: " << pMap->GetName() << endl;
         return false;
     }
 
     std::cout << "Info: Processing Map Things" << endl;
-    if (!ReadMapThing(pMap))
+    if (!ReadMapThings(pMap))
     {
-        cout << "Error: Failed to load map thing data MAP: " << pMap->GetName() << endl;
+        cout << "Error: Failed to load map things data MAP: " << pMap->GetName() << endl;
         return false;
     }
 
     std::cout << "Info: Processing Map Nodes" << endl;
     if (!ReadMapNodes(pMap))
     {
-        cout << "Error: Failed to load map node data MAP: " << pMap->GetName() << endl;
+        cout << "Error: Failed to load map nodes data MAP: " << pMap->GetName() << endl;
         return false;
-
     }
 
+    std::cout << "Info: Processing Map Subsectors" << endl;
+    if (!ReadMapSubsectors(pMap))
+    {
+        cout << "Error: Failed to load map subsectors data MAP: " << pMap->GetName() << endl;
+        return false;
+    }
+
+    std::cout << "Info: Processing Map Segs" << endl;
+    if (!ReadMapSegs(pMap))
+    {
+        cout << "Error: Failed to load map segs data MAP: " << pMap->GetName() << endl;
+        return false;
+    }
     return true;
 }
 
@@ -140,7 +152,7 @@ int WADLoader::FindMapIndex(Map *pMap)
     return -1;
 }
 
-bool WADLoader::ReadMapVertex(Map *pMap)
+bool WADLoader::ReadMapVertexes(Map *pMap)
 {
     int iMapIndex = FindMapIndex(pMap);
 
@@ -169,7 +181,7 @@ bool WADLoader::ReadMapVertex(Map *pMap)
     return true;
 }
 
-bool WADLoader::ReadMapLinedef(Map *pMap)
+bool WADLoader::ReadMapLinedefs(Map *pMap)
 {
     int iMapIndex = FindMapIndex(pMap);
 
@@ -198,7 +210,7 @@ bool WADLoader::ReadMapLinedef(Map *pMap)
     return true;
 }
 
-bool WADLoader::ReadMapThing(Map *pMap)
+bool WADLoader::ReadMapThings(Map *pMap)
 {
     int iMapIndex = FindMapIndex(pMap);
 
@@ -250,9 +262,69 @@ bool WADLoader::ReadMapNodes(Map *pMap)
     Node node;
     for (int i = 0; i < iNodesCount; ++i)
     {
-        m_Reader.ReadNodesData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iNodesSizeInBytes, node);
+        m_Reader.ReadNodeData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iNodesSizeInBytes, node);
 
         pMap->AddNode(node);
+    }
+
+    return true;
+}
+
+bool WADLoader::ReadMapSubsectors(Map *pMap)
+{
+    int iMapIndex = FindMapIndex(pMap);
+
+    if (iMapIndex == -1)
+    {
+        return false;
+    }
+
+    iMapIndex += EMAPLUMPSINDEX::eSSECTORS;
+
+    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "SSECTORS") != 0)
+    {
+        return false;
+    }
+
+    int iSubsectorsSizeInBytes = sizeof(Subsector);
+    int iSubsectorsCount = m_WADDirectories[iMapIndex].LumpSize / iSubsectorsSizeInBytes;
+
+    Subsector subsector;
+    for (int i = 0; i < iSubsectorsCount; ++i)
+    {
+        m_Reader.ReadSubsectorData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSubsectorsSizeInBytes, subsector);
+
+        pMap->AddSubsector(subsector);
+    }
+
+    return true;
+}
+
+bool WADLoader::ReadMapSegs(Map *pMap)
+{
+    int iMapIndex = FindMapIndex(pMap);
+
+    if (iMapIndex == -1)
+    {
+        return false;
+    }
+
+    iMapIndex += EMAPLUMPSINDEX::eSEAGS;
+
+    if (strcmp(m_WADDirectories[iMapIndex].LumpName, "SEGS") != 0)
+    {
+        return false;
+    }
+
+    int iSegsSizeInBytes = sizeof(Seg);
+    int iSegsCount = m_WADDirectories[iMapIndex].LumpSize / iSegsSizeInBytes;
+
+    Seg seg;
+    for (int i = 0; i < iSegsCount; ++i)
+    {
+        m_Reader.ReadSegData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSegsSizeInBytes, seg);
+
+        pMap->AddSeg(seg);
     }
 
     return true;
