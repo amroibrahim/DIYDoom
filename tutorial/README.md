@@ -1,15 +1,16 @@
+__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
 # Week 009 - Sector and Subsector  
-At this point there is no escape from understanding sectors, sub-sectors and segs! So let's start.  
-We know that a vertexes and linedefs form a walls (Week002).  
-Using vertexes and lindefs lets create a very simple room (top 2D view).   
+At this point there is no escape from understanding sectors, sub-sectors, and segs! So, let's start.  
+We know that vertexes and linedefs form walls (Week002).  
+Using vertexes and lindefs, lets create a very simple room (top 2D view).   
 ![Simple Room](../img/singleroom_2d.png)  
 
 which in DOOM view would look like this    
 
 ![Simple Room 3D](../img/singleroom.png)  
 
-A sector is (usually) a closed area. It is formed by linedefs and sidefes (Sidedefs holds information about the walls texture. For now, we will keep texture  aside, so you don’t have to worry about sidedefs).  
-See the above simple room, it has same floor and ceiling height, texture light level, it is all the same sector.    
+A sector is (usually) a closed area. It is formed by linedefs and sidedefs (Sidedefs hold information about the wall's texture. For now, we will keep texture aside, so you don’t have to worry about sidedefs).  
+See the above simple room, it has same floor and ceiling height, texture, light level. It is all the same sector.    
 A sector has the following properties:   
 * Floor height  
 * Ceiling height  
@@ -18,9 +19,9 @@ A sector has the following properties:
 * Light level  
 * Type  
 
-So if I want to make areas with different properties, let's say height, we would split that area into two sectors, sector for each height.  
+So, if I want to make areas with different properties, let's say height, we would split that area into two sectors, sector for each height.  
 
-So adding a single step to this simple room would need to update the map and split the sector to something like this (top 2D view).  
+So, adding a single step to this simple room would need to update the map and split the sector into something like this (top 2D view).  
 
 ![Simple Room](../img/singlestep.png)  
 
@@ -28,13 +29,13 @@ which would render to
 
 ![Simple Room](../img/singlestep_2d.png)  
 
-Now, Imagen the power of this! You can keep adding sectors to make stairs, or bring the floor a little higher and ceiling a little lower, creating what would look like a window.  
+Now, Imagine the power of this! You can keep adding sectors to make stairs, or bring the floor a little higher and ceiling a little lower, creating what would look like a window.  
 
-Now let’s move to sub-sector, a sector is broken down to small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlaping walls. This convex area are defined by segments of linedefs know as "seg".    
+Now, let’s move to sub-sector, a sector is broken down into small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlaping walls. This convex area is defined by segments of linedefs known as "segs".    
 
 ![Convex Segs](../img/subsectors.png)  
 
-It is a very common that sub-sectors are represented as a polygon (a closed convex polygon), but the closed polygon part is not very acturate. Usually an extra side is added, and adding that extra line would help visualize which subsector the player is in. If you color segs you would end up with something like this  
+It is very common that sub-sectors are represented as a polygon (a closed convex polygon), but the closed polygon part is not very accurate. Usually, an extra side is added and adding that extra line would help visualize which subsector the player is in. If you color the segs you would end up with something like this  
 
 ![Segs](../img/segs.png)   
 
@@ -72,7 +73,7 @@ I have noticed I was not consistent in my variable/function naming, so I renamed
 * Linedef StartVertex, StartVertexID  
 * Linedef EndVertex, EndVertexID  
 
-We will not go into details, how to read those from the WAD file since we have done this many times by now, I will just list structs so it is easier to follow the code.  
+We will not go into detail on how to read those from the WAD file since we have done this many times by now, I will just list structs so it is easier to follow the code.  
 
 ``` cpp
 struct Subsector
@@ -116,7 +117,7 @@ Let's run and see the magic!
 
 ![DIYDOOM](../img/diydoom.gif)
 
-That is nice! But I'm not thrilled, I'm kind of guy who like to see everything with my own eyes (still I don't believe everything I see!), this flickering map is cool but I really want to see the rendering orders of the segs in slow motion.  
+That is nice! But I'm not thrilled, I'm the kind of guy who likes to see everything with my own eyes (still, I don't believe everything I see!), this flickering map is cool, but I really want to see the rendering orders of the segs in slow motion.  
 
 add this to the end of ``` void Map::RenderSubsector(int iSubsectorID)```  
 
@@ -130,12 +131,16 @@ Now let’s run and see what happens.
 
 ![Segs](../img/subsectorsslog.gif)  
 
-You can see that the front side of the root node gets completed first before moving to the backside. You can also see at any angle to the player the “walls” in front of the player if done before the further way!  
+You can see that the front side of the root node gets completed first before moving to the backside.  
 
-Traversing the BSP tree gives us all the sub-sectors, with nearest to the player to further. So we will need to filter those to the ones that are just player field of view.  
+![Node Side](../img/node.png)   
+  
+You can also see at any angle to the player the “walls” in front of the player if done before the further way!  
+
+Traversing the BSP tree gives us all the sub-sectors, from nearest to and farthest from the player. So, we will need to filter those to the ones that are just within the player's field of view.  
 
 ## Other Notes
-If you are tracing or comparing your code to original/chocolate doom, there are few things you need to keep in mind to make comparing your code easier. In the function ``` void R_RenderBSPNode (int bspnum) ``` you can comment out ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` so it would look like  
+If you are tracing or comparing your code to original/chocolate DOOM, there are few things you need to keep in mind to make comparing your code easier. In the function ``` void R_RenderBSPNode (int bspnum) ``` you can comment out ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` so it would look like  
 
 ``` cpp
     // Decide which side the viewpoint is on.
