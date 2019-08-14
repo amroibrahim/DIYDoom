@@ -34,6 +34,7 @@ Now, Imagine the power of this! You can keep adding sectors to make stairs, or b
 Now, let’s move to sub-sector, a sector is broken down into small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlaping walls. This convex area is defined by segments of linedefs known as "segs".    
 
 ![Convex Segs](../img/subsectors.png)  
+[Image credit Doom Wiki](https://doom.fandom.com/wiki/Subsectori)
 
 It is very common that sub-sectors are represented as a polygon (a closed convex polygon), but the closed polygon part is not very accurate. Usually, an extra side is added and adding that extra line would help visualize which subsector the player is in. If you color the segs you would end up with something like this  
 
