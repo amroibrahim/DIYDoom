@@ -130,16 +130,16 @@ void Map::RenderSubsector(int iSubsectorID)
     for (int i = 0; i < subsector.SegCount; i++)
     {
         Seg seg = m_Segs[subsector.FirstSegID + i];
-        SDL_RenderDrawLine(m_pRenderer,
-            RemapXToScreen(m_Vertexes[seg.StartVertexID].XPosition),
-            RemapYToScreen(m_Vertexes[seg.StartVertexID].YPosition),
-            RemapXToScreen(m_Vertexes[seg.EndVertexID].XPosition),
-            RemapYToScreen(m_Vertexes[seg.EndVertexID].YPosition));
+        Angle V1Angle, V2Angle;
+        if (m_pPlayer->ClipVertexesInFOV(m_Vertexes[seg.StartVertexID], m_Vertexes[seg.EndVertexID], V1Angle, V2Angle))
+        {
+            SDL_RenderDrawLine(m_pRenderer,
+                RemapXToScreen(m_Vertexes[seg.StartVertexID].XPosition),
+                RemapYToScreen(m_Vertexes[seg.StartVertexID].YPosition),
+                RemapXToScreen(m_Vertexes[seg.EndVertexID].XPosition),
+                RemapYToScreen(m_Vertexes[seg.EndVertexID].YPosition));
+        }
     }
-
-    //SDL_RenderPresent(m_pRenderer); 
-    //SDL_Delay(100);
-
 }
 
 bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)

@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Angle.cpp" />
     <ClCompile Include="DoomEngine.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="DIYDoom.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="WADReader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Angle.h" />
     <ClInclude Include="DataTypes.h" />
     <ClInclude Include="DoomEngine.h" />
     <ClInclude Include="Game.h" />

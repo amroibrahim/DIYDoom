@@ -47,9 +47,11 @@ void DoomEngine::KeyPressed(SDL_Event &event)
         break;
 
     case SDLK_LEFT:
+        m_pPlayer->RotateLeft();
         break;
 
     case SDLK_RIGHT:
+        m_pPlayer->RotateRight();
         break;
 
     case SDLK_ESCAPE:

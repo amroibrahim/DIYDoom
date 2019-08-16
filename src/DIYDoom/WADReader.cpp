@@ -118,5 +118,4 @@ void WADReader::ReadSegData(const uint8_t *pWADData, int offset, Seg &seg)
     seg.LinedefID = Read2Bytes(pWADData, offset + 6);
     seg.Direction = Read2Bytes(pWADData, offset + 8);
     seg.Offset = Read2Bytes(pWADData, offset + 10);
-
 }
