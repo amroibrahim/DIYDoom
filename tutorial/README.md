@@ -339,7 +339,7 @@ This method of reading keyboard input is not optimal, when using SDL events, we 
 
 
 So, let's summarize what we have done.
-At this point we can traverse through all the Segs, from near to far, then we are able to determine which ones are actually in the player's FOV. What we need to do next is determine what kind of wall it is. Is it a solid wall (we can't see through) which will block you from seeing what is behind it or is it a "window" (there is an opening in the middle of the wall aka portal). This will be our next step. 
+At this point we can traverse through all the Segs, from near to far, then we are able to determine which ones are actually in the player's FOV. What we need to do next is determine where those sigs would be drawn on the screen. This will be our next step. 
 
 ## Other Notes
 The code we have covered today is a part of the R_AddLine function, if you understand what happened today it should be more or less the same.  
