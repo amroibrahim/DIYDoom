@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-Game::Game() : m_iWindowWidth(1280), m_iWindowHeight(800)
+Game::Game() : m_iWindowWidth(1280), m_iWindowHeight(800), m_pWindow(nullptr)
 {
 }
 
@@ -24,7 +24,7 @@ bool Game::Init()
         return false;
     }
 
-    m_pWindow = SDL_CreateWindow(NULL, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_iWindowWidth, m_iWindowHeight, SDL_WINDOW_SHOWN);
+    m_pWindow = SDL_CreateWindow(nullptr, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_iWindowWidth, m_iWindowHeight, SDL_WINDOW_SHOWN);
     if (m_pWindow == nullptr)
     {
         std::cout << "SDL failed to create window! SDL_Error: " << SDL_GetError() << std::endl;
@@ -83,23 +83,7 @@ void Game::ProcessInput()
 
 void Game::Render()
 {
-    RenderClear();
-
-    //Game objects to draw themselves
     m_pDoomEngine->Render();
-
-    RenderPresent();
-}
-
-void Game::RenderPresent()
-{
-    SDL_RenderPresent(m_pRenderer);
-}
-
-void Game::RenderClear()
-{
-    SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 0, 0xff);
-    SDL_RenderClear(m_pRenderer);
 }
 
 void Game::Update()

@@ -1,9 +1,7 @@
 #include "Player.h"
+#include <math.h>
 
-
-#define PI 3.14159265358979f
-
-Player::Player(int iID) : m_iPlayerID(iID), m_FOV(90), m_iRotationSpeed(4), m_iMoveSpeed(2)
+Player::Player(ViewRenderer *pViewRenderer, int iID) : m_pViewRenderer(pViewRenderer), m_iPlayerID(iID), m_FOV(90), m_iRotationSpeed(4), m_iMoveSpeed(2)
 {
 }
 
@@ -119,4 +117,11 @@ void Player::RotateLeft()
 void Player::RotateRight()
 {
     m_Angle -= (0.1875f * m_iRotationSpeed);
+}
+
+void Player::RenderAutoMap()
+{
+    m_pViewRenderer->SetDrawColor(255, 0, 0);
+
+    m_pViewRenderer->DrawLine(m_XPosition, m_YPosition, m_XPosition + 5, m_YPosition + 5);
 }

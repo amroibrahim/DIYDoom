@@ -6,6 +6,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "WADLoader.h"
+#include "ViewRenderer.h"
 
 class DoomEngine
 {
@@ -34,9 +35,11 @@ protected:
     int m_iRenderHeight;
 
     bool m_bIsOver;
+    bool m_bRenderAutoMap;
 
     SDL_Renderer *m_pRenderer;
     WADLoader m_WADLoader;
     Map *m_pMap;
     Player *m_pPlayer;
+    ViewRenderer *m_pViewRenderer;
 };

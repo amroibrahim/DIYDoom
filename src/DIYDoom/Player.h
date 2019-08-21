@@ -1,14 +1,13 @@
 #pragma once
 
-#include <SDL.h>
-
 #include "Angle.h"
 #include "DataTypes.h"
+#include "ViewRenderer.h"
 
 class Player
 {
 public:
-    Player(int iID);
+    Player(ViewRenderer *pViewRenderer, int iID);
     ~Player();
 
     void SetXPosition(int XPosition);
@@ -16,6 +15,7 @@ public:
     void SetAngle(int Angle);
     void RotateLeft();
     void RotateRight();
+    void RenderAutoMap();
 
     int GetID();
     int GetXPosition();
@@ -35,4 +35,5 @@ protected:
     int m_iMoveSpeed;
 
     Angle m_Angle;
+    ViewRenderer *m_pViewRenderer;
 };

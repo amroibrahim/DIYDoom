@@ -2,20 +2,26 @@
 
 using namespace std;
 
-DoomEngine::DoomEngine(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200)
+DoomEngine::DoomEngine(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200), m_pMap(nullptr), m_bRenderAutoMap(false)
 {
 }
 
 DoomEngine::~DoomEngine()
 {
     delete m_pMap;
+    delete m_pPlayer;
+    delete m_pViewRenderer;
 }
 
 bool DoomEngine::Init()
 {
     // Delay object creation to this point so renderer is inistilized correctly
-    m_pPlayer = new Player(1);
-    m_pMap = new Map(m_pRenderer, "E1M1", m_pPlayer);
+    m_pViewRenderer = new ViewRenderer(m_pRenderer);
+
+    m_pPlayer = new Player(m_pViewRenderer, 1);
+    m_pMap = new Map(m_pViewRenderer, "E1M1", m_pPlayer);
+
+    m_pViewRenderer->Init(m_pMap, m_pPlayer);
 
     m_WADLoader.SetWADFilePath(GetWADFileName());
     m_WADLoader.LoadWAD();
@@ -31,9 +37,8 @@ std::string DoomEngine::GetWADFileName()
 
 void DoomEngine::Render()
 {
-    SDL_SetRenderDrawColor(m_pRenderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(m_pRenderer);
-    m_pMap->RenderAutoMap();
+    m_pViewRenderer->InitFrame();
+    m_pViewRenderer->Render(m_bRenderAutoMap);
 }
 
 void DoomEngine::KeyPressed(SDL_Event &event)
@@ -54,6 +59,10 @@ void DoomEngine::KeyPressed(SDL_Event &event)
         m_pPlayer->RotateRight();
         break;
 
+    case SDLK_TAB:
+        m_bRenderAutoMap = true;
+        break;
+
     case SDLK_ESCAPE:
         Quit();
         break;
@@ -65,6 +74,15 @@ void DoomEngine::KeyPressed(SDL_Event &event)
 
 void DoomEngine::KeyReleased(SDL_Event &event)
 {
+    switch (event.key.keysym.sym)
+    {
+    case SDLK_TAB:
+        m_bRenderAutoMap = false;
+        break;
+
+    default:
+        break;
+    }
 }
 
 void  DoomEngine::Quit()

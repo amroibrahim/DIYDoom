@@ -4,11 +4,8 @@
 
 using namespace std;
 
-Map::Map(SDL_Renderer *pRenderer, std::string sName, Player *pPlayer) : m_pRenderer(pRenderer), m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iAutoMapScaleFactor(15), m_iLumpIndex(-1), m_pPlayer(pPlayer)
+Map::Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iLumpIndex(-1), m_pPlayer(pPlayer), m_pViewRenderer(pViewRenderer)
 {
-    SDL_RenderGetLogicalSize(m_pRenderer, &m_iRenderXSize, &m_iRenderYSize);
-    --m_iRenderXSize;
-    --m_iRenderYSize;
 }
 
 Map::~Map()
@@ -36,6 +33,26 @@ void Map::AddVertex(Vertex &v)
     {
         m_YMax = v.YPosition;
     }
+}
+
+int Map::GetXMin()
+{
+    return m_XMin;
+}
+
+int Map::GetXMax()
+{
+    return m_XMax;
+}
+
+int Map::GetYMin()
+{
+    return m_YMin;
+}
+
+int Map::GetYMax()
+{
+    return m_YMax;
 }
 
 void Map::AddLinedef(Linedef &l)
@@ -75,21 +92,21 @@ string Map::GetName()
     return m_sName;
 }
 
-int Map::RemapXToScreen(int XMapPosition)
-{
-    return (XMapPosition + (-m_XMin)) / m_iAutoMapScaleFactor;
-}
-
-int Map::RemapYToScreen(int YMapPosition)
-{
-    return m_iRenderYSize - (YMapPosition + (-m_YMin)) / m_iAutoMapScaleFactor;
-
-}
-
 void Map::RenderAutoMap()
 {
-    RenderAutoMapWalls();
-    RenderAutoMapPlayer();
+    m_pViewRenderer->SetDrawColor(255, 255, 255);
+
+    for (Linedef &l : m_Linedefs)
+    {
+        Vertex vStart = m_Vertexes[l.StartVertexID];
+        Vertex vEnd = m_Vertexes[l.EndVertexID];
+
+        m_pViewRenderer->DrawLine(vStart.XPosition, vStart.YPosition, vEnd.XPosition, vEnd.YPosition);
+    }
+}
+
+void Map::Render3DView()
+{
     RenderBSPNodes();
 }
 
@@ -125,7 +142,7 @@ void Map::RenderBSPNodes(int iNodeID)
 void Map::RenderSubsector(int iSubsectorID)
 {
     Subsector subsector = m_Subsector[iSubsectorID];
-    SDL_SetRenderDrawColor(m_pRenderer, rand() % 255, rand() % 255, rand() % 255, SDL_ALPHA_OPAQUE);
+    m_pViewRenderer->SetDrawColor(rand() % 255, rand() % 255, rand() % 255);
 
     for (int i = 0; i < subsector.SegCount; i++)
     {
@@ -133,11 +150,7 @@ void Map::RenderSubsector(int iSubsectorID)
         Angle V1Angle, V2Angle;
         if (m_pPlayer->ClipVertexesInFOV(m_Vertexes[seg.StartVertexID], m_Vertexes[seg.EndVertexID], V1Angle, V2Angle))
         {
-            SDL_RenderDrawLine(m_pRenderer,
-                RemapXToScreen(m_Vertexes[seg.StartVertexID].XPosition),
-                RemapYToScreen(m_Vertexes[seg.StartVertexID].YPosition),
-                RemapXToScreen(m_Vertexes[seg.EndVertexID].XPosition),
-                RemapYToScreen(m_Vertexes[seg.EndVertexID].YPosition));
+            m_pViewRenderer->AddWallInFOV(seg, V1Angle, V2Angle);
         }
     }
 }
@@ -150,71 +163,18 @@ bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)
     return (((dx * m_Nodes[iNodeID].ChangeYPartition) - (dy * m_Nodes[iNodeID].ChangeXPartition)) <= 0);
 }
 
-void Map::RenderAutoMapPlayer()
-{
-    SDL_SetRenderDrawColor(m_pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-
-    pair<int, int> Direction[] = {
-        make_pair(-1, -1), make_pair(0, -1), make_pair(+1, -1),
-        make_pair(-1, 0), make_pair(0, 0), make_pair(+1, 0),
-        make_pair(-1, +1), make_pair(0, +1), make_pair(+1, +1)
-    };
-
-    for (int i = 0; i < 9; ++i)
-    {
-        SDL_RenderDrawPoint(m_pRenderer,
-            RemapXToScreen(m_pPlayer->GetXPosition()) + Direction[i].first,
-            RemapYToScreen(m_pPlayer->GetYPosition()) + Direction[i].second);
-    }
-}
-
-void Map::RenderAutoMapWalls()
-{
-
-    SDL_SetRenderDrawColor(m_pRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-
-    for (Linedef &l : m_Linedefs)
-    {
-        Vertex vStart = m_Vertexes[l.StartVertexID];
-        Vertex vEnd = m_Vertexes[l.EndVertexID];
-
-        SDL_RenderDrawLine(m_pRenderer,
-            RemapXToScreen(vStart.XPosition),
-            RemapYToScreen(vStart.YPosition),
-            RemapXToScreen(vEnd.XPosition),
-            RemapYToScreen(vEnd.YPosition));
-    }
-}
-
 void Map::RenderAutoMapNode(int iNodeID)
 {
     Node node = m_Nodes[iNodeID];
 
-    SDL_Rect FrontRect = {
-        RemapXToScreen(node.FrontBoxLeft),
-        RemapYToScreen(node.FrontBoxTop),
-        RemapXToScreen(node.FrontBoxRight) - RemapXToScreen(node.FrontBoxLeft) + 1,
-        RemapYToScreen(node.FrontBoxBottom) - RemapYToScreen(node.FrontBoxTop) + 1
-    };
+    m_pViewRenderer->SetDrawColor(0, 255, 0);
+    m_pViewRenderer->DrawRect(node.FrontBoxLeft, node.FrontBoxTop, node.FrontBoxRight, node.FrontBoxBottom);
 
-    SDL_Rect BackRect = {
-        RemapXToScreen(node.BackBoxLeft),
-        RemapYToScreen(node.BackBoxTop),
-        RemapXToScreen(node.BackBoxRight) - RemapXToScreen(node.BackBoxLeft) + 1,
-        RemapYToScreen(node.BackBoxBottom) - RemapYToScreen(node.BackBoxTop) + 1
-    };
+    m_pViewRenderer->SetDrawColor(255, 0, 0);
+    m_pViewRenderer->DrawRect(node.BackBoxLeft, node.BackBoxTop, node.BackBoxRight, node.BackBoxLeft);
 
-    SDL_SetRenderDrawColor(m_pRenderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawRect(m_pRenderer, &FrontRect);
-    SDL_SetRenderDrawColor(m_pRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawRect(m_pRenderer, &BackRect);
-
-    SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawLine(m_pRenderer,
-        RemapXToScreen(node.XPartition),
-        RemapYToScreen(node.YPartition),
-        RemapXToScreen(node.XPartition + node.ChangeXPartition),
-        RemapYToScreen(node.YPartition + node.ChangeYPartition));
+    m_pViewRenderer->SetDrawColor(0, 0, 255);
+    m_pViewRenderer->DrawLine(node.XPartition, node.YPartition, node.XPartition + node.ChangeXPartition, node.YPartition + node.ChangeYPartition);
 }
 
 void Map::SetLumpIndex(int iIndex)
