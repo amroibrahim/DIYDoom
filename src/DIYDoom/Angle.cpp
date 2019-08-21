@@ -1,6 +1,6 @@
 #include "Angle.h"
 
-#include <cmath>
+#include <math.h>
 
 Angle::Angle() : m_Angle(0)
 {
@@ -37,8 +37,8 @@ Angle Angle::operator-(const Angle& rhs)
 
 Angle Angle::operator-()
 {
-	Angle angle(360 - m_Angle);
-	return angle;
+    Angle angle(360 - m_Angle);
+    return angle;
 }
 
 void Angle::Normalize360()

@@ -3,15 +3,14 @@
 #include <vector>
 #include <string>
 
-#include <SDL.h>
-
 #include "DataTypes.h"
 #include "Player.h"
+#include "ViewRenderer.h"
 
 class Map
 {
 public:
-    Map(SDL_Renderer *pRenderer, std::string sName, Player *pPlayer);
+    Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer);
     ~Map();
 
     std::string GetName();
@@ -22,20 +21,20 @@ public:
     void AddSubsector(Subsector &subsector);
     void AddSeg(Seg &seg);
     void RenderAutoMap();
+    void Render3DView();
     void SetLumpIndex(int iIndex);
 
+    int GetXMin();
+    int GetXMax();
+    int GetYMin();
+    int GetYMax();
     int GetLumpIndex();
 
 protected:
-    void RenderAutoMapPlayer();
-    void RenderAutoMapWalls();
     void RenderBSPNodes();
     void RenderAutoMapNode(int iNodeID);
     void RenderBSPNodes(int iNodeID);
     void RenderSubsector(int iSubsectorID);
-
-    int RemapXToScreen(int XMapPosition);
-    int RemapYToScreen(int YMapPosition);
 
     bool IsPointOnBackSide(int XPosition, int YPosition, int iNodeID);
 
@@ -51,12 +50,8 @@ protected:
     int m_XMax;
     int m_YMin;
     int m_YMax;
-    int m_iRenderXSize;
-    int m_iRenderYSize;
-    int m_iAutoMapScaleFactor;
     int m_iLumpIndex;
 
-    SDL_Renderer *m_pRenderer;
-
     Player *m_pPlayer;
+    ViewRenderer *m_pViewRenderer;
 };

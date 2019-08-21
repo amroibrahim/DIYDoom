@@ -4,7 +4,7 @@
 
 using namespace std;
 
-WADLoader::WADLoader() : m_WADData(NULL)
+WADLoader::WADLoader() : m_WADData(nullptr)
 {
 }
 
@@ -53,7 +53,7 @@ bool WADLoader::OpenAndLoad()
     }
 
     m_WADData = new uint8_t[length];
-    if (m_WADData == NULL)
+    if (m_WADData == nullptr)
     {
         cout << "Error: Failed alocate memory for WAD file of size " << length << endl;
         return false;

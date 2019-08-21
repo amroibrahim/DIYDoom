@@ -161,6 +161,7 @@
     <ClCompile Include="DIYDoom.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="ViewRenderer.cpp" />
     <ClCompile Include="WADLoader.cpp" />
     <ClCompile Include="WADReader.cpp" />
   </ItemGroup>
@@ -171,6 +172,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="ViewRenderer.h" />
     <ClInclude Include="WADLoader.h" />
     <ClInclude Include="WADReader.h" />
   </ItemGroup>

@@ -10,7 +10,7 @@ public:
     Angle operator=(const float& rhs);
     Angle operator+(const Angle& rhs);
     Angle operator-(const Angle& rhs);
-	Angle operator-();
+    Angle operator-();
     Angle& operator+=(const float& rhs);
     Angle& operator-=(const float& rhs);
 
