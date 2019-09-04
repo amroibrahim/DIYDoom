@@ -9,6 +9,13 @@ Player::~Player()
 {
 }
 
+void Player::Init(Thing thing)
+{
+    SetXPosition(thing.XPosition);
+    SetYPosition(thing.YPosition);
+    SetAngle(thing.Angle);
+}
+
 int Player::GetID()
 {
     return m_iPlayerID;

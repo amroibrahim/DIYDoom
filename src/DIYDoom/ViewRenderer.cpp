@@ -1,4 +1,5 @@
 #include "ViewRenderer.h"
+
 #include <math.h>
 #include <iostream>
 
@@ -53,7 +54,16 @@ void ViewRenderer::InitFrame()
     SDL_RenderClear(m_pRenderer);
 }
 
-void ViewRenderer::AddWallInFOV(Seg seg, Angle V1Angle, Angle V2Angle)
+void ViewRenderer::AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle)
+{
+    // Solid walls don't have a Back side.
+    if (seg.pBackSector == nullptr)
+    {
+        AddSolidWall(seg, V1Angle, V2Angle);
+    }
+}
+
+void ViewRenderer::AddSolidWall(Seg &seg, Angle V1Angle, Angle V2Angle)
 {
     int V1XScreen = AngleToScreen(V1Angle);
     int V2XScreen = AngleToScreen(V2Angle);
@@ -75,6 +85,7 @@ void ViewRenderer::Render3DView()
 
 int ViewRenderer::AngleToScreen(Angle angle)
 {
+    Angle tempAngle = angle;
     int iX = 0;
 
     if (angle > 90)

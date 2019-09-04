@@ -1,208 +1,259 @@
-__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+# Week 012 - Solid Wall
+Now that we have the angles of all the walls in the player FOV, we need to figure out the type of each wall.  
 
-# Week 011 - Horizontal Projection  
-So, at this point we know all the walls which are within the player's FOV and we know the angle to those walls, but where should we draw them on the screen?  
+There are two types of walls, a solid wall and a wall with a window (AKA portal). For now, let's focus only on solid walls, which is simply when you can't see what is behind it.  
 
-![FOV](../img/wall_angle.PNG)  
+![Solid Wall](../img/singleroom.png)  
 
-Where should we draw them on the screen is not the only question, there is still more we need to know: its height, is it a window/portal (see-though and passable), or is it a solid wall (opaque and impassable)? This is too much to do at once, so let's break things down a little.  
-All we know at this point is the angle of the wall segments' "edges"! But which angle corresponds with which X coordinate on the screen? Before we jump into the math, let's try to visualize what is going on!  
-Imagine that you are the player and are looking through your monitor, what you see is a "window into the virtual world"; whatever is behind the screen is the virtual world.  
+The screenshot above shows a single Sector (all of the area has the same ceiling height and floor height), and we see two walls (Linedefs) at different angles.  
 
-![Player](../img/player.png)
+![Solid Wall lable](../img/singleroomlable.png)  
 
-From a top view  
+It is obvious that you will not be able to see what is behind this wall, no matter what. So, once you draw a solid wall on the screen you really can't draw anything behind it.  
 
-![Screen](../img/You.PNG)
+So, how do we know if a wall is a solid wall? Solid walls have a property that makes it easy to figure out, which is that it only has one side! What does that mean? It only can be viewed from one side, the front side. Again, what does that mean? Let me explain with an example.  
 
-So, with this visualization there are a few facts we need to remind ourselves about  
-*  FOV is 90.
-*  Screen Width is 320 pixels.
+Here you can see that there are four pillars in front of Doomguy as soon as he spawns in E1M1.
 
-![Screen Math](../img/screen_math.PNG)
+![Pillar](../img/pillar.png)  
 
-So, the first thing to figure out is exactly how far the screen is from the player.  
-This is a simple high school Trigonometry problem.  
-All we need to do is split the 90-degree view into two 45-degree triangles, and also split the 320 pixels into two 160 units
-using TAN. This should be easy to solve!  
+Those pillars are solid walls, and there are four sides for each pillar (front side only) 
 
-Tan = Opposite / Adjacent  
-Tan(45) = 160 / Adjacent  
-Adjacent = 160  
+![Pillar](../img/pillar2D.png)  
 
-Let's find out how far the player is from the screen.  
-Now, with that Adjacent side length being known, we can use it to do the math for the X coordinates on the screen.  
+and there is no way for the player to get inside the pillar (where the question mark is on the back side each of the pillar's Linedefs).  
 
-Original DOOM used a lookup table to map an angle into its corresponding X coordinate on the screen; the lookup table was built on game start up and calculates the Tan values. The lookup table is possible if you limit the precession of the angles to a predetermined range. ("Lookup tables" were frequently used back then as a performance optimization; it was quicker to perform a memory lookup than to calculate a trigonometric function.  However, this is not as applicable today as most processors' trigonometric functions are run so quickly and efficiently that they are frequently faster than a memory lookup.)
+Another good example of solid walls are the walls just behind the player.  
 
-So, I will do the second part where we calculate the Tan but will not cache the value.  
+![Solid walls](../img/solid_walls.png)  
 
-What we will have at this point is the edges of the walls and their corresponding X coordinates on the screen.  
+These walls are solid and have no back side; the player will never get outside the map! (actually, they can with cheats, but let's keep that aside).  
+
+So, to summarize, the solid wall can only be viewed from one side, which means it will have a front Sidedef but not a back Sidedef (a front Sector, but no back Sector). So, figuring out if a wall is solid is simple (we will handle doors on a later day); we only need to check if it has a back Sidedef! If it doesn't, then you can't see through it.
+But, how can we do that check? This is the story behind all the refactoring we will do today!  
 
 ## Goals
-*  ViewRenderer Class  
-*  Refactor  
-*  Convert an angle to its X coordinate on screen  
-   
+*  Refactor! 
+*  Refactor!
+*  Refactor!
+*  Determine if the wall is solid!
+
 ## Coding
-So, the map class it is becoming complicated; I will move the rendering logic out. This is where the ViewRenderer class comes into play!  
+The best thing to do is to diff the code with a previous version to see all the changes. But I will try to give a quick summary of what I had in mind.  
+Originally, we had structs that would hold an ID of another struct. For example, a Linedef was holding the ID of StartVertexID and EndVertexID! We could access the Vertex vector and do something like this  
 
 ``` cpp
-class ViewRenderer
+int StartVertexXValue = m_Vertexes[line.StartVertexID].XPosition;
+```
+
+But what would be even better is to convert those IDs into pointers so it will be easier to access the data.  
+Maybe something like this  
+
+``` cpp
+int StartVertexXValue  = line.pStartVertex->XPosition;
+```
+
+It will make passing Linedefs or Segs much easier, without need of having access to the vector (and it sure looks cleaner). But, how can we do this?  
+I would load all the data from the WAD file then build those pointers. So, we will still need the old structs to read the data off the WAD file and create new, neater ones to use in code.  
+I suffixed the old ones with "WAD" so they became  
+
+``` cpp
+struct WADSector
 {
-public:
-    ViewRenderer(SDL_Renderer *pRenderer);
-    ~ViewRenderer();
+    int16_t FloorHeight;
+    int16_t CeilingHeight;
+    char FloorTexture[8];
+    char CeilingTexture[8];
+    uint16_t Lightlevel;
+    uint16_t Type;
+    uint16_t Tag;
+};
 
-    void Init(Map *pMap, Player *pPlayer);
-    void Render(bool IsAutomap);
-    void AddWallInFOV(Seg seg, Angle V1Angle, Angle V2Angle);
-    void InitFrame();
-    void SetDrawColor(int R, int G, int B);
-    void DrawRect(int X, int Y, int Width, int Height);
-    void DrawLine(int X1, int Y1, int X2, int Y2);
+struct WADSidedef
+{
+    int16_t XOffset;
+    int16_t YOffset;
+    char UpperTexture[8];
+    char LowerTexture[8];
+    char MiddleTexture[8];
+    uint16_t SectorID;
+};
 
-protected:
-    void RenderAutoMap();
-    void Render3DView();
+struct WADLinedef
+{
+    uint16_t StartVertexID;
+    uint16_t EndVertexID;
+    uint16_t Flags;
+    uint16_t LineType;
+    uint16_t SectorTag;
+    uint16_t FrontSidedef; //0xFFFF means there is no sidedef
+    uint16_t BackSidedef;  //0xFFFF means there is no sidedef
+};
 
-    int AngleToScreen(Angle angle);
-    int RemapXToScreen(int XMapPosition);
-    int RemapYToScreen(int YMapPosition);
+struct WADSeg
+{
+    uint16_t StartVertexID;
+    uint16_t EndVertexID;
+    uint16_t Angle;
+    uint16_t LinedefID;
+    uint16_t Direction; // 0 same as Linedef, 1 opposite of Linedef
+    uint16_t Offset; // distance along Linedef to start of Seg
+};
 
-    int m_iRenderXSize;
-    int m_iRenderYSize;
-    int m_iAutoMapScaleFactor;
+```
+And added the following, but notice they now point to the objects.
 
-    Map *m_pMap;
-    Player *m_pPlayer;
+``` cpp
+struct Sidedef
+{
+    int16_t XOffset;
+    int16_t YOffset;
+    char UpperTexture[9];
+    char LowerTexture[9];
+    char MiddleTexture[9];
+    Sector *pSector;
+};
 
-    SDL_Renderer *m_pRenderer;
+struct Linedef
+{
+    Vertex *pStartVertex;
+    Vertex *pEndVertex;
+    uint16_t Flags;
+    uint16_t LineType;
+    uint16_t SectorTag;
+    Sidedef *pFrontSidedef;
+    Sidedef *pBackSidedef;
+};
+
+struct Seg
+{
+    Vertex *pStartVertex;
+    Vertex *pEndVertex;
+    Angle SlopeAngle;
+    Linedef *pLinedef;
+    uint16_t Direction; // 0 same as Linedef, 1 opposite of Linedef  
+    uint16_t Offset; // distance along Linedef to start of Seg  
+    Sector *pFrontSector;
+    Sector *pBackSector;
 };
 ```
 
-Remember, we forced the player to look at 90 degrees and we rotated the world around that.  
-
-![Screen Math](../img/screen_solve.png)
-
-You will notice there are two triangles, a left triangle and a right triangle. We need to handle them separately.
+In the Map class I created new variable pointers (so that I can free the memory as soon as I don't need it anymore)  
 
 ``` cpp
-// Please remember to replace the numeric literals (numbers) with predefined, "const" variables; it
-// is a very bad idea to use "magic numbers" as they are the source of many bugs.  
-// I have broken this rule for the sake of clarity.
-int ViewRenderer::AngleToScreen(Angle angle)
+    std::vector<WADSector> *m_pSectors;
+    std::vector<WADSidedef> *m_pSidedefs;
+    std::vector<WADLinedef> *m_pLinedefs;
+    std::vector<WADSeg> *m_pSegs;
+```
+
+and updated the init function!
+``` cpp
+void Map::Init()
 {
-    int iX = 0;
-
-    // Left side
-    if (angle > 90)
-    {
-        angle -= 90;
-        iX = 160 - round(tanf(angle.GetValue() * PI / 180.0f) * 160);
-    }
-    else
-    {
-        // Right side
-        angle = 90 - angle.GetValue();
-        float f = tanf(angle.GetValue());
-        iX = round(tanf(angle.GetValue() * PI / 180.0f) * 160);
-        iX += 160;
-    }
-
-    return iX;
+    BuildSectors();
+    BuildSidedefs();
+    BuildLinedef();
+    BuildSeg();
 }
 ```
 
-Finally, let's draw those lines. We don't know the height yet so we will just draw a line on its corresponding X column, from the top of the screen (0) down to the bottom (200).
+Those helper functions just populate the pointers! I will just list BuildLinedef here  
 
 ``` cpp
-void ViewRenderer::AddWallInFOV(Seg seg, Angle V1Angle, Angle V2Angle)
+void Map::BuildLinedef()
 {
-    int V1XScreen = AngleToScreen(V1Angle);
-    int V2XScreen = AngleToScreen(V2Angle);
+    WADLinedef wadlinedef;
+    Linedef linedef;
 
-    SDL_RenderDrawLine(m_pRenderer, V1XScreen, 0, V1XScreen, m_iRenderYSize);
-    SDL_RenderDrawLine(m_pRenderer, V2XScreen, 0, V2XScreen, m_iRenderYSize);
-}
-```
-
-I have added a few other changes to show the Automap only when I press the Tab key on the keyboard.
-
-``` cpp
-void DoomEngine::KeyPressed(SDL_Event &event)
-{
-...
-    case SDLK_TAB:
-        m_bRenderAutoMap = true;
-        break;
-...
-}
-```
-
-and before we render, we can check whether we should render the Map or the 3D View
-
-``` cpp
-void ViewRenderer::Render(bool IsRenderAutoMap)
-{
-    if (IsRenderAutoMap)
+    for (int i = 0; i < m_pLinedefs->size(); ++i)
     {
-        RenderAutoMap();
-    }
-    else
-    {
-        Render3DView();
+        wadlinedef = m_pLinedefs->at(i);
+
+        linedef.pStartVertex = &m_Vertexes[wadlinedef.StartVertexID];
+        linedef.pEndVertex = &m_Vertexes[wadlinedef.EndVertexID];
+        linedef.Flags = wadlinedef.Flags;
+        linedef.LineType = wadlinedef.LineType;
+        linedef.SectorTag = wadlinedef.SectorTag;
+        
+        // 0xFFFF means not defined, sidedef doens't exist
+        if (wadlinedef.FrontSidedef == 0xFFFF)
+        {
+            linedef.pFrontSidedef = nullptr;
+        }
+        else
+        {
+            linedef.pFrontSidedef = &m_Sidedefs[wadlinedef.FrontSidedef];
+        }
+
+        if (wadlinedef.BackSidedef == 0xFFFF)
+        {
+            linedef.pBackSidedef = nullptr;
+        }
+        else
+        {
+            linedef.pBackSidedef = &m_Sidedefs[wadlinedef.BackSidedef];
+        }
+
+        m_Linedefs.push_back(linedef);
     }
 
-    SDL_RenderPresent(m_pRenderer);
+    delete m_pLinedefs;
+    m_pLinedefs = nullptr;
 }
 ```
 
-Side Note: The above would be better implemented as a state machine [state design pattern](https://sourcemaking.com/design_patterns/state). As the code grows bigger, we'll definitely look into implementing it.  
-Now, when running the program we will see something like this  
+I have also added other helper functions just to correctly point to each other.  
 
-![Walls](../img/walls.png)
+Now, with this new structure populated, all we need to do is a simple check: does the Seg have a back Sector defined?  
 
-So, what are we looking at here? We are looking at the edges of each wall within the player's FOV!  
-They can be represented graphicly as
-
-![Walls](../img/screen_projected.PNG)
-
-The point that is all the way on the left is only partially in view, so we have clipped it to the left edge of the screen (coordinate 0).
-Now, we need to identify wall types and perform clipping on walls which are not visible to the player. Partial clipping must be performed when one edge of the wall extends past either the left or right edge of the screen and the other edge of the wall is within the screen's horizontal range (0-319). If neither of the edges of the wall fall within the screen's horizontal range, then we clip the entire wall as it cannot possibly be seen.
-
-## Other Notes
-Please feel free to open an issue if you have a question, if you think there is a better way to implement things, or even if you notice spelling mistakes (I will credit you for it). I'm very open to constructive criticism. The main goal of this is to learn more about DOOM engine internals, so please help me by sharing your ideas and thoughts.  
-
-The code we covered today is part of ``` R_AddLine ``` function
 ``` cpp
-//
-// R_AddLine
-// Clips the given segment
-// and adds any visible pieces to the line list.
-//
-void R_AddLine (seg_t* line)
+void ViewRenderer::AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle)
 {
-...
-...
-...
-
-    // The seg is in the view range,
-    // but not necessarily visible.
-    angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-    angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT; // <- We stopped here last week
-    
-    x1 = viewangletox[angle1]; // <- Yes, these 2 lines of code is all what we did today!
-    x2 = viewangletox[angle2]; 
+    // Solid walls don't have a Back side.
+    if (seg.pBackSector == nullptr) 
+    {
+        AddSolidWall(seg, V1Angle, V2Angle);
+    }
+}
 ```
 
-and the lookup table ``` viewangletox ``` gets populated as part of ```void R_InitTextureMapping (void)```.
+If not, just draw it!  
 
-To make it possible to store the lookup table in memory there is a value truncation that happens ``` angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT``` the shift truncates the value, making it possible to create a lookup table with what was a reasonable amount of memory back in the i486 days.
+![Wall Edge](../img/walledge.png)  
 
+Sorry to blind you with those flickering colored edges! I promise to fix that next week.  
 
-## Source code
+Graphical representation!  
+
+![Wall Edge](../img/screen_solid.PNG)  
+
+Now, we have filtered down all the solid walls that are in the FOV! But not all those walls should be drawn; the ones in the front block the ones behind them, and that is what we will do next.  
+The fun part is about to start!  
+
+## Other Notes  
+The structs pointing to each other is not my idea, this is how the Chocolate/ Classic Doom was implemented, and building all those structs from day one would just be confusing and it would be easy to get lost, so I was just progressing based on what was needed.  
+Loading and setup of those structs are done in ``` p_setup.c ``` I didn't copy the same exact structs that DOOM had, I implemented what makes sense to me, (if you didn't notice I like to keep things simple and refactor as needed).  
+The Chocolate / Original Doom does all those loading and setup when in the ``` void P_SetupLevel ( int episode, int map, int playermask, skill_t skill) ```  
+
+Here is a some of the function in Chocolate Doom that does the load and setup structures  
+
+``` cpp
+    P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+    P_LoadVertexes (lumpnum+ML_VERTEXES);
+    P_LoadSectors (lumpnum+ML_SECTORS);
+    P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
+
+    P_LoadLineDefs (lumpnum+ML_LINEDEFS);
+    P_LoadSubsectors (lumpnum+ML_SSECTORS);
+    P_LoadNodes (lumpnum+ML_NODES);
+    P_LoadSegs (lumpnum+ML_SEGS);
+
+    P_GroupLines ();
+```
+
+## Source code  
 [Source code](../src)  
 
-## Reference
-[Math is Fun (SOHCAHTOA)](https://www.mathsisfun.com/sine-cosine-tangent.html)  
+## Reference  
+[Chocolate Doom](https://www.chocolate-doom.org/wiki/index.php/Chocolate_Doom)  

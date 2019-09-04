@@ -13,3 +13,4 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 009 - Sector and Subsector](../Week009/tutorial)  
 [Week 010 - Player FOV](../Week010/tutorial)  
 [Week 011 - Horizontal Projection](../Week011/tutorial)  
+[Week 012 - Solid Walls](../Week012/tutorial)  

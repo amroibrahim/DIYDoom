@@ -10,6 +10,7 @@ public:
     Player(ViewRenderer *pViewRenderer, int iID);
     ~Player();
 
+    void Init(Thing thing);
     void SetXPosition(int XPosition);
     void SetYPosition(int YPosition);
     void SetAngle(int Angle);
