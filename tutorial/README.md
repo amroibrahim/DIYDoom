@@ -1,3 +1,5 @@
+__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+
 # Week 012 - Solid Wall
 Now that we have the angles of all the walls in the player FOV, we need to figure out the type of each wall.  
 
