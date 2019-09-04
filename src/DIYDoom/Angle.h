@@ -1,5 +1,7 @@
 #pragma once
 
+#define PI 3.14159265358979f
+
 class Angle
 {
 public:

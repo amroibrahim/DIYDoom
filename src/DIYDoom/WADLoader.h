@@ -27,6 +27,8 @@ protected:
     bool ReadMapThings(Map *pMap);
     bool ReadMapNodes(Map *pMap);
     bool ReadMapSubsectors(Map *pMap);
+    bool ReadMapSectors(Map *pMap);
+    bool ReadMapSidedefs(Map *pMap);
     bool ReadMapSegs(Map *pMap);
 
     int FindMapIndex(Map *pMap);

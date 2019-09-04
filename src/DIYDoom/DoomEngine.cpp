@@ -19,14 +19,21 @@ bool DoomEngine::Init()
     m_pViewRenderer = new ViewRenderer(m_pRenderer);
 
     m_pPlayer = new Player(m_pViewRenderer, 1);
-    m_pMap = new Map(m_pViewRenderer, "E1M1", m_pPlayer);
+    m_pThings = new Things();
+
+    m_pMap = new Map(m_pViewRenderer, "E1M1", m_pPlayer, m_pThings);
 
     m_pViewRenderer->Init(m_pMap, m_pPlayer);
 
     m_WADLoader.SetWADFilePath(GetWADFileName());
     m_WADLoader.LoadWAD();
-
     m_WADLoader.LoadMapData(m_pMap);
+
+    Thing thing = (m_pMap->GetThings())->GetThingByID(m_pPlayer->GetID());
+
+    m_pPlayer->Init(thing);
+    m_pMap->Init();
+
     return true;
 }
 

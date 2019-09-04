@@ -6,23 +6,26 @@
 #include "DataTypes.h"
 #include "Player.h"
 #include "ViewRenderer.h"
+#include "Things.h"
 
 class Map
 {
 public:
-    Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer);
+    Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer, Things *pThings);
     ~Map();
 
     std::string GetName();
     void AddVertex(Vertex &v);
-    void AddLinedef(Linedef &l);
-    void AddThing(Thing &thing);
+    void AddLinedef(WADLinedef &l);
     void AddNode(Node &node);
     void AddSubsector(Subsector &subsector);
-    void AddSeg(Seg &seg);
+    void AddSeg(WADSeg &seg);
+    void AddSidedef(WADSidedef &sidedef);
+    void AddSector(WADSector &sector);
     void RenderAutoMap();
     void Render3DView();
     void SetLumpIndex(int iIndex);
+    void Init();
 
     int GetXMin();
     int GetXMax();
@@ -30,7 +33,13 @@ public:
     int GetYMax();
     int GetLumpIndex();
 
+    Things* GetThings();
+
 protected:
+    void BuildSectors();
+    void BuildSidedefs();
+    void BuildLinedef();
+    void BuildSeg();
     void RenderBSPNodes();
     void RenderAutoMapNode(int iNodeID);
     void RenderBSPNodes(int iNodeID);
@@ -39,12 +48,19 @@ protected:
     bool IsPointOnBackSide(int XPosition, int YPosition, int iNodeID);
 
     std::string m_sName;
+
     std::vector<Vertex> m_Vertexes;
+    std::vector<Sector> m_Sectors;
+    std::vector<Sidedef> m_Sidedefs;
     std::vector<Linedef> m_Linedefs;
-    std::vector<Thing> m_Things;
-    std::vector<Node> m_Nodes;
-    std::vector<Subsector> m_Subsector;
     std::vector<Seg> m_Segs;
+    std::vector<Subsector> m_Subsector;
+    std::vector<Node> m_Nodes;
+
+    std::vector<WADSector> *m_pSectors;
+    std::vector<WADSidedef> *m_pSidedefs;
+    std::vector<WADLinedef> *m_pLinedefs;
+    std::vector<WADSeg> *m_pSegs;
 
     int m_XMin;
     int m_XMax;
@@ -53,5 +69,6 @@ protected:
     int m_iLumpIndex;
 
     Player *m_pPlayer;
+    Things *m_pThings;
     ViewRenderer *m_pViewRenderer;
 };

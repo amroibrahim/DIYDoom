@@ -16,7 +16,7 @@ public:
 
     void Init(Map *pMap, Player *pPlayer);
     void Render(bool IsAutomap);
-    void AddWallInFOV(Seg seg, Angle V1Angle, Angle V2Angle);
+    void AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle);
     void InitFrame();
     void SetDrawColor(int R, int G, int B);
     void DrawRect(int X, int Y, int Width, int Height);
@@ -25,6 +25,8 @@ public:
 protected:
     void RenderAutoMap();
     void Render3DView();
+
+    void AddSolidWall(Seg &seg, Angle V1Angle, Angle V2Angle);
 
     int AngleToScreen(Angle angle);
     int RemapXToScreen(int XMapPosition);
