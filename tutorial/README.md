@@ -105,7 +105,6 @@ int ViewRenderer::AngleToScreen(Angle angle)
     {
         // Right side
         angle = 90 - angle.GetValue();
-        float f = tanf(angle.GetValue());
         iX = round(tanf(angle.GetValue() * PI / 180.0f) * 160);
         iX += 160;
     }
