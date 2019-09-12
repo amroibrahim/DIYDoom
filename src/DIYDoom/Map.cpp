@@ -284,7 +284,6 @@ void Map::RenderBSPNodes(int iNodeID)
 void Map::RenderSubsector(int iSubsectorID)
 {
     Subsector &subsector = m_Subsector[iSubsectorID];
-    m_pViewRenderer->SetDrawColor(rand() % 255, rand() % 255, rand() % 255);
 
     for (int i = 0; i < subsector.SegCount; i++)
     {

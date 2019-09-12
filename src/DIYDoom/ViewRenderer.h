@@ -1,5 +1,9 @@
 #pragma once
 
+#include <list>
+#include <map>
+#include <string>
+
 #include <SDL.h>
 
 #include "DataTypes.h"
@@ -23,10 +27,25 @@ public:
     void DrawLine(int X1, int Y1, int X2, int Y2);
 
 protected:
+    struct SolidSegmentRange
+    {
+        int XStart;
+        int XEnd;
+    };
+
+    struct SolidSegmentData
+    {
+        Seg &seg;
+        int XStart;
+        int XEnd;
+    };
+
     void RenderAutoMap();
     void Render3DView();
+    void DrawSolidWall(SolidSegmentData &visableSeg);
 
-    void AddSolidWall(Seg &seg, Angle V1Angle, Angle V2Angle);
+    void ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen);
+    void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen);
 
     int AngleToScreen(Angle angle);
     int RemapXToScreen(int XMapPosition);
@@ -36,9 +55,13 @@ protected:
     int m_iRenderYSize;
     int m_iAutoMapScaleFactor;
 
+    SDL_Color GetWallColor(std::string textureName);
+
     Map *m_pMap;
     Player *m_pPlayer;
 
     SDL_Renderer *m_pRenderer;
-};
 
+    std::list<SolidSegmentRange> m_SolidWallRanges;
+    std::map<std::string, SDL_Color> m_WallColor;
+};
