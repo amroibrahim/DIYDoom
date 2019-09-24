@@ -1,3 +1,5 @@
+__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+
 # Week 014 - Solid Wall Heights (Part 1)
 Before jumping into DOOM code to see how the vertical projection was done, I thought to myself: "The hard part is done". After all, online fans frequently claim that the most complex part of the DOOM engine is dealing with the BSP tree. But I didn't find it too hard, it is just a simple tree traversal (in my opinion, constructing the tree is the hard part, which is not part of DOOM code). 
 
