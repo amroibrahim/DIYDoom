@@ -26,6 +26,10 @@ public:
     bool operator>=(const float& rhs);
 
     float GetValue();
+    float GetCosValue();
+    float GetSinValue();
+    float GetTanValue();
+    float GetSignedValue();
 
 protected:
     float m_Angle;

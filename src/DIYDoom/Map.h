@@ -57,6 +57,7 @@ protected:
     std::vector<Subsector> m_Subsector;
     std::vector<Node> m_Nodes;
 
+
     std::vector<WADSector> *m_pSectors;
     std::vector<WADSidedef> *m_pSidedefs;
     std::vector<WADLinedef> *m_pLinedefs;

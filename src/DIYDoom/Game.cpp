@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-Game::Game() : m_iWindowWidth(1280), m_iWindowHeight(800), m_pWindow(nullptr)
+Game::Game() : m_iWindowWidth(320), m_iWindowHeight(200), m_pWindow(nullptr)
 {
 }
 
@@ -61,24 +61,25 @@ bool Game::Init()
 void Game::ProcessInput()
 {
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
         {
-            switch (event.type)
-            {
-            case SDL_KEYDOWN:
-                m_pDoomEngine->KeyPressed(event);
-                break;
+        case SDL_KEYDOWN:
+            m_pDoomEngine->KeyPressed(event);
+            break;
 
-            case SDL_KEYUP:
-                m_pDoomEngine->KeyReleased(event);
-                break;
+        case SDL_KEYUP:
+            m_pDoomEngine->KeyReleased(event);
+            break;
 
-            case SDL_QUIT:
-                m_pDoomEngine->Quit();
-                break;
-            }
+        case SDL_QUIT:
+            m_pDoomEngine->Quit();
+            break;
         }
     }
+
+    m_pDoomEngine->UpdateKeyStatus(SDL_GetKeyboardState(NULL));
 }
 
 void Game::Render()

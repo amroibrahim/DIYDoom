@@ -1,398 +1,290 @@
-__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+# Week 014 - Solid Wall Heights (Part 1)
+Before jumping into DOOM code to see how the vertical projection was done, I thought to myself: "The hard part is done". After all, online fans frequently claim that the most complex part of the DOOM engine is dealing with the BSP tree. But I didn't find it too hard, it is just a simple tree traversal (in my opinion, constructing the tree is the hard part, which is not part of DOOM code). 
 
-# Week 013 - Clipping Solid Walls  
-Things are heating up; we are getting closer and closer to rendering the 3D view! I can see the excitement in your eyes!   
-Without further do, let's get started.   
-As usual, let's recap what is going on. Up to this point we are able to iterate though the walls in the field of view, and we have filtered only the solid walls. But not all of those are visible, a solid wall will block you from seeing another wall behind it.  
+I was expecting math like that which was used in Wolfenstein 3D for vertical projection, specifically that which was used for "Ray Casting". After all, online fans also keep referring to DOOM's rendering technology as being a "Ray Caster", implying similarity between both, but let me state this important fact: the DOOM engine has nothing to do with the Wolf3D engine. Not on any level. Both engines use completely different technologies. So, the next time you see someone saying "Wolf3D/Doom style engine" or "DOOM used Ray Casting", you can be certain that it is not true! 
 
-For example, look at this top view.  
+That being said, it is actually possible to project walls using similar math as to that which was used in Wolf3D and this is what we will cover in Part 1. In Part 2 we will cover how the Original/Chocolate doom engine implemented the projection. As a heads up, I was not able to back up my conclusions in Part 2 with references. I have a basic understanding of what is going on based on observation, experimentation, and by stepping through the code with a debugger. Please don't blame me if it's not perfect. Here is what John Carmack himself thinks about his own projection code
 
-![FOV Top](../img/topview.png)  
+![John Carmack](../img/johncarmacktwitter.png)  
 
-You would expect that the player would see something like this  
+[Twitter](https://twitter.com/ID_AA_Carmack/status/807723200431783936?ref_src=twsrc%5Etfw)  
 
-![3D View](../img/3dview.png)  
+Note: If you understand the math in ```R_ScaleFromGlobalAngle``` function used in DOOM, and you can back your statements with a reliable reference, ping [AngryCPPCoder](https://twitter.com/AngryCPPCoder) or [DOOMReboot](https://twitter.com/DOOMReboot) and you will be rewarded for sharing the knowledge!   
 
-(Note: this is not a very accurate example, but please buy it! Those walls have no depth)  
+So, for this week I will be projecting the walls using a similar technique to that which is used in Wolf3D. Please note that this technique didn't give me output that was identical to that of the original DOOM.  
 
-See how the red wall is clipped by the yellow wall in front of it?
-We need to figure out which wall clips which wall, and that is what we will do today.   
+With that out of the way let's get started!   
+As usual, I like to start with the givens, what we know up to this point.  
+1. We know the player location X, and Y.  
+2. We know how far the player is from the screen 160 units (Week 011).  
+3. We know the height of the screen 200 units (Width 320 x Height 200).  
+4. For a given Seg (part of the wall/Linedef) we know its start and end points, V1 and V2 respectively, on the screen.  
 
-Chocolate / Classic Doom has a nice implementation. A good overview about how this algorithm works can be found in Game Engine Black book DOOM 1.1ed (section 5.12.3.3). I would recommend reading it.  
+## Goals  
+* Calculate the wall height  
+* Draw the wall  
 
-Before we jump to the implementation, the simplest possible way to do this would be to have an array that matches the size of the screen's width. Let's say array of 320 bool elements, and every time you get a Segment you know its starting and ending X position, with a simple for loop you can check if it is already occupied by some other wall (if not update it). Although this method is used elsewhere in DOOM code, it is not used for wall clipping.  
+## Similar triangles approach and fisheye effect  
+The technique used to calculate the vertical wall projection is covered in details in [GAME ENGINE BLACK BOOK: WOLFENSTEIN 3D by Fabien Sanglard](http://fabiensanglard.net/gebbwolf3d/). It is a good read, don't miss it. This technique is covered in lots of tutorials online (look at references) so I will just summarize the logic.  
+The technique is based on the properties of similar triangles. Similar triangles are triangles that are the same shape, but not the same size.   
 
-Let's start with an overview of how the Chocolate/Classic Doom algorithm works. At this point we are iterating though the Segs near-to-far, so if a wall fills an area on screen, no other wall can fill same area later.  
-So what we should do is to just keep track of where the Segs are drawn on screen, and if a previous wall already occupied that spot, then the Seg might be clipped or not drawn at all! sounds simple? 
-Let's visualize how this works    
+![Similar Triangles](../img/similar_triangles.png)   
 
-![Clipping Demo](../img/clip_demo.gif)  
+How do we know that two triangles are similar? One way that could let us know is if they have equally sized angles.  
+The property that we care about for similar triangles is where corresponding sides are in the same proportions. Based on the example above, 
 
-In the above animation each vertical colored rectangle represents a wall. Once it fills an area no other rectangles at a later stage is drawn over it.  
-If you have a keen eye, this is the view you'll see as soon as Doomguy spawns in E1M1. You can easily see the pillars getting drawn (in blue) first, didn't I say we are getting really close? :)
+![Sides](../img/side.png)  
 
-## Goals
-* Clip solid walls.
-* Generate color for same texture
-* Draw visible solid walls
+While browsing I found this nice example on Wikipedia (link in reference).  
 
-## Coding
-About the clipping solid walls algorithm, it works by keeping track of the start and end of contiguous X coordinate filled areas on the screen instead of having an individual boolean for each X coordinate.  
-The key to this algorithm is keeping the elements sorted and handling special cases correctly.  
-Here is a summary of the cases we need to handle  
-*  The Seg is not clipped by another solid wall, it is all visible. (Insert)
-*  The Seg is completely clipped by another wall. (Ignore the new Seg)
-*  Part of the Seg is clipped (Update a current entry in the linked list)
-*  The Seg is partially visible, but multiple walls are clipping it (Update and Delete other entries).
+![Example](../img/example.PNG)   
 
-Given:
-* For each Seg we have two edges, V1 and V2.
-* V1 and V2 are converted to screen coordinates V1XScreen and V1XScreen
-* V1XScreen < V2XScreen is always true
-* V1XScreen is the start of the edge
-* V2XScreen is the end of the edge
+If you're familiar with those from high school math, then this should be very simple for you.  
+Now, how can we apply this to our problem?    
 
-A simple struct for storing the range and keeping them sorted in a linked list
+So, the first thing we need to figure out is the wall height of the virtual wall. The data provided within the WAD files are the Ceiling and Floor Z values (after all, the solid wall is between them). Using this data, we will be able to know the vertical start and end points of the wall's height in the virtual wall.  
 
-``` cpp 
-struct SolidSegmentRange
-{
-    int XStart;
-    int XEnd;
-};
+Let's start with a very simple example, let's assume there is a single wall in front of the player, it is segmented to four parts, and it looks like the following   
+![Wall](../img/wall.PNG)  
+
+the expected output is should be a straight horizontal wall which looks something like this  
+
+![Wall Screen](../img/wall_screen.png)   
+
+Here are some assumptions for the above example:    
+* Wall rests at Z = 0 and has a height of 200 units (ceiling height  - floor height).   
+* Player's eye level is at Z = 41 (This is the eye Z level for Doomguy)  
+* Screen height is 200 units  
+* Center of the player FOV will split the screen into two halves, 100 to the top (0) and 100 to the bottom (199).  
+* Center of the player FOV will split the wall, but the wall is resting on Z = 0, so it will split it into 0 to 41 and 41 to 159.  
+* Projection screen is 160 units away from player.  
+
+drawing those givens:  
+
+![Example](../img/example_1.png)  
+
+Notice how part of the wall is above the player's eye level and the rest is below? In order to create a right angle triangle, we need to split this wall into two.  
+Can you see the 2 triangles now?  
+
+Both triangles are highlighted in red  
+
+![Example](../img/example_2.png)   
+
+First thing we need to do is calculate how far the player is from the wall  
+We have two points, the segment's start and end
+Let's start with point (1056, -3200)  
+Player is at (1056,-3616)  
+We can use the distance formula to calculate the distance between the player and the first edge of the segment
+
+![Formula](../img/formula.PNG)   
+
+ Sqrt((1056 - 1056)^2 - (-3200 -3616)^2) = 440.2    
+
+Now, doing the math for the upper triangle: (160 * 159) / 440.2 = 57.7 (~58 pixels from center of the screen)    
+The math for the lower triangle: (160 * 41) / 440.2 = 14.9 (~15 pixels from center of the screen)   
+
+Let's do the same thing on another edge at point (1200, -3200)  
+Sqrt((1200 - 1056)^2 - (-3200 -3616)^2) = 416    
+
+Upper triangle: (160 * 159) / 416 = 61.15 (~61 pixels from center of the screen)   
+Lower triangle: (160 * 41) / 416 = 15.76 (~16 pixels from center of the screen)     
+ 
+Okay something is off here! The wall should have the same height, why is it getting shorter? If you do the math for all those points you will notice a fisheye effect. Where is the error in the calculation?  
+
+The screen is 160 units away from player. It is only 160 units in the center of the screen.  
+The circle shows a 160 radius around the player. Note how there is extra space between the player's radius and the projection screen! We must take that into account.   
+
+![Fish Eye](../img/eye160.PNG)   
+
+We need to correct for this fisheye effect.  
+
+To find the correct distance to the screen we use trigonometry. Take the distance to the screen (160) divided by the COSINE of the angle between the wall edge and the center of the screen. If that is not clear, then please head to the reference section for more to read.   
+
+So, using this technique we can calculate the height for both edges of a wall and just draw it in wireframe.   
+
+## Coding  
+To organize things, I have added helper functions in Angle class to do all the trigonometry that will be needed  
+
+```
+    float GetCosValue();
+    float GetSinValue();
+    float GetTanValue();
+    float GetSignedValue();
 ```
 
-This simple struct will keep track of a filled area on the screen.  
+And a simple function to calculate how far a point is to the player
 
 ``` cpp
-std::list<SolidSegmentRange> m_SolidWallRanges;
-```
-
-Those segments will be updated, merged, deleted, and inserted in a linked list. The linked list will keep track of all the segments that are drawn on the screen. AGAIN, we need to keep things sorted in the linked list! 
-
-Lets go step by step!
-An empty list would have two dummy entries, negative infinity and positive infinity! The algorithm completes if negative infinity and positive infinity Segments merge together. Within an int there is no negative or positive infinity, so we will use INT_MIN and INT_MAX.
-
-So, our linked list gets initialized in InitFrame function with those values
-
-``` cpp
-void ViewRenderer::InitFrame()
+float Player::DistanceToPoint(Vertex &V)
 {
-    SetDrawColor(0, 0, 0);
-    SDL_RenderClear(m_pRenderer);
-
-    m_SolidWallRanges.clear();
-
-    SolidSegmentRange WallLeftSide;
-    SolidSegmentRange WallRightSide;
-
-    WallLeftSide.XStart = INT_MIN;
-    WallLeftSide.XEnd = -1;
-    m_SolidWallRanges.push_back(WallLeftSide);
-
-    WallRightSide.XStart = m_iRenderXSize;
-    WallRightSide.XEnd = INT_MAX;
-    m_SolidWallRanges.push_back(WallRightSide);
+    // We have two points, where the player is and the vertex passed.
+    // To calculate the distance just use "The Distance Formula"
+    // distance = square root ((X2 - X1)^2 + (y2 - y1)^2)
+    return sqrt(pow(m_XPosition - V.XPosition, 2) + pow(m_YPosition - V.YPosition, 2));
 }
 ```
 
-Making the linked list look something like this
-
-```
-[0] INT_MIN, -1  
-[1] 320, INT_MIN
-```
-
-Notice how the struct at index zero just ends at -1, and how the other starts at 320. Both are just one pixel outside screen.  
-
-This algorithm can be broken down into two main cases:
-* Inserting or Updating to the left of an existing entry in the linked list.
-* Updating or Deleting to right of an existing entry in the linked list.
-
-Let's say our first Seg to track starts at 69 and ends at 80 (which we will call CurrentWall), what we need to do next is to search if that range is occupied in list.  
-To achieve this we look into each entry in the linked list. Since we know that the list is always sorted, we linearly search for where the correct position's (CurrentWall) start edge to end edge is within the linked list entries.  
+Now, write a function that will do the required math for a single edge.  
+But, before we start, we need to figure out the angle of the wall relative to the center of the screen, this is where the lookup table ```m_ScreenXToAngle``` comes into play.  
+Building this table is very simple. The FOV for the player is 90 and splits the screen into two sections, each of which is 45 degrees.  So, just divide this evenly over the X coordinates.  
+Just create the table once during initialization.   
 
 ``` cpp
-    std::list<SolidSegmentRange>::iterator FoundClipWall = m_SolidWallRanges.begin();
-    while (FoundClipWall != m_SolidWallRanges.end() && FoundClipWall->XEnd < CurrentWall.XStart - 1)
-    {
-        ++FoundClipWall;
-    }
-```
-
-First, let's handle the scenarios where the Update or Insert is to the left of the FoundClipWall.
-
-We need to check if it is a new entry in the list or if we should update one edge of the existing FoundClipWall
-
-``` cpp
- if (CurrentWall.XStart < FoundClipWall->XStart)
-    {
-        // Are the they overlapping?
-        if (CurrentWall.XEnd < FoundClipWall->XStart - 1)
-        {
-            //All of the wall is visible, so insert it
-            StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
-            m_SolidWallRanges.insert(FoundClipWall, CurrentWall);
-            return;
-        }
-
-        // The end is already included, just update start
-        StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
-        FoundClipWall->XStart = CurrentWall.XStart;
-    }
-
-```
-Note: StoreWallRange function just does the drawing and is not storing anything for now.  
-Our new values will be inserted, updating the list to look like 
-
-```
-[0] INT_MIN, -1  
-[1] 68, 80
-[2] 320, INT_MIN
-```
-
-Now, let's try to add 46, 69
-The implementation will update the list to look like this (no new entry will be added)
-
-```
-[0] INT_MIN, -1  
-[1] 46, 80
-[2] 320, INT_MIN
-```
-
-Now, let's try to add a new seg, starting at 70 and ends 75.  
-It will fail the above checks so we will need to add a check to see if it is completely clipped
-
-``` cpp
-    // This part is already occupied
-    if (CurrentWall.XEnd <= FoundClipWall->XEnd)
-        return;
-```
-
-We have handled the left side of the FoundClipWall, and at this point we know CurrentWall is to the right of FoundClipWall. But, will it span over multiple elements or will updating the right side of the FoundClipWall be enough?
-
-Let's take the case where it is spanning over multiple elements to the right; let's assume the linked list now looks like this
-```
-[0]	INT_MIN,  -1
-[1]	46, 80
-[2]	107, 195
-[3]	198, 210
-[4]	223, 291
-[5]	320, INT_MAX
-```
-and we are processing a Seg with start at 76 and end at 107. This will require us to close the gap between element at index 1 and index 2.
-To do that we will Update the element at index one and Delete the element at index 2.
-
-``` cpp
-    // Start looking and next entry in the linked list
-    std::list<SolidSegmentRange>::iterator NextWall = FoundClipWall;
-
-    // Is the next entry within the CurrentWall range?
-    while (CurrentWall.XEnd >= next(NextWall, 1)->XStart - 1)
-    {
-        // partialy clipped by other walls, store each fragment
-        StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
-        ++NextWall;
-
-        if (CurrentWall.XEnd <= NextWall->XEnd)
-        {
-            FoundClipWall->XEnd = NextWall->XEnd;
-            // Do we need to remove entries from the linked list?
-            if (NextWall != FoundClipWall)
-            {
-                //Delete a range of walls
-                FoundClipWall++;
-                NextWall++;
-                m_SolidWallRanges.erase(FoundClipWall, NextWall);
-            }
-            return;
-        }
-    }
-```
-
-Note: In this case we just had to delete one element, there are cases where more than one element will be deleted.
-
-Finally, the last check is to handle an edge case, for example the linked list is as following
-
-```
-[0]	INT_MIN, -1
-[1]	46, 210
-[2]	223, 291
-[3]	320, INT_MAX
-```
-and the new Seg starts at 0 and ends at 42, this will fail the above cases, so we need to handle it separately.
-
-``` cpp
-    StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
-    FoundClipWall->XEnd = CurrentWall.XEnd;
-
-    // Yes this edge case could also span over multiple elements
-    if (NextWall != FoundClipWall)
-    {
-        FoundClipWall++;
-        NextWall++;
-        m_SolidWallRanges.erase(FoundClipWall, NextWall);
-    }
-```
-
-updating the linked list to  
-
-```
-[0]	INT_MIN, 42
-[1]	46, 210
-[2]	223, 291
-[3]	320, INT_MAX
-```
-
-As more and more walls fill the screen, the more elements will merge, up to a point where all of the screen if filled. A single entry will remain in the list 
-
-```
-[0]	INT_MIN, INT_MAX
-```
-
-Here is the algorithm all in one piece
-
-``` cpp
-void ViewRenderer::ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen)
+void  ViewRenderer::Init(Map *pMap, Player *pPlayer)
 {
-    // Find clip window 
-    SolidSegmentRange CurrentWall = { V1XScreen, V2XScreen };
+    m_pMap = pMap;
+    m_pPlayer = pPlayer;
 
-    std::list<SolidSegmentRange>::iterator FoundClipWall = m_SolidWallRanges.begin();
-    while (FoundClipWall != m_SolidWallRanges.end() && FoundClipWall->XEnd < CurrentWall.XStart - 1)
+    SDL_RenderGetLogicalSize(m_pRenderer, &m_iRenderXSize, &m_iRenderYSize);
+
+    Angle ScreenAngle = m_pPlayer->GetFOV() / 2.0f;
+    float fStep = (float)m_pPlayer->GetFOV() / (float)(m_iRenderXSize + 1);
+    for (int i = 0; i <= m_iRenderXSize; ++i)
     {
-        ++FoundClipWall;
+            m_ScreenXToAngle[i] = ScreenAngle;
+            ScreenAngle -= fStep;
     }
 
-    if (CurrentWall.XStart < FoundClipWall->XStart)
-    {
-        // Are the edges touching?
-        if (CurrentWall.XEnd < FoundClipWall->XStart - 1)
-        {
-            //All of the wall is visible, so insert it
-            StoreWallRange(seg, CurrentWall.XStart, CurrentWall.XEnd);
-            m_SolidWallRanges.insert(FoundClipWall, CurrentWall);
-            return;
-        }
-
-        // The end is already included, just update start
-        StoreWallRange(seg, CurrentWall.XStart, FoundClipWall->XStart - 1);
-        FoundClipWall->XStart = CurrentWall.XStart;
-    }
-
-    // This part is already occupied
-    if (CurrentWall.XEnd <= FoundClipWall->XEnd)
-        return;
-
-    std::list<SolidSegmentRange>::iterator NextWall = FoundClipWall;
-
-    while (CurrentWall.XEnd >= next(NextWall, 1)->XStart - 1)
-    {
-        // partially clipped by other walls, store each fragment
-        StoreWallRange(seg, NextWall->XEnd + 1, next(NextWall, 1)->XStart - 1);
-        ++NextWall;
-
-        if (CurrentWall.XEnd <= NextWall->XEnd)
-        {
-            FoundClipWall->XEnd = NextWall->XEnd;
-            if (NextWall != FoundClipWall)
-            {
-                //Delete a range of walls
-                FoundClipWall++;
-                NextWall++;
-                m_SolidWallRanges.erase(FoundClipWall, NextWall);
-            }
-            return;
-        }
-    }
-
-    StoreWallRange(seg, NextWall->XEnd + 1, CurrentWall.XEnd);
-    FoundClipWall->XEnd = CurrentWall.XEnd;
-
-    if (NextWall != FoundClipWall)
-    {
-        FoundClipWall++;
-        NextWall++;
-        m_SolidWallRanges.erase(FoundClipWall, NextWall);
-    }
+    m_HalfScreenWidth = m_iRenderXSize / 2;
+    m_HalfScreenHeight = m_iRenderYSize / 2;
+    Angle HalfFOV = m_pPlayer->GetFOV() / 2;
+    m_iDistancePlayerToScreen = m_HalfScreenWidth / HalfFOV.GetTanValue();
 }
 ```
 
-Note: I have rewritten this algorithm multiple times due to bugs (tricky edge cases!); the algorithm might look simple but handling all the cases correctly is difficult!
-
-As promised in previous week, I need to get rid of all those flickering colors.
-To make things look more authentic we can use the texture name as a key for the random color. This means that surfaces with same texture will have same color, making it easier on the eyes and giving the world a more coherent look.
+Now putting all the above math into code!   
+```CalculateCeilingFloorHeight``` calculates the top and bottom edges of a single wall  
 
 ``` cpp
-SDL_Color ViewRenderer::GetWallColor(std::string textureName)
+void ViewRenderer::CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen)
 {
-    if (m_WallColor.count(textureName))
+    float Ceiling = seg.pFrontSector->CeilingHeight - m_pPlayer->GetZPosition();
+    float Floor = seg.pFrontSector->FloorHeight - m_pPlayer->GetZPosition();
+
+    Angle VScreenAngle = m_ScreenXToAngle[VXScreen];
+
+    float DistanceToVScreen = m_iDistancePlayerToScreen / VScreenAngle.GetCosValue();
+    CeilingVOnScreen = (abs(Ceiling) * DistanceToVScreen) / DistanceToV;
+    FloorVOnScreen = (abs(Floor) * DistanceToVScreen) / DistanceToV;
+
+    if (Ceiling > 0)
     {
-        return m_WallColor[textureName];
+        CeilingVOnScreen = m_HalfScreenHeight - CeilingVOnScreen;
     }
     else
     {
-        SDL_Color color{ rand() % 255, rand() % 255, rand() % 255 };
-        m_WallColor[textureName] = color;
-        return color;
+        CeilingVOnScreen += m_HalfScreenHeight;
+    }
+
+    if (Floor > 0)
+    {
+        FloorVOnScreen = m_HalfScreenHeight - FloorVOnScreen;
+    }
+    else
+    {
+        FloorVOnScreen += m_HalfScreenHeight;
     }
 }
 ```
 
-Don't forget to draw the walls!
+Now, call all those helper functions and draw it in wireframe  
 
 ``` cpp
-void ViewRenderer::DrawSolidWall(SolidSegmentData &visibleSeg)
+void ViewRenderer::CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
 {
-    SDL_Color color = GetWallColor(visibleSeg.seg.pLinedef->pFrontSidedef->MiddleTexture);
-    // We know nothing about the wall hight yet, so draw from top of the screen to the bottom
-    SDL_Rect Rect = { visibleSeg.XStart, 0, visibleSeg.XEnd - visibleSeg.XStart + 1, m_iRenderYSize };
+    //We have V1 and V2, do calculations for V1 and V2 separately then interpolate values in between
+    float DistanceToV1 = m_pPlayer->DistanceToPoint(*seg.pStartVertex);
+    float DistanceToV2 = m_pPlayer->DistanceToPoint(*seg.pEndVertex);
+
+    float CeilingV1OnScreen;
+    float FloorV1OnScreen;
+    float CeilingV2OnScreen;
+    float FloorV2OnScreen;
+
+    CalculateCeilingFloorHeight(seg, V1XScreen, DistanceToV1, CeilingV1OnScreen, FloorV1OnScreen);
+    CalculateCeilingFloorHeight(seg, V2XScreen, DistanceToV2, CeilingV2OnScreen, FloorV2OnScreen);
+
+    //SDL_Color color = { 255,255,255 };
+    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
     SetDrawColor(color.r, color.g, color.b);
-    SDL_RenderFillRect(m_pRenderer, &Rect);
+
+    SDL_RenderDrawLine(m_pRenderer, V1XScreen, CeilingV1OnScreen, V1XScreen, FloorV1OnScreen);
+    SDL_RenderDrawLine(m_pRenderer, V2XScreen, CeilingV2OnScreen, V2XScreen, FloorV2OnScreen);
+    SDL_RenderDrawLine(m_pRenderer, V1XScreen, CeilingV1OnScreen, V2XScreen, CeilingV2OnScreen);
+    SDL_RenderDrawLine(m_pRenderer, V1XScreen, FloorV1OnScreen, V2XScreen, FloorV2OnScreen);
 }
 ```
 
-Now, this was all the solid walls
-![All Solid Walls](../img/screen_solid.PNG)
+If you run the code now you should see  
 
-After clipping it should be something like
+![Screen](../img/screen.png)  
 
-![All Solid Walls](../img/solid_walls_screen_clipped.PNG)
+Comparing this to the original rendering  
 
-Now run!  
-![Wall Edge](../img/walls.png)
+![Morph 1](../img/morph_1.gif)  
 
-What a masterpiece!  
-...  
-...  
-What? ....   
+Let's give the player the ability to move within the map. I updated ```void Game::ProcessInput()``` adding 
+``` cpp
+    // read the states of the keyboard every frame
+    m_pDoomEngine->UpdateKeyStatus(SDL_GetKeyboardState(NULL));
+```
 
-So, it doesn't look like walls to you? You don't trust me? Hmm... honestly, I don't trust software engineers myself, so I don't blame you! Let me try to prove it!
-So, the original screen should be something like this
+And let the Player class handle those events
 
-![Original screen](../img/original.png)
+Now, if you re-run you will notice that something is not quite right. The Segs that are only partially visible (clipped) are not rendered correctly!
+Can you guess why?
 
-If we overlay those screens you will see this
+The edge that is outside the view is being calculated with angle 45 or -45 (lookup table) despite its actual value being greater than 45. One option is to calculate precisely where the FOV intersects with the Seg.  
+There are multiple ways to evaluate this. I decided to use Law of Sines to solve the problem (I will not cover this piece of code in detail as there is a better way to solve this problem. Please see Other Notes at the end of this tutorial.)  
 
-![Overlay screen](../img/overlay.png)
+``` cpp
+void ViewRenderer::PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &DistanceToV, bool IsLeftSide)
+{
+    float SideC = sqrt(pow(seg.pStartVertex->XPosition - seg.pEndVertex->XPosition, 2) + pow(seg.pStartVertex->YPosition - seg.pEndVertex->YPosition, 2));
+    Angle V1toV2Span = V1Angle - V2Angle;
+    float SINEAngleB = DistanceToV * V1toV2Span.GetSinValue() / SideC;
+    Angle AngleB(asinf(SINEAngleB) * 180.0 / PI);
+    Angle AngleA(180 - V1toV2Span.GetValue() - AngleB.GetValue());
 
-Morphing them together  
+    Angle AngleVToFOV;
+    if (IsLeftSide)
+    {
+        AngleVToFOV = V1Angle - (m_pPlayer->GetAngle() + 45);
+    }
+    else
+    {
+        AngleVToFOV = (m_pPlayer->GetAngle() - 45) - V2Angle;
+    }
 
-![Morph](../img/morph.gif)
+    Angle NewAngleB(180 - AngleVToFOV.GetValue() - AngleA.GetValue());
+    DistanceToV = DistanceToV * AngleA.GetSinValue() / NewAngleB.GetSinValue();
+}
+```
 
-Do you believe me now? Yes, I know there is still some work to be done! But, we have achieved some really good progress.  
-Now, what we need to do next is to draw the walls with the correct height.  
+A visualization of what I had in mind to help you understand the above code  
 
-## Other Notes
-The solid wall clipping is an interesting algorithm, there was a very minimal use of memory, also keeping the list short with merging keeps the sequential search fast.
-If I was to implement this myself, I would have done it differently. I could have possibly used [Interval trees](https://en.wikipedia.org/wiki/Interval_tree) (but, is it worth the more complex data structure?).
-The implemented algorithm was hard to get bug free in the first try; I have gone though four or five iterations before getting it right.  
+![Part of a Seg](../img/partseg.png)
 
-The algorithm exists in Chocolate DOOM under the name ```R_ClipSolidWallSegment```. It might look more complex, but in reality, they are both the same. Ours just looks more simple because we are using the built in C++ STD List. Meanwhile, the original code had to shift elements up the array when deleting entries.  
-One interesting thing I found was that the function ```R_ClipPassWallSegment``` is more or less the same as ```R_ClipSolidWallSegment```, few ``if`` statements and both functions would been merged, but we will talk about ```R_ClipPassWallSegment``` in detail in an upcoming week.  
+Finding the intersection this way doesn't always give the correct value, but it works for most of the cases. So, you will still find some partial Segs that don't look correct.  
+Running the above code, and moving around the map, you'll see that things looks much better (but not perfect).
+Note: There are still rendering issues at some angles, but I will not invest any more time fixing this. After all, my goal was just to see if it was possible to use Wolf3D rendering in DOOM!  
+After all remember the goal was to just find out if it was possible to apply Wolf3D logic in DOOM.  
+
+![Demo](../img/walk.gif)  
+
+Visualize what happened in the last two weeks   
+
+![Morph 2](../img/morph_2.gif)  
+
+## Other Notes  
+It was very interesting to apply Wolf3D techniques in DOOM and it now makes me wonder how easy it would be to project walls using a more modern, matrix-based approach. 
+My poor choice of using Law of Sines to handle partial Segs ruined the game experience. Also, there is a good chance I have bugs in my implementation. A better way to handle partial Segs is to use cross products, this [link](https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect) explains in detail how the cross product can be used to clip the Segs correctly. Any robust line-line or segment-segment algorithm will work, too.
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[Chocolate Doom]()https://www.chocolate-doom.org/wiki/index.php/Chocolate_Doom
+[Similar Triangles](https://en.wikibooks.org/wiki/High_School_Trigonometry/Angles_in_Triangles)   
+[Raycasting Tutorial](https://permadi.com/1996/05/ray-casting-tutorial-table-of-contents/)  
+[Lode's Raycasting Tutorial](https://lodev.org/cgtutor/raycasting.html)  
+[Find Intersection Point](https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect)  

@@ -20,7 +20,7 @@ public:
 
     void Init(Map *pMap, Player *pPlayer);
     void Render(bool IsAutomap);
-    void AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle);
+    void AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle, Angle V1AngleFromPlayer, Angle V2AngleFromPlayer);
     void InitFrame();
     void SetDrawColor(int R, int G, int B);
     void DrawRect(int X, int Y, int Width, int Height);
@@ -33,19 +33,16 @@ protected:
         int XEnd;
     };
 
-    struct SolidSegmentData
-    {
-        Seg &seg;
-        int XStart;
-        int XEnd;
-    };
-
     void RenderAutoMap();
     void Render3DView();
-    void DrawSolidWall(SolidSegmentData &visableSeg);
 
-    void ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen);
-    void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen);
+    void ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
+    void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
+
+    void CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
+    void CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen);
+    void PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &DistanceToV1, bool IsLeftSide);
+    void RenderSolidWall(Seg &seg, int XStart, int XStop);
 
     int AngleToScreen(Angle angle);
     int RemapXToScreen(int XMapPosition);
@@ -54,6 +51,9 @@ protected:
     int m_iRenderXSize;
     int m_iRenderYSize;
     int m_iAutoMapScaleFactor;
+    int m_iDistancePlayerToScreen;
+    int m_HalfScreenWidth;
+    int m_HalfScreenHeight;
 
     SDL_Color GetWallColor(std::string textureName);
 
@@ -64,4 +64,5 @@ protected:
 
     std::list<SolidSegmentRange> m_SolidWallRanges;
     std::map<std::string, SDL_Color> m_WallColor;
+    std::map<int, Angle> m_ScreenXToAngle;
 };
