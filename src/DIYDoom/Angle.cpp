@@ -53,6 +53,31 @@ float Angle::GetValue()
     return m_Angle;
 }
 
+float Angle::GetCosValue()
+{
+    return cosf(m_Angle * PI / 180.0f);
+}
+
+float Angle::GetSinValue()
+{
+    return sinf(m_Angle * PI / 180.0f);
+}
+
+float Angle::GetTanValue()
+{
+    return tanf(m_Angle * PI / 180.0f);
+}
+
+float Angle::GetSignedValue()
+{
+    if (m_Angle > 180)
+    {
+        return m_Angle - 360;
+    }
+
+    return m_Angle;
+}
+
 Angle& Angle::operator+=(const float& rhs)
 {
     m_Angle += rhs;

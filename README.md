@@ -14,4 +14,5 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 010 - Player FOV](../Week010/tutorial)  
 [Week 011 - Horizontal Projection](../Week011/tutorial)  
 [Week 012 - Solid Walls](../Week012/tutorial)  
-[Week 013 - Clipping Solid Walls](../Week013/tutorial) 
+[Week 013 - Clipping Solid Walls](../Week013/tutorial)  
+[Week 014 - Solid Walls Height (1/2)](../Week014/tutorial)  

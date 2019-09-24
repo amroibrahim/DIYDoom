@@ -16,6 +16,7 @@ public:
 
     virtual void Render();
     virtual void KeyPressed(SDL_Event &event);
+    virtual void UpdateKeyStatus(const Uint8* KeyStates);
     virtual void KeyReleased(SDL_Event &event);
     virtual void Quit();
     virtual void Update();

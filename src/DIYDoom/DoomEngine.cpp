@@ -53,17 +53,19 @@ void DoomEngine::KeyPressed(SDL_Event &event)
     switch (event.key.keysym.sym)
     {
     case SDLK_UP:
+        //m_pPlayer->MoveForward();
         break;
 
     case SDLK_DOWN:
+        //m_pPlayer->MoveBackward();
         break;
 
     case SDLK_LEFT:
-        m_pPlayer->RotateLeft();
+        //m_pPlayer->RotateLeft();
         break;
 
     case SDLK_RIGHT:
-        m_pPlayer->RotateRight();
+        //m_pPlayer->RotateRight();
         break;
 
     case SDLK_TAB:
@@ -76,6 +78,29 @@ void DoomEngine::KeyPressed(SDL_Event &event)
 
     default:
         break;
+    }
+}
+
+void DoomEngine::UpdateKeyStatus(const Uint8* KeyStates)
+{
+    if (KeyStates[SDL_SCANCODE_UP])
+    {
+        m_pPlayer->MoveForward();
+    }
+
+    if (KeyStates[SDL_SCANCODE_DOWN])
+    {
+        m_pPlayer->MoveBackward();
+    }
+
+    if (KeyStates[SDL_SCANCODE_LEFT])
+    {
+        m_pPlayer->RotateLeft();
+    }
+
+    if (KeyStates[SDL_SCANCODE_RIGHT])
+    {
+        m_pPlayer->RotateRight();
     }
 }
 

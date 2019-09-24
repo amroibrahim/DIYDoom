@@ -128,8 +128,16 @@ void Map::BuildSeg()
         Sidedef *pFrontSidedef;
         Sidedef *pBackSidedef;
 
-        pFrontSidedef = seg.pLinedef->pFrontSidedef;
-        pBackSidedef = seg.pLinedef->pBackSidedef;
+        if (seg.Direction)
+        {
+            pFrontSidedef = seg.pLinedef->pBackSidedef;
+            pBackSidedef = seg.pLinedef->pFrontSidedef;
+        }
+        else
+        {
+            pFrontSidedef = seg.pLinedef->pFrontSidedef;
+            pBackSidedef = seg.pLinedef->pBackSidedef;
+        }
 
         if (pFrontSidedef)
         {
@@ -288,10 +296,10 @@ void Map::RenderSubsector(int iSubsectorID)
     for (int i = 0; i < subsector.SegCount; i++)
     {
         Seg &seg = m_Segs[subsector.FirstSegID + i];
-        Angle V1Angle, V2Angle;
-        if (m_pPlayer->ClipVertexesInFOV(*(seg.pStartVertex), *(seg.pEndVertex), V1Angle, V2Angle))
+        Angle V1Angle, V2Angle, V1AngleFromPlayer, V2AngleFromPlayer;
+        if (m_pPlayer->ClipVertexesInFOV(*(seg.pStartVertex), *(seg.pEndVertex), V1Angle, V2Angle, V1AngleFromPlayer, V2AngleFromPlayer))
         {
-            m_pViewRenderer->AddWallInFOV(seg, V1Angle, V2Angle);
+            m_pViewRenderer->AddWallInFOV(seg, V1Angle, V2Angle, V1AngleFromPlayer, V2AngleFromPlayer);
         }
     }
 }
