@@ -11,8 +11,6 @@ That being said, it is actually possible to project walls using similar math as 
 
 [Twitter](https://twitter.com/ID_AA_Carmack/status/807723200431783936?ref_src=twsrc%5Etfw)  
 
-Note: If you understand the math in ```R_ScaleFromGlobalAngle``` function used in DOOM, and you can back your statements with a reliable reference, ping [AngryCPPCoder](https://twitter.com/AngryCPPCoder) or [DOOMReboot](https://twitter.com/DOOMReboot) and you will be rewarded for sharing the knowledge!   
-
 So, for this week I will be projecting the walls using a similar technique to that which is used in Wolf3D. Please note that this technique didn't give me output that was identical to that of the original DOOM.  
 
 With that out of the way let's get started!   
