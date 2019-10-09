@@ -38,11 +38,13 @@ protected:
 
     void ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
-
+    void CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen);
     void PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &DistanceToV1, bool IsLeftSide);
     void RenderSolidWall(Seg &seg, int XStart, int XStop);
+
+    float GetScaleFactor(int VXScreen, Angle NormalAngle, float NormalDistance);
 
     int AngleToScreen(Angle angle);
     int RemapXToScreen(int XMapPosition);
@@ -65,4 +67,6 @@ protected:
     std::list<SolidSegmentRange> m_SolidWallRanges;
     std::map<std::string, SDL_Color> m_WallColor;
     std::map<int, Angle> m_ScreenXToAngle;
+    bool m_UseClassicDoomScreenToAngle;
 };
+

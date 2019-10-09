@@ -168,6 +168,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Angle.h" />
+    <ClInclude Include="ClassicDefs.h" />
     <ClInclude Include="DataTypes.h" />
     <ClInclude Include="DoomEngine.h" />
     <ClInclude Include="Game.h" />
