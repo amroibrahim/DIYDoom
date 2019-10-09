@@ -5,8 +5,9 @@
 
 #include "Map.h"
 #include "Player.h"
+#include "ClassicDefs.h"
 
-ViewRenderer::ViewRenderer(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_iAutoMapScaleFactor(15)
+ViewRenderer::ViewRenderer(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_iAutoMapScaleFactor(15), m_UseClassicDoomScreenToAngle(false)
 {
 }
 
@@ -28,7 +29,14 @@ void  ViewRenderer::Init(Map *pMap, Player *pPlayer)
 
     for (int i = 0; i <= m_iRenderXSize; ++i)
     {
-        m_ScreenXToAngle[i] = atan((m_HalfScreenWidth - i) / (float) m_iDistancePlayerToScreen) * 180 / PI;
+        if (m_UseClassicDoomScreenToAngle)
+        {
+            m_ScreenXToAngle[i] = classicDoomScreenXtoView[i];
+        }
+        else
+        {
+            m_ScreenXToAngle[i] = atan((m_HalfScreenWidth - i) / (float)m_iDistancePlayerToScreen) * 180 / PI;
+        }
     }
 }
 
@@ -161,7 +169,76 @@ void ViewRenderer::ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle 
 void ViewRenderer::StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
 {
     // For now just lets sotre the range 
-    CalculateWallHeightSimple(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+    CalculateWallHeight(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+    // CalculateWallHeightSimple(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+}
+
+void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
+{
+    // Calculate the distance to the first edge of the wall
+    Angle Angle90(90);
+    Angle SegToNormalAngle = seg.SlopeAngle + Angle90;
+    //Angle NomalToV1Angle = abs(SegToNormalAngle.GetSignedValue() - V1Angle.GetSignedValue());
+    Angle NomalToV1Angle = SegToNormalAngle.GetValue() - V1Angle.GetValue();
+
+    // Normal angle is 90 degree to wall
+    Angle SegToPlayerAngle = Angle90 - NomalToV1Angle;
+
+    float DistanceToV1 = m_pPlayer->DistanceToPoint(*seg.pStartVertex);
+    float DistanceToNormal = SegToPlayerAngle.GetSinValue() * DistanceToV1;
+
+    float V1ScaleFactor = GetScaleFactor(V1XScreen, SegToNormalAngle, DistanceToNormal);
+    float V2ScaleFactor = GetScaleFactor(V2XScreen, SegToNormalAngle, DistanceToNormal);
+
+    float Steps = (V2ScaleFactor - V1ScaleFactor) / (V2XScreen - V1XScreen);
+
+    float Ceiling = seg.pFrontSector->CeilingHeight - m_pPlayer->GetZPosition();
+    float Floor = seg.pFrontSector->FloorHeight - m_pPlayer->GetZPosition();
+
+    float CeilingStep = -(Ceiling * Steps);
+    float CeilingEnd = m_HalfScreenHeight - (Ceiling * V1ScaleFactor);
+
+    float FloorStep = -(Floor * Steps);
+    float FloorStart = m_HalfScreenHeight - (Floor * V1ScaleFactor);
+
+    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
+    SetDrawColor(color.r, color.g, color.b);
+
+    int iXCurrent = V1XScreen;
+    while (iXCurrent <= V2XScreen)
+    {
+        SDL_RenderDrawLine(m_pRenderer, iXCurrent, CeilingEnd, iXCurrent, FloorStart);
+        ++iXCurrent;
+
+        CeilingEnd += CeilingStep;
+        FloorStart += FloorStep;
+    }
+}
+
+float ViewRenderer::GetScaleFactor(int VXScreen, Angle SegToNormalAngle, float DistanceToNormal)
+{
+    static float MAX_SCALEFACTOR = 64.0f;
+    static float MIN_SCALEFACTOR = 0.00390625f;
+
+    Angle Angle90(90);
+
+    Angle ScreenXAngle = m_ScreenXToAngle[VXScreen];
+    Angle SkewAngle = m_ScreenXToAngle[VXScreen] + m_pPlayer->GetAngle() - SegToNormalAngle;
+
+    float ScreenXAngleCos = ScreenXAngle.GetCosValue();
+    float SkewAngleCos = SkewAngle.GetCosValue();
+    float ScaleFactor = (m_iDistancePlayerToScreen * SkewAngleCos) / (DistanceToNormal * ScreenXAngleCos);
+
+    if (ScaleFactor > MAX_SCALEFACTOR)
+    {
+        ScaleFactor = MAX_SCALEFACTOR;
+    }
+    else if (MIN_SCALEFACTOR > ScaleFactor)
+    {
+        ScaleFactor = MIN_SCALEFACTOR;
+    }
+
+    return ScaleFactor;
 }
 
 void ViewRenderer::CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
@@ -190,8 +267,8 @@ void ViewRenderer::CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScr
     CalculateCeilingFloorHeight(seg, V1XScreen, DistanceToV1, CeilingV1OnScreen, FloorV1OnScreen);
     CalculateCeilingFloorHeight(seg, V2XScreen, DistanceToV2, CeilingV2OnScreen, FloorV2OnScreen);
 
-    //SDL_Color color = { 255,255,255 };
-    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
+    SDL_Color color = { 255,255,255 };
+    //SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
     SetDrawColor(color.r, color.g, color.b);
 
     SDL_RenderDrawLine(m_pRenderer, V1XScreen, CeilingV1OnScreen, V1XScreen, FloorV1OnScreen);
