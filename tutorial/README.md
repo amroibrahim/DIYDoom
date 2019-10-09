@@ -1,3 +1,5 @@
+__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+
 # Week 015 - Solid Walls Height (2/2)
 So, the time has come to cover how things work in DOOM. This part has puzzled fans and, after reading this post at [Doomworld](https://www.doomworld.com/forum/topic/69966-prboom-graphical-glitches/), I became even more confused. I kept hunting for the correct answers. I investigated the code and tried to understand the theory behind it, but no luck. I looked into books old and new, but no one used such a way to calculate the wall projection. I even tried to reach out to the internet for answers by posting questions, again no answer. But before writing this note, I gave the code one last look, and OMG it happened, it clicked!  
 
