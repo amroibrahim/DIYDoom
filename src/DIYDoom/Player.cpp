@@ -149,6 +149,16 @@ void Player::RotateRight()
     m_Angle -= (0.1875f * m_iRotationSpeed);
 }
 
+void Player::Fly()
+{
+    m_ZPosition += 1;
+}
+
+void Player::Sink()
+{
+    m_ZPosition -= 1;
+}
+
 void Player::RenderAutoMap()
 {
     m_pViewRenderer->SetDrawColor(255, 0, 0);

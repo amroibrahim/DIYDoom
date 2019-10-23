@@ -15,3 +15,4 @@ public:
 protected:
     std::vector<Thing> m_Things;
 };
+

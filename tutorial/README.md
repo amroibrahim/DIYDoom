@@ -1,379 +1,341 @@
 __Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
 
-# Week 015 - Solid Walls Height (2/2)
-So, the time has come to cover how things work in DOOM. This part has puzzled fans and, after reading this post at [Doomworld](https://www.doomworld.com/forum/topic/69966-prboom-graphical-glitches/), I became even more confused. I kept hunting for the correct answers. I investigated the code and tried to understand the theory behind it, but no luck. I looked into books old and new, but no one used such a way to calculate the wall projection. I even tried to reach out to the internet for answers by posting questions, again no answer. But before writing this note, I gave the code one last look, and OMG it happened, it clicked!  
+# Week 016 - Portals
+Now it is time to talk about the second type of walls, Portals, or as I like to call them "Windows".  
+
+Before explaining what Portals are, let's recap a few things about solid walls.  
+* Solid walls are one-sided Linedefs (you are not supposed to go behind them).
+* Once a solid wall is drawn at an X location on the screen, nothing else can be drawn on top of that.  
+* A solid wall has three parts, ceiling, the solid wall itself (which now we will start calling Middle Section), and the floor.  
+  
+So, what are Portals? Portals are walls with an opening where you can see through them. They can look like a passageway, a see-through barrier (like grating if a texture is provided), and a step and/or decrease in ceiling height.
+
+![Portals](./img/portal.png)  
+  
+There are two types of Portals, ones that you can see through, and ones you can partially see through.   
+Portals are parts of a Sector (a sector consists of all connected, surrounding Seg)s. A Sector defines the ceilings and floors; a Sector defines both heights and textures of both ceilings and floors).
+
+![Walls](./img/walls.png)  
+
+Notice the top and bottom section of the Portal are not see-through.  
+
+Top view   
+
+![Wall top](./img/top.png)  
+
+The main difference between see-through Portals and partial see-through Portals, is the see-through part has a middle texture.  
+If you don't know me by now, simplicity is the key to understanding, so forget about the partial see-through walls and let’s assume that all Portals are just see-through (we will just ignore the middle texture).  
+
+So, with that simplification it should be easy to draw a Portal. It's similar to drawing solid walls, but instead of drawing one single solid wall (middle section), let's draw two solid sections: the top and bottom sections. We will not draw anything for the middle, but there is a catch!  
+
+Portals can be identified by having both a front Sector and a back Sector (since we see through the wall, we need to know some information about the floor and ceiling on the other side of the Portal).  
+In a single-sided Linedef (a solid wall), a single Seg is created which only has a front side, but two Segs are created for a two-sided Linedef, one for the front and one for the back. That means when we try to draw a Seg we must know if it is running along the front Sector or the back Sector. This is where the direction flag in the Seg data becomes handy. The direction flag indicates the type (direction) of the Seg.  
+
+Original/Chocolate Doom had a nice trick, it checks the direction flag and switches the front and the back, so let’s "borrow" that trick.
+In the function ```void Map::BuildSeg()```  
+
+``` cpp
+    Sidedef *pFrontSidedef;
+    Sidedef *pBackSidedef;
+
+    if (seg.Direction)
+    {
+        pFrontSidedef = seg.pLinedef->pBackSidedef;
+        pBackSidedef = seg.pLinedef->pFrontSidedef;
+    }
+    else
+    {
+        pFrontSidedef = seg.pLinedef->pFrontSidedef;
+        pBackSidedef = seg.pLinedef->pBackSidedef;
+    }
+```
+Note: I just noticed I pushed the above code in an earlier week, it should have been pushed this week with the explanation.  
+
+With the first issue out of the way, there is another issue we need to handle: maintaining ceiling and floor height. Imagine drawing a Portal (top section and/or bottom section). As you are drawing Segs you need to draw what is behind them.  
+ 
+From the previous week, did you notice that the four pillars look taller than how they look in the original DOOM?  
+
+![Wall top](./img/screen1.png)  
+
+This is due to the ceiling and floors of the Segs that are in front of and behind the clipped Seg (in other words, there is a ceiling or a floor that blocks you from seeing this). 
+The following animation shows the ceiling and the floor for the Segs where the player spawns (those ceilings and floors are not clipping each other).
+
+![No Clip](./img/no_clip.gif)  
+
+Looking at the same problem from the Portal's point of view, Portals are see-through, so you have to draw what is behind it, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
+We will have two vectors that will keep track of every Y height for every X on the screen.
+
+``` cpp
+    std::vector<int> m_FloorClipHeight;
+    std::vector<int> m_CeilingClipHeight;
+```
+
+and on initialization 
+``` cpp
+    // m_iRenderXSize = 320
+    m_CeilingClipHeight.resize(m_iRenderXSize);
+    m_FloorClipHeight.resize(m_iRenderXSize);
+```
+
+on each frame start we will set them all to their minimum values
+
+``` cpp
+    std::fill(m_CeilingClipHeight.begin(), m_CeilingClipHeight.end(), -1);
+    std::fill(m_FloorClipHeight.begin(), m_FloorClipHeight.end(), m_iRenderYSize);
+```
+
+Now, while we are drawing Segs we should update those two vectors.
+
+Let’s jump to the code and explain what's happening as we go.
 
 ## Goals
-* Calculate Wall height the DOOM way  
+* Refactoring
+* Clip ceilings and floors
+* Draw Portals
 
-## Polar Coordinates 
-To understand the code, I had to look at things as black boxing without trying to understand how they internally work.  
-Before we move on, we must understand what "polar coordinates" mean.  
-
-The most commonly used coordinate system is Cartesian: define a point using X and Y. In simple English, you define a point by how far left or right and how far up or down it is.  
-Cartesian coordinates:   
-
-![Cartesian](./img/cartesiancoordinate.png)   
-
-Now, let's look at what polar coordinates mean. Polar coordinates use a distance and an angle to define a point location, how far away it is, and at which angle.   
-Polar coordinates:   
-
-![Polar](./img/polarcoordinates.png)   
-
-So, with that being said, expect a point being defined by distance and angle!   
-
-## Projection 
-In the previous approach (Week014), the approach was to calculate the distance to a point and evaluate the proportional value on the screen. Original/Chocolate DOOM code does the same, but with a different approach: it finds the scaling factor.   
-
-Let's start by understanding what scaling means. Keep in mind that we are focusing on the horizontal properties of an object.   
-The screen is 160 units away from the player. That means anything you see that is exactly at the screen location will not be scaled (it should be drawn on screen with 1 pixel = 1 world unit).   
-For example, if an object is 50 units high, then it should be drawn as 50 pixels on screen.  
-Now, let's move to another example. Let's say this object has moved to be at 320 units away from the player. How do you expect it to be scaled?   
-In a proportional world, the distance has doubled which means the player is further away from the object, which makes it look much smaller on the screen.   
-To calculate the scale, divide 160 units (where player sees it at 100% scale) by the distance of the object which is now 320.  This comes out to be scaled at 0.5 or (50%).  
-Note: I’m assuming that the following objects show at the center of the screen.   
-With this logic in mind, implementing this on walls should be very simple; find the distance to the screen at the same angle to wall edge (V1) and divide it by the distance to wall edge (V1) to get your factor!  
-
-![Try 1](./img/try_1.png)  
-
-Do this for V1 and V2 and you will be able to draw the wall. Simple? That is what DOOM does, but with clipping partial Segs in mind.  
-
-## The Normal   
-The code doesn't look at the line seg, it looks at the entire line. A line segment has a starting point and an ending point while a line has no starting or end point (it stretches to infinity).   
-Let's look at a segment example   
-
-![Example 1](./img/example_1.png)  
-
-We are interested in the wall denoted by V1 at (928, -3392) and V2 at (928, -3360)  
-Keep in mind we know that V1 exists in the wall (Seg) we care about!   
-Now, forget it is a line segment and think about it as a line!   
-
-![Example 2](./img/example_2.png)   
-
-In the above example V1 and V2 would be viewable by the player. We can simply use the distance formula to calculate the distance to V1 (Same way we did in Week014), but what about if V1 or V2 is outside the screen area?  
-
-![Partial Seg](./img/partseg.png)   
-
-The rendering will not be correct for partially viewable segments.  
-So, we need to decouple V1 and V2 from the calculation; instead of calculating the distance to V1, we would calculate the intersection of the FOV with the segment. To implement this, we need a way to calculate points on the line without V1 or V2 being involved. This is where the normal to the wall would help.   
-The normal is simply a line that is perpendicular to the line slope. The Seg slope is already available in the Seg data which is loaded from the WAD.   
-
-The normal will help us create a right-angle triangle no matter what the angle of the wall is.  
-
-![right-angle](./img/right.png)  
-
-Notice that if we have the right-angle triangle (using the normal), then you can calculate the distance of side 1, 2 or 3 (given the angle).  
-And instead of calculating the distance using X and Y coordinates for V1 or V2 we can use the V1 and V2 screen X coordinates' angle to calculate the distance.  
-
-```
-Note: 
-Remember the X coordinate was clipped so if V1 is outside the screen it was clipped to be drawn at X = 0 with angle 45, and if V2 was outside the screen it was clipped to be drawn at 319 with angle -45.
-We can use this to our advantage.  
-```
-
-Let's continue using our example by adding a normal to the Seg  
+## Code
+First things first, clean up! I noticed that I have been passing a lot of parameters around, so I grouped them up in a struct and just pass a pointer to that struct.
 
 ``` cpp
-Angle SegToNormalAngle = seg.SlopeAngle + Angle90;
+struct FrameRenderData
+    {
+        float DistanceToV1;
+        float DistanceToNormal;
+        float V1ScaleFactor;
+        float V2ScaleFactor;
+        float Steps;
+
+        float FrontSectorCeiling;
+        float FrontSectorFloor;
+        float CeilingStep;
+        float CeilingEnd;
+        float FloorStep;
+        float FloorStart;
+
+        float BackSectorCeiling;
+        float BackSectorFloor;
+
+        bool bDrawUpperSection;
+        bool bDrawLowerSection;
+
+        float UpperHeightStep;
+        float iUpperHeight;
+        float LowerHeightStep;
+        float iLowerHeight;
+
+        bool UpdateFloor;
+        bool UpdateCeiling;
+    };
 ```
 
-The slope of this Seg (line) is 90! Just add 90 to that to get the normal to that line (Normal angle = 90 + 90 = 180)   
+Now, we should start processing Portal Segs. Since we used such a check ```if (seg.pBackSector == nullptr)``` to determine a solid Seg you would expect everything to be a Portal Seg. However, that is not the case. One case is when doors are Portals, so we want to handle them in a special way!
+So, one alternative is to check if the there is a change in ceiling or floor height between the front and back Sector (after all, that is what makes a wall a Portal, a difference between these two heights).
 
-![Example 3](./img/example_3.png)   
-
-The normal can be drawn anywhere on the line, but we care that it goes though the player. After all, we are trying to project relative to the player's location.    
-Note: The normal that is calculated will be true for any segment on the line, and not only V1 or V2 (do you see that we started decoupling?). But, if we want to be completely decoupled from V1 or V2 (and form a right-angle triangle) then we need to find the length from the normal to the player.    
-
-![Example 4](./img/example_4.png)   
-
-We have some givens we could make use of to find that out.  
-Let's create a right-angle triangle and find out the length of that segment. Add a segment from V1 to the player (I promise we will decouple V1 by using V1 just be patient).  
-
-![Example 5](./img/example_5.png)  
-
-We can find the angle at the top of the triangle easily since we have all the givens  
 
 ``` cpp
-    Angle NomalToV1Angle = SegToNormalAngle.GetValue() - V1Angle.GetValue();
+    // function AddWallInFOV
+    // Windowed walls
+    if (seg.pFrontSector->CeilingHeight != seg.pBackSector->CeilingHeight ||
+        seg.pFrontSector->FloorHeight != seg.pBackSector->FloorHeight)
+    {
+        ClipPassWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+        return;
+    }
 ```
 
-Now it is even more easy to find the angle at the lower right corner of the triangle  
+Now, what we want to do when we detect that a Seg is Portal, is to find out if a solid wall already fills in that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function will think the Seg we are passing in is a solid wall and will fill the area that is supposed to be a Portal, which is something we don't want to do. One solution to this problem is to change ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions are the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
 
 ``` cpp
-    // Total sum of angles in a triangle is 180
-    // We already know that one of them is 90
-    // and we just calculated another one
-    // so 180 - 90 - NomalToV1Angle
-    Angle SegToPlayerAngle = Angle90 - NomalToV1Angle;
-```
-
-Now that we have all three angles, we can easily calculate the length of one side (V1) to the player, by simply using the distance formula.  
-
-``` cpp
-    // using the location of V1 and player we can 
-    float DistanceToV1 = m_pPlayer->DistanceToPoint(*seg.pStartVertex);
-```
-
-Now, it should be simple trigonometry to find out the length of the normal  
-
-``` cpp
-    float DistanceToNormal = SegToPlayerAngle.GetSinValue() * DistanceToV1;
-``` 
-
-Let's move on to calculating the scaling factor and see how we can put this to use!  
-
-So, we want to find the scale of the wall at the point V1 (without using V1 coordinates).  
-Let's start by finding the distance to the projection screen; it should be easy, and we have done that back in week014 (when calculating for fish eye correction). We know the distance to the screen is 160 and we know the angle from the lookup table.  
-
-![Example 6](./img/example_6.png)  
-
-So that makes our first equation   
-
-```
-// m_iDistancePlayerToScreen = 160
-// ScreenXAngleCos: The angle from the center of the screen, forming a right-angle triangle
-m_iDistancePlayerToScreen / ScreenXAngleCos
-```
-
-Now, we care about finding the full length at the same exact angle of the screen, but by utilizing the normal we calculated; in other words, find the distance from the player to V1, yes, V1. Does that sound bizarre? We are trying to re-calculate the distance to V1, but using angles this time (polar coordinates). Again, the reason for this is to clip it in case it is outside the FOV.  
-Now that we have the base of the right-angle triangle, we need to calculate the angle between the normal and the new projected line to V1 (to form a right-angle triangle), which I will call SkewAngle.  
-
-``` cpp
-Angle SkewAngle = m_ScreenXToAngle[VXScreen] + m_pPlayer->GetAngle() - SegToNormalAngle;  
-```
-
-Using cosine, we can find the full length to what is/was "V1"   
-
-![Example 7](./img/example_7.png)  
-
-This makes the second equation  
-
-``` 
-DistanceToNormal / SkewAngleCos
-```
-
-Notice V1 didn't come to play anymore and we just used the angles and distances to points.  
-Dividing those two equations would give us the factor for scaling V1  
-
-```
-(m_iDistancePlayerToScreen / ScreenXAngleCos)  divided by (DistanceToNormal / SkewAngleCos)
-```
-
-Simplifying the above equation (fraction division to multiplication, flip right side)   
-
-```
-float ScaleFactor = (m_iDistancePlayerToScreen * SkewAngleCos) / (DistanceToNormal * ScreenXAngleCos);
-```
-
-That gives us the scaling factor.  
-
-All of the scaling code in one piece!  
-
-``` cpp
-float ViewRenderer::GetScaleFactor(int VXScreen, Angle SegToNormalAngle, float DistanceToNormal)
+void ViewRenderer::ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
 {
-    static float MAX_SCALEFACTOR = 64.0f;
-    static float MIN_SCALEFACTOR = 0.00390625f;
-
-    Angle Angle90(90);
-
-    Angle ScreenXAngle = m_ScreenXToAngle[VXScreen];
-    Angle SkewAngle = m_ScreenXToAngle[VXScreen] + m_pPlayer->GetAngle() - SegToNormalAngle;
-
-    float ScreenXAngleCos = ScreenXAngle.GetCosValue();
-    float SkewAngleCos = SkewAngle.GetCosValue();
-    float ScaleFactor = (m_iDistancePlayerToScreen * SkewAngleCos) / (DistanceToNormal * ScreenXAngleCos);
-
-    if (ScaleFactor > MAX_SCALEFACTOR)
-    {
-        ScaleFactor = MAX_SCALEFACTOR;
-    }
-    else if (MIN_SCALEFACTOR > ScaleFactor)
-    {
-        ScaleFactor = MIN_SCALEFACTOR;
-    }
-
-    return ScaleFactor;
+    ....
 }
 ```
-Notice: The scaling is clamped between 64 and 0.00390625, this is a texture thing (Which will come in an upcoming week).
 
-This example looks simple, and the base of the triangle is nicely at 180 degrees, but that is not the case for most Segs.   
+Now, after we know that the partial Seg could possibly be drawn in that area we will require some flags to help us decide of what to keep track.
 
-This algorithm boils down to: calculate the distance to the screen at a specific angle, calculate the distance to the Seg at the same specific angle using the normal, and divide those values to get the ratio.  
-
-## Coding
-After all the math and scaling is done, it is time to draw.  
-Once we have the scale for V1 and for V2 we can easily interpolate the values in between.   
+This is where the function ```CeilingFloorUpdate(RenderData, seg);``` comes into play.
 
 ``` cpp
-float Steps = (V2ScaleFactor - V1ScaleFactor) / (V2XScreen - V1XScreen);
+void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg)
+{
+    // Is it a solid wall?
+    if (!seg.pBackSector)
+    {
+        RenderData.UpdateCeiling = true;
+        RenderData.UpdateFloor = true;
+        return;
+    }
+
+    // Is there difference in ceiling height?
+    if (RenderData.BackSectorCeiling != RenderData.FrontSectorCeiling)
+    {
+        RenderData.UpdateCeiling = true;
+    }
+    else
+    {
+        RenderData.UpdateCeiling = false;
+    }
+
+    // Is there difference in floor height?
+    if (RenderData.BackSectorFloor != RenderData.FrontSectorFloor)
+    {
+        RenderData.UpdateFloor = true;
+    }
+    else
+    {
+        RenderData.UpdateFloor = false;
+    }
+
+    // Is this a closed door?
+    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
+    {
+        RenderData.UpdateCeiling = RenderData.UpdateFloor = true;
+    }
+
+    // Is the ceiling below the player? (ceiling is always above you)
+    if (seg.pFrontSector->CeilingHeight <= m_pPlayer->GetZPosition())
+    {
+        RenderData.UpdateCeiling = false;
+    }
+
+    // Is the floor above the player? (floor is always below you)
+    if (seg.pFrontSector->FloorHeight >= m_pPlayer->GetZPosition())
+    {
+        // above view plane
+        RenderData.UpdateFloor = false;
+    }
+}
 ```
 
+Now, we need to update our ```CalculateWallHeight``` to handle the back Sector. If you remember, it already handles the front Sector from the previous week.
+These are similar calculations as to what we have done on the front Sector.
+
 ``` cpp
-    float Steps = (V2ScaleFactor - V1ScaleFactor) / (V2XScreen - V1XScreen);
-    float Ceiling = seg.pFrontSector->CeilingHeight - m_pPlayer->GetZPosition();
-    float Floor = seg.pFrontSector->FloorHeight - m_pPlayer->GetZPosition();
+void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
+{
+    ...
 
-    float CeilingStep = -(Ceiling * Steps);
-    float CeilingEnd = m_HalfScreenHeight - (Ceiling * V1ScaleFactor);
+    if (seg.pBackSector)
+    {
+        RenderData.BackSectorCeiling = seg.pBackSector->CeilingHeight - m_pPlayer->GetZPosition();
+        RenderData.BackSectorFloor = seg.pBackSector->FloorHeight - m_pPlayer->GetZPosition();
 
-    float FloorStep = -(Floor * Steps);
-    float FloorStart = m_HalfScreenHeight - (Floor * V1ScaleFactor);
+        CeilingFloorUpdate(RenderData, seg);
 
-    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
-    SetDrawColor(color.r, color.g, color.b);
+        // Is the Ceiling visible?
+        if (RenderData.BackSectorCeiling < RenderData.FrontSectorCeiling)
+        {
+            RenderData.bDrawUpperSection = true;
+            RenderData.UpperHeightStep = -(RenderData.BackSectorCeiling * RenderData.Steps);
+            RenderData.iUpperHeight = round(m_HalfScreenHeight - (RenderData.BackSectorCeiling * RenderData.V1ScaleFactor));
+        }
 
-    int iXCurrent = V1XScreen;
+        // Is the floor visible
+        if (RenderData.BackSectorFloor > RenderData.FrontSectorFloor)
+        {
+            RenderData.bDrawLowerSection = true;
+            RenderData.LowerHeightStep = -(RenderData.BackSectorFloor * RenderData.Steps);
+            RenderData.iLowerHeight = round(m_HalfScreenHeight - (RenderData.BackSectorFloor * RenderData.V1ScaleFactor));
+        }
+    }
+
+    RenderSegment(seg, V1XScreen, V2XScreen, RenderData);
+}
+```
+
+Now, with the drawing function cleaned up, the drawing of upper and lower sections is basically the same. The drawing of the middle section is also very similar.
+The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next week but, for now, let’s set both the upper and lower sections of each Portal to same color.  
+
+``` cpp
+void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
+{
+    SDL_Color color;
+    int iXCurrent;
+
+    iXCurrent = V1XScreen;
+
+    SelectColor(seg, color);
+
     while (iXCurrent <= V2XScreen)
     {
-        SDL_RenderDrawLine(m_pRenderer, iXCurrent, CeilingEnd, iXCurrent, FloorStart);
-        ++iXCurrent;
+        int CurrentCeilingEnd = RenderData.CeilingEnd;
+        int CurrentFloorStart = RenderData.FloorStart;
 
-        CeilingEnd += CeilingStep;
-        FloorStart += FloorStep;
+        // Validate with the height of ceiling and floor is within range
+        if (!ValidateRange(RenderData, iXCurrent, CurrentCeilingEnd, CurrentFloorStart))
+        {
+            continue;
+        }
+
+        // Is it a Portal?
+        if (seg.pBackSector)
+        {
+            DrawUpperSection(RenderData, iXCurrent, CurrentCeilingEnd);
+            DrawLowerSection(RenderData, iXCurrent, CurrentFloorStart);
+        }
+        else
+        {
+            // It is solid
+            DrawMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
+        }
+
+        RenderData.CeilingEnd += RenderData.CeilingStep;
+        RenderData.FloorStart += RenderData.FloorStep;
+        ++iXCurrent;
+    }
+}
+```
+
+There is a nice optimization in the code, handle closed doors as a solid wall
+
+``` cpp
+    // AddWallInFOV
+    // Handle closed door
+    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight
+        || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
+    {
+        ClipSolidWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+        return;
     }
 ```
 
-After interpolating the height of the wall between V1XScreen and V2XScreen, we can draw a line for every screen X value between V1XScreen and V2XScreen.  
+One final thing, let’s give the player a way to raise and lower their altitude so that we can fly around the map using the Z and X buttons.
+
+``` cpp
+void Player::Fly()
+{
+    m_ZPosition += 1;
+}
+
+void Player::Sink()
+{
+    m_ZPosition -= 1;
+}
+```
 
 Now run  
 
-![Screen](./img/screen.png)   
+![Screen](./img/screen.png)  
 
-Comparing to original DOOM
+Comparing the progress
 
-![Fade](./img/fade.gif)   
+![Play](./img/morph.gif)  
 
-Moving around the map  
+Now moving around
 
-![Screen](./img/play.gif)  
+![Play](./img/play.gif)  
 
-We can enable the previous week's height calculation (as a white boarder) to compare it to Doom's technique.
-It is now easy to notice and compare both ways.  
-
-![Screen](./img/screen_2.png)  
-
-Looking at this makes me feel very guilty for my poor partial Seg handling, but overall you can see that in most of the cases it works well.  
+It unbelievable that simply handling those two types of walls renders the Mission, it is very impressive to see a 2D map transform into a 3D view this way. It makes me wonder how they came up with this back in 1993.  
+All those ceilings and floors that are drawn in black are known as Visplanes. But, those are for an upcoming week.
+What I would like to do now is to give the DOOM guy proper walking code. You may have noticed that his Z coordinate doesn't change when he goes up or down stairs.
 
 ## Other Notes
-In the previous week, I mentioned that DOOM's way was more accurate in calculating wall heights (that was before me understanding this new approach). Actually, I take that back, it is not exactly true, there is an error rate caused by the low precision due to the X to screen angle lookup table. But, does it really matter? No, it doesn't, the error rate is really small and won't be noticeable.  
-
-Notice: this error will only differ in a few pixels (in our current 200-pixel height resolution).
-
-Using DIY Doom code, here is an idea about the error rate for some vertices: 
-Player standing (1056, -3616)
-Now compare the distance from player to V1 using distance formula and using the polar lookup table.
-
-| V1 (X,Y)    | Distance | Polar   |
-|-------------|----------|---------|
-| 928, -3392  | 257.992  | 258.908 |
-| 1184, -3360 | 286.217  | 286.217 |
-| 896, -3392  | 275.274  | 275.042 |
-| 1184, -3392 | 257.992  | 258.39  |
-| 1184, -3104 | 527.758  | 527.758 |
-| 1344, -3200 | 505.964  | 493.458 |
-| 896, -3104  | 536.418  | 536.418 |
-| 928, -3104  | 527.758  | 540.503 |
-| 1184, -3072 | 558.856  | 553.938 |
-| 1344, -2880 | 790.342  | 786.087 |
-| 832, -2944  | 708.35   | 708.509 |
-| 832, -2944  | 708.35   | 719.612 |
-| 968, -2880  | 741.242  | 740.643 |
-| 704, -2944  | 758.609  | 749.45  |
-| 1248, -2528 | 1104.81  | 1140.87 |
-| 512, -3136  | 725.49   | 693.303 |
-| 680, -3104  | 635.232  | 634.286 |
-| 1344, -3264 | 454.805  | 456.329 |
-| 1384, -2592 | 1075.25  | 1084.1  |
-| 2208, -2304 | 1745.98  | 1776.13 |
-| 2304, -2304 | 1810.76  | 1805.76 |
-
-![Screen Error](./img/screen_error.png)  
-
-I have extracted the original lookup table from DOOM code and stored it in array ```classicDoomScreenXtoView``` just to see the difference between the lookup table and the one I created. There is a boolean you can set to switch between lookup tables.
-
-Let's have a look at ```R_ScaleFromGlobalAngle```.  
-It is called as the following ```rw_scale = R_ScaleFromGlobalAngle(viewangle + xtoviewangle[start]);```, notice ```visangle = viewangle + xtoviewangle[start]```  
-
-``` cpp
-//
-// R_ScaleFromGlobalAngle
-// Returns the texture mapping scale
-//  for the current line (horizontal span)
-//  at the given angle.
-// rw_distance must be calculated first.
-//
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
-{
-    fixed_t		scale;
-    angle_t		anglea;
-    angle_t		angleb;
-    int			sinea;
-    int			sineb;
-    fixed_t		num;
-    int			den;
-
-    anglea = ANG90 + (visangle-viewangle);
-    angleb = ANG90 + (visangle-rw_normalangle);
-
-    // both sines are allways positive
-    sinea = finesine[anglea>>ANGLETOFINESHIFT];	
-    sineb = finesine[angleb>>ANGLETOFINESHIFT];
-    num = FixedMul(projection,sineb)<<detailshift;
-    den = FixedMul(rw_distance,sinea);
-
-    if (den > num>>FRACBITS)
-    {
-	scale = FixedDiv (num, den);
-
-	if (scale > 64*FRACUNIT)
-	    scale = 64*FRACUNIT;
-	else if (scale < 256)
-	    scale = 256;
-    }
-    else
-	scale = 64*FRACUNIT;
-	
-    return scale;
-}
-```
-
-Let's have a look at ```anglea```, and simplify it  
-
-```
-anglea = ANG90 + (visangle-viewangle);
-anglea = ANG90 + (viewangle + xtoviewangle[start] - viewangle);
-anglea = ANG90 + xtoviewangle[start];
-```
-
-```anglea``` is simply ```xtoviewangle[start]```, the addition of 90 degree is to use a sine instead of cosine.  
-
-Now looking at ```angleb````  
-
-```
-angleb = ANG90 + (viewangle + xtoviewangle[start] - rw_normalangle);
-```
-
-```angleb``` the angle be will represent the xtoviewangle to the Normal side of the triangle. It is important to have the angle start from ```xtoviewangle[start]```, both calculations should share the same side of the triangle.  
-
-![Choco DOOM](./img/chocodoom.png)   
-
-The above code is implemented in the original Chocolate DOOM in r_segs.c, R_StoreWallRange and r_main.c, R_ScaleFromGlobalAngle.  
-Understanding this part of the code in DOOM original/Chocolate code was difficult and here are the factors that I believe contributed to the difficulty  
-* I have not seen someone used such an approach to projection and clipping.  
-* The function that has this implemented does a lot of stuff (texture mapping, handling solid walls, handling portals, etc.).  
-* Looking at a simplified mathematical equation, it is very hard to guess the original meaning before simplification.   
-* Using sine instead of cosine sin(Q)= cos(90 - Q); in our case +90 would also work due to the symmetry around 0.  
-The original code mostly used Sine instead of Cosine, due to the fact that rendering was one of the first things implemented in the game and at that time only the Sine lookup table existed, not the Cosine (again, this is just a wild guess).   
-
-After understanding what is going on, it is a simple and easy algorithm to implement.  
-What I like about this DOOM technique is its efficiency; it uses square root only once per Seg, and only a few divisions.  
-
-Now, we need to focus on portals (windowed walls).
+The above code is implemented in the original Chocolate DOOM in r_segs.c, R_StoreWallRange, and r_main.c. This is just part of what this function does.
+Drawing Portals was easier than I had expected. It may sound complex at the beginning, but if you break it down and go slow it should be easy to understand
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-[SOHCAHTOA](https://www.mathsisfun.com/algebra/sohcahtoa.html)  
+https://doom.fandom.com/wiki/Seg

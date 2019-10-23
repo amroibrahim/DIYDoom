@@ -19,6 +19,8 @@ public:
     void MoveBackward();
     void RotateLeft();
     void RotateRight();
+    void Fly();
+    void Sink();
     void RenderAutoMap();
 
     int GetID();
