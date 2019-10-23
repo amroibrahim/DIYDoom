@@ -11,7 +11,7 @@ The WAD file has 3 main parts, header, lumps, and directories.
 1. Header  
    This contains basic information about the WAD file and where are the directories offset.  
 2. Lumps  
-   This is where the game assets gets stored, map data, sprites, music, etc.  
+   This is where the game assets get stored, map data, sprites, music, etc.  
 3. Directories  
    This is an organizational structure to find data in the lump section.  
 ```
@@ -71,9 +71,9 @@ We will also need a simple main function that calls those classes.
 Note: this design might not be optimal but let's tune it as we need to.  
 
 ## Coding  
-So, let's start by creating an empty C++ Project, In a visual studio just click File-> New -> Project. let's name it "DIYDoom".  
+So, let's start by creating an empty C++ Project, in a visual studio just click File-> New -> Project. let's name it "DIYDoom".  
 
-![New Project](../img/newproject.PNG)  
+![New Project](./img/newproject.PNG)  
 
 let's add two new classes WADLoader, and WADReader.  
 let's start by implementing WADLoader.  
@@ -138,7 +138,7 @@ m_WADFile.read((char *)m_WADData, length); // read the file and place it in m_WA
 m_WADFile.close();
 ```
 
-Maybe you have noticed that I have used unint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using unint8_t garauntees the size of a byte (8 bits which are hinted by the name).  
+Maybe you have noticed that I have used unint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using unint8_t guarantees the size of a byte (8 bits which are hinted by the name).  
 If we want to allocate 2 bytes (16 bits) we would use unint16_t, which we will come across later! Using such types makes it platform independent.  
 Just to clarify, if we use "int" the actual size of the int in memory will depend on your system. Compiling an "int" under a 32-bit configuration will provide a memory size of 4 bytes (32 bits), and if you compile same code under 64-bit it will provide you with a memory size of 8 bytes (64 bits)! To make things worse if you compile this under a 16-bit platform (maybe you are a DOS fan) it will give you 2 bytes (16 bits)!  
 
@@ -175,14 +175,14 @@ Oh! A console window that just opens for a few seconds! Nothing much to see... h
 I have an idea! Let's look at the memory and see how it looks like! Maybe we can see something special there!  
 First, let's place a breakpoint by double-clicking on the left of the line number, you should see something like this.  
 
-![Breakpoint](../img/breakpoint.png)
+![Breakpoint](./img/breakpoint.png)
 
 I placed my breakpoint just after reading all the bytes from the file, so I can look at that array in memory and see what is loaded in it.  
 Now let's click run again!  
 In the auto window, I can see the first few bytes! It is reading "IWAD" in the first 4 bytes! WOW! It is working! I never thought this day would come!  
 Come on! Pull yourself together there is still more to do!  
 
-![Debug](../img/debug.png)
+![Debug](./img/debug.png)
 
 ## Reading the header
 The header has a total of 12 bytes (0x00 to 0x0b), this 12-bytes is divided to 3 groups, first 4 bytes is the WAD type and usually it is either "IWAD" or "PWAD", IWAD Should be official WAD released officially by ID Software, "PWAD" should be used by Mods. In other words, it is just a way to identify if this WAD file is an official release or is it made by modders. Note the string is not NULL terminated so be careful!  
@@ -254,7 +254,7 @@ bool WADLoader::ReadDirectories()
 }
 ```
 let's run and see if this is working!
-![Run 1](../img/run1.PNG)
+![Run 1](./img/run1.PNG)
 
 Cool! It is easy to validate the IWAD string, but do the other 2 numbers look correct, let's try to read the directories using that offset and see if it works!  
 
@@ -291,21 +291,21 @@ for (unsigned int i = 0; i < header.DirectoryCount; ++i)
 Let's run this now and see what happens.  
 Wow! A big list of directories.  
 
-![Run 2](../img/run2.PNG)  
+![Run 2](./img/run2.PNG)  
 
 From the lump name, we can assume that we were able to read the data correctly, but maybe there is a better way to validate this.  
 We can have a look at the WAD Directory entries using Slade3.  
 
-![Slade](../img/slade.PNG)  
+![Slade](./img/slade.PNG)  
 
 It seems the name, and the lump size matches the output of our code.  
 I think we are good for today!  
 
 ## Other Notes
 * At some point I thought using a vector to store the directories might not be smart! Why not use a Map? It will be faster to retrieve data than linearly searching the vector. That is a bad idea. Using a map will not keep track of the directory’s entry order, and we need that information later to retrieve the correct data.  
-Also, one final miss conception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup, and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
+Also, one final miss conception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
 * Loading all the WAD files to memory is not the optimal way to do this. It would make more sense to just read the header and directories to memory, then based on the code flow needs we would go back to the WAD file and load the recourses from the disk. Hopefully at some point we learn more about caching.  
-__DOOMReboot__ *Completely disagree. 15MB of RAM is absolutely nothing these days and reading from it will be significantly faster than the voluminous fseeks you're going to find yourself using by the time you're through loading everything required for a level. It has shaved off at least a second or two of load time (for me, I've got entire load time now down to under 20ms). fseeks hit the OS. Which likely has the file in RAM cache, but may not. Even if it is, that's a lot of overhead and will mess up a lot of WAD reads in terms of CPU cache. The best part is that you can hybrid the load methods and have all contiguous WAD data for a level fitting into modern processors' L3 cache where savings are incredible.*  
+__DOOMReboot__ *Completely disagree. 15MB of RAM is absolutely nothing these days and reading from it will be significantly faster than the voluminous fseeks you're going to find yourself using by the time you're through loading everything required for a level. It has shaved off at least a second or two of load time (for me, I've got entire load time now down to under 20ms). fseeks hit the OS. Which likely has the file in RAM cache but may not. Even if it is, that's a lot of overhead and will mess up a lot of WAD reads in terms of CPU cache. The best part is that you can hybrid the load methods and have all contiguous WAD data for a level fitting into modern processors' L3 cache where savings are incredible.*  
 I still think it is worth learning how to create a caching system, and how DOOM implemented it. 
 
 ## Source code  
