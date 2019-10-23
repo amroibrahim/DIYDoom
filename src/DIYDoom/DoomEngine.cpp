@@ -102,6 +102,16 @@ void DoomEngine::UpdateKeyStatus(const Uint8* KeyStates)
     {
         m_pPlayer->RotateRight();
     }
+
+    if (KeyStates[SDL_SCANCODE_Z])
+    {
+        m_pPlayer->Fly();
+    }
+
+    if (KeyStates[SDL_SCANCODE_X])
+    {
+        m_pPlayer->Sink();
+    }
 }
 
 void DoomEngine::KeyReleased(SDL_Event &event)
