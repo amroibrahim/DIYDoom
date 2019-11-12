@@ -27,6 +27,7 @@ public:
     void SetLumpIndex(int iIndex);
     void Init();
 
+    int GetPlayerSubSectorHieght();
     int GetXMin();
     int GetXMax();
     int GetYMin();

@@ -134,7 +134,7 @@ void  DoomEngine::Quit()
 
 void DoomEngine::Update()
 {
-
+    m_pPlayer->Think(m_pMap->GetPlayerSubSectorHieght());
 }
 
 bool DoomEngine::IsOver()

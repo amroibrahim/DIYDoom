@@ -1,341 +1,198 @@
-__Editor:__ DOOMReboot ([twitter](https://twitter.com/DOOMReboot))  
+# Week 017 - History
+Do you think all the history is true? I don't believe so. Keeping history aside we need to cover a different type of history but before we jump in lets recap.  
+So up to last week we were able to render portals and solid segments, what are doing at this point is very close to how DOOM renders a frame. Here is a slow animation to what we currently do.  
 
-# Week 016 - Portals
-Now it is time to talk about the second type of walls, Portals, or as I like to call them "Windows".  
+![Current rendering](./img/currentrender.gif)  
 
-Before explaining what Portals are, let's recap a few things about solid walls.  
-* Solid walls are one-sided Linedefs (you are not supposed to go behind them).
-* Once a solid wall is drawn at an X location on the screen, nothing else can be drawn on top of that.  
-* A solid wall has three parts, ceiling, the solid wall itself (which now we will start calling Middle Section), and the floor.  
-  
-So, what are Portals? Portals are walls with an opening where you can see through them. They can look like a passageway, a see-through barrier (like grating if a texture is provided), and a step and/or decrease in ceiling height.
+Due to drawing that way we were forced to draw both top and bottom with exact same color (using upper texture as a random color key), switching color in between was very slow affecting frame rate (SDL_SetRenderDrawColor is performance very expensive, what I tested was draw a single line on top section switch color, draw a single line in bottom section switch color again and so on until we are done with both top and bottom section).  
 
-![Portals](./img/portal.png)  
-  
-There are two types of Portals, ones that you can see through, and ones you can partially see through.   
-Portals are parts of a Sector (a sector consists of all connected, surrounding Seg)s. A Sector defines the ceilings and floors; a Sector defines both heights and textures of both ceilings and floors).
+With the way we render a frame now is fine, but there is a lot of important information that we lost. For example, we have simplified the partial see thought portal as a see though portal, we can’t draw those in a front to back order, it is very hard to draw a nearby see though portal then try and draw what is behind it, it is much easier sometimes to draw object at the back first then draw object in front of them, even if you are going to overdraw each other.   
+Notice that now we are looking for a different behavior, we used to draw near to far, but for some cases we need to draw far to near, this is where "history" comes to play, we need somehow to keep track of what was drawn and the order of drawing.  
+The classic / Chocolate DOOM engine keeps track of what is drawn in an array called "drawsegs" aka "drawn segments". To read more about drawsegs it is covered in Fabian DOOM engine book v1.1 section 5.12.9.2.  
+The idea behind is is very simple, think about it like a history log, when ever you draw something on the screen just add it to an array, and they what is drawn first with show up first in the array.  
+We will do a little bit of modification to that, what we will do is keep track of things (and not draw them) and at the end we draw every thing (remember for us this is temporary change of behavior we will revert this at some point, and use the order of segs similar to what it is used in classic / Chocolate DOOM). Our implementation will not be identical to drawsegs, we will modify it as we go and need.  
 
-![Walls](./img/walls.png)  
+One other thing I would like to implement this week is giving the player the correct height, we did implement a fly and sink last week, but I would love to see the player just go upstairs and downstairs (with minimal animation). In E1M1 we are lucky that the player spawns on a floor with 0 height, if you switch to E1M3 you will see that when the player spawns the walls are halfway above his head.  
 
-Notice the top and bottom section of the Portal are not see-through.  
-
-Top view   
-
-![Wall top](./img/top.png)  
-
-The main difference between see-through Portals and partial see-through Portals, is the see-through part has a middle texture.  
-If you don't know me by now, simplicity is the key to understanding, so forget about the partial see-through walls and let’s assume that all Portals are just see-through (we will just ignore the middle texture).  
-
-So, with that simplification it should be easy to draw a Portal. It's similar to drawing solid walls, but instead of drawing one single solid wall (middle section), let's draw two solid sections: the top and bottom sections. We will not draw anything for the middle, but there is a catch!  
-
-Portals can be identified by having both a front Sector and a back Sector (since we see through the wall, we need to know some information about the floor and ceiling on the other side of the Portal).  
-In a single-sided Linedef (a solid wall), a single Seg is created which only has a front side, but two Segs are created for a two-sided Linedef, one for the front and one for the back. That means when we try to draw a Seg we must know if it is running along the front Sector or the back Sector. This is where the direction flag in the Seg data becomes handy. The direction flag indicates the type (direction) of the Seg.  
-
-Original/Chocolate Doom had a nice trick, it checks the direction flag and switches the front and the back, so let’s "borrow" that trick.
-In the function ```void Map::BuildSeg()```  
-
-``` cpp
-    Sidedef *pFrontSidedef;
-    Sidedef *pBackSidedef;
-
-    if (seg.Direction)
-    {
-        pFrontSidedef = seg.pLinedef->pBackSidedef;
-        pBackSidedef = seg.pLinedef->pFrontSidedef;
-    }
-    else
-    {
-        pFrontSidedef = seg.pLinedef->pFrontSidedef;
-        pBackSidedef = seg.pLinedef->pBackSidedef;
-    }
-```
-Note: I just noticed I pushed the above code in an earlier week, it should have been pushed this week with the explanation.  
-
-With the first issue out of the way, there is another issue we need to handle: maintaining ceiling and floor height. Imagine drawing a Portal (top section and/or bottom section). As you are drawing Segs you need to draw what is behind them.  
- 
-From the previous week, did you notice that the four pillars look taller than how they look in the original DOOM?  
-
-![Wall top](./img/screen1.png)  
-
-This is due to the ceiling and floors of the Segs that are in front of and behind the clipped Seg (in other words, there is a ceiling or a floor that blocks you from seeing this). 
-The following animation shows the ceiling and the floor for the Segs where the player spawns (those ceilings and floors are not clipping each other).
-
-![No Clip](./img/no_clip.gif)  
-
-Looking at the same problem from the Portal's point of view, Portals are see-through, so you have to draw what is behind it, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
-We will have two vectors that will keep track of every Y height for every X on the screen.
-
-``` cpp
-    std::vector<int> m_FloorClipHeight;
-    std::vector<int> m_CeilingClipHeight;
-```
-
-and on initialization 
-``` cpp
-    // m_iRenderXSize = 320
-    m_CeilingClipHeight.resize(m_iRenderXSize);
-    m_FloorClipHeight.resize(m_iRenderXSize);
-```
-
-on each frame start we will set them all to their minimum values
-
-``` cpp
-    std::fill(m_CeilingClipHeight.begin(), m_CeilingClipHeight.end(), -1);
-    std::fill(m_FloorClipHeight.begin(), m_FloorClipHeight.end(), m_iRenderYSize);
-```
-
-Now, while we are drawing Segs we should update those two vectors.
-
-Let’s jump to the code and explain what's happening as we go.
+![E1M3](./img/E1M3.png)
 
 ## Goals
-* Refactoring
-* Clip ceilings and floors
-* Draw Portals
+* Refactoring / Cleanup  
+* Lazy sector drawing  
+* Find the correct player eye-level height  
 
 ## Code
-First things first, clean up! I noticed that I have been passing a lot of parameters around, so I grouped them up in a struct and just pass a pointer to that struct.
+
+Let’s start by creating a struct to store the data we need for each segment, just simple store every line we need to draw.  
 
 ``` cpp
-struct FrameRenderData
+    struct SingleDrawLine
     {
-        float DistanceToV1;
-        float DistanceToNormal;
-        float V1ScaleFactor;
-        float V2ScaleFactor;
-        float Steps;
+        int x1;
+        int y1;
+        int x2;
+        int y2;
+    };
 
-        float FrontSectorCeiling;
-        float FrontSectorFloor;
-        float CeilingStep;
-        float CeilingEnd;
-        float FloorStep;
-        float FloorStart;
-
-        float BackSectorCeiling;
-        float BackSectorFloor;
+    struct FrameSegDrawData
+    {
+        Seg *seg;
 
         bool bDrawUpperSection;
         bool bDrawLowerSection;
+        bool bDrawMiddleSection;
 
-        float UpperHeightStep;
-        float iUpperHeight;
-        float LowerHeightStep;
-        float iLowerHeight;
-
-        bool UpdateFloor;
-        bool UpdateCeiling;
+        std::list<SingleDrawLine> UpperSection;
+        std::list<SingleDrawLine> LowerSection;
+        std::list<SingleDrawLine> MiddleSection;
     };
 ```
 
-Now, we should start processing Portal Segs. Since we used such a check ```if (seg.pBackSector == nullptr)``` to determine a solid Seg you would expect everything to be a Portal Seg. However, that is not the case. One case is when doors are Portals, so we want to handle them in a special way!
-So, one alternative is to check if the there is a change in ceiling or floor height between the front and back Sector (after all, that is what makes a wall a Portal, a difference between these two heights).
-
+Now we need to store this for every single segment we are going to draw  
 
 ``` cpp
-    // function AddWallInFOV
-    // Windowed walls
-    if (seg.pFrontSector->CeilingHeight != seg.pBackSector->CeilingHeight ||
-        seg.pFrontSector->FloorHeight != seg.pBackSector->FloorHeight)
-    {
-        ClipPassWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
-        return;
-    }
+std::list<FrameSegDrawData> m_FrameSegsDrawData;
 ```
 
-Now, what we want to do when we detect that a Seg is Portal, is to find out if a solid wall already fills in that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function will think the Seg we are passing in is a solid wall and will fill the area that is supposed to be a Portal, which is something we don't want to do. One solution to this problem is to change ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions are the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
+Now just add a helper function sore the data we need for a section (top/mid/bottom) of a segment   
 
 ``` cpp
-void ViewRenderer::ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
+void ViewRenderer::AddLineToSection(std::list<SingleDrawLine> &Section, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart)
 {
-    ....
+    SingleDrawLine line;
+    line.x1 = iXCurrent;
+    line.y1 = CurrentCeilingEnd;
+    line.x2 = iXCurrent;
+    line.y2 = CurrentFloorStart;
+    Section.push_back(line);
 }
 ```
 
-Now, after we know that the partial Seg could possibly be drawn in that area we will require some flags to help us decide of what to keep track.
-
-This is where the function ```CeilingFloorUpdate(RenderData, seg);``` comes into play.
+Now update the function that will do the rendering to call the AddLineToSection we just created.  
 
 ``` cpp
-void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg)
+void ViewRenderer::RenderUpperSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd, FrameSegDrawData &SegDrawData)
 {
-    // Is it a solid wall?
-    if (!seg.pBackSector)
-    {
-        RenderData.UpdateCeiling = true;
-        RenderData.UpdateFloor = true;
-        return;
-    }
+	...
+	AddLineToSection(SegDrawData.UpperSection, iXCurrent, CurrentCeilingEnd, iUpperHeight);
+	...
+}
+```
 
-    // Is there difference in ceiling height?
-    if (RenderData.BackSectorCeiling != RenderData.FrontSectorCeiling)
-    {
-        RenderData.UpdateCeiling = true;
-    }
-    else
-    {
-        RenderData.UpdateCeiling = false;
-    }
+Finally, add a function to draw off this history we created (you need to update your void ViewRenderer::Render to call the draw function last)  
 
-    // Is there difference in floor height?
-    if (RenderData.BackSectorFloor != RenderData.FrontSectorFloor)
+``` cpp
+void ViewRenderer::DrawSoredSegs()
+{
+    for (std::list<FrameSegDrawData>::iterator SegDrawData = m_FrameSegsDrawData.begin(); SegDrawData != m_FrameSegsDrawData.end(); ++SegDrawData)
     {
-        RenderData.UpdateFloor = true;
-    }
-    else
-    {
-        RenderData.UpdateFloor = false;
-    }
+        if (SegDrawData->bDrawUpperSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->UpperTexture);
+            DrawSection(SegDrawData->UpperSection);
+        }
 
-    // Is this a closed door?
-    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
-    {
-        RenderData.UpdateCeiling = RenderData.UpdateFloor = true;
-    }
+        if (SegDrawData->bDrawMiddleSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->MiddleTexture);
+            DrawSection(SegDrawData->MiddleSection);
+        }
 
-    // Is the ceiling below the player? (ceiling is always above you)
-    if (seg.pFrontSector->CeilingHeight <= m_pPlayer->GetZPosition())
-    {
-        RenderData.UpdateCeiling = false;
+        if (SegDrawData->bDrawLowerSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->LowerTexture);
+            DrawSection(SegDrawData->LowerSection);
+        }
     }
+}
 
-    // Is the floor above the player? (floor is always below you)
-    if (seg.pFrontSector->FloorHeight >= m_pPlayer->GetZPosition())
+void ViewRenderer::DrawSection(std::list<ViewRenderer::SingleDrawLine> &Section)
+{
+    for (std::list<SingleDrawLine>::iterator line = Section.begin(); line != Section.end(); ++line)
     {
-        // above view plane
-        RenderData.UpdateFloor = false;
+        SDL_RenderDrawLine(m_pRenderer, line->x1, line->y1, line->x2, line->y2);
     }
 }
 ```
 
-Now, we need to update our ```CalculateWallHeight``` to handle the back Sector. If you remember, it already handles the front Sector from the previous week.
-These are similar calculations as to what we have done on the front Sector.
+Now our rendering looks like  
+
+![Lazy rendering](./img/newrender.gif)  
+
+Again remember, the what was implemented last week was closer to what classic DOOM does, we will revert some of those changes at some point.  
+
+Now implementing player height calculation, this was much easier that I expected, if you have gone thought Week 006, 007, 008 you will find this a piece of cake.  
+
+Remember the part where you search for the sector the player is in? Once you find the sector, find out its height and add the player eye level to it.  
+
+So simple implement the search of player exactly like what we have done previously  
 
 ``` cpp
-void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
+int Map::GetPlayerSubSectorHieght()
 {
-    ...
-
-    if (seg.pBackSector)
+    int iSubsectorID = m_Nodes.size() - 1;
+    while (!(iSubsectorID & SUBSECTORIDENTIFIER))
     {
-        RenderData.BackSectorCeiling = seg.pBackSector->CeilingHeight - m_pPlayer->GetZPosition();
-        RenderData.BackSectorFloor = seg.pBackSector->FloorHeight - m_pPlayer->GetZPosition();
 
-        CeilingFloorUpdate(RenderData, seg);
+        bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iSubsectorID);
 
-        // Is the Ceiling visible?
-        if (RenderData.BackSectorCeiling < RenderData.FrontSectorCeiling)
+        if (isOnBack)
         {
-            RenderData.bDrawUpperSection = true;
-            RenderData.UpperHeightStep = -(RenderData.BackSectorCeiling * RenderData.Steps);
-            RenderData.iUpperHeight = round(m_HalfScreenHeight - (RenderData.BackSectorCeiling * RenderData.V1ScaleFactor));
-        }
-
-        // Is the floor visible
-        if (RenderData.BackSectorFloor > RenderData.FrontSectorFloor)
-        {
-            RenderData.bDrawLowerSection = true;
-            RenderData.LowerHeightStep = -(RenderData.BackSectorFloor * RenderData.Steps);
-            RenderData.iLowerHeight = round(m_HalfScreenHeight - (RenderData.BackSectorFloor * RenderData.V1ScaleFactor));
-        }
-    }
-
-    RenderSegment(seg, V1XScreen, V2XScreen, RenderData);
-}
-```
-
-Now, with the drawing function cleaned up, the drawing of upper and lower sections is basically the same. The drawing of the middle section is also very similar.
-The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next week but, for now, let’s set both the upper and lower sections of each Portal to same color.  
-
-``` cpp
-void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
-{
-    SDL_Color color;
-    int iXCurrent;
-
-    iXCurrent = V1XScreen;
-
-    SelectColor(seg, color);
-
-    while (iXCurrent <= V2XScreen)
-    {
-        int CurrentCeilingEnd = RenderData.CeilingEnd;
-        int CurrentFloorStart = RenderData.FloorStart;
-
-        // Validate with the height of ceiling and floor is within range
-        if (!ValidateRange(RenderData, iXCurrent, CurrentCeilingEnd, CurrentFloorStart))
-        {
-            continue;
-        }
-
-        // Is it a Portal?
-        if (seg.pBackSector)
-        {
-            DrawUpperSection(RenderData, iXCurrent, CurrentCeilingEnd);
-            DrawLowerSection(RenderData, iXCurrent, CurrentFloorStart);
+            iSubsectorID = m_Nodes[iSubsectorID].BackChildID;
         }
         else
         {
-            // It is solid
-            DrawMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
+            iSubsectorID = m_Nodes[iSubsectorID].FrontChildID;
         }
-
-        RenderData.CeilingEnd += RenderData.CeilingStep;
-        RenderData.FloorStart += RenderData.FloorStep;
-        ++iXCurrent;
     }
+    Subsector &subsector = m_Subsector[iSubsectorID & (~SUBSECTORIDENTIFIER)];
+    Seg &seg = m_Segs[subsector.FirstSegID];
+    return seg.pFrontSector->FloorHeight;
+    
 }
 ```
 
-There is a nice optimization in the code, handle closed doors as a solid wall
+Once you found the sector return the floor height, this is where the player is standing! now all you must do is simply add the player eye level to that height (which is 41 in DOOM)  
 
 ``` cpp
-    // AddWallInFOV
-    // Handle closed door
-    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight
-        || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
-    {
-        ClipSolidWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
-        return;
-    }
+void Player::Think(int iSubSectorHieght)
+{
+    m_ZPosition = iSubSectorHieght + m_EyeLevel;
+}
 ```
 
-One final thing, let’s give the player a way to raise and lower their altitude so that we can fly around the map using the Z and X buttons.
+Now the best place to call those functions is when the DoomEngine is updating!  
 
 ``` cpp
-void Player::Fly()
+void DoomEngine::Update()
 {
-    m_ZPosition += 1;
+    m_pPlayer->Think(m_pMap->GetPlayerSubSectorHieght());
 }
 
-void Player::Sink()
-{
-    m_ZPosition -= 1;
-}
 ```
 
-Now run  
-
-![Screen](./img/screen.png)  
-
-Comparing the progress
-
-![Play](./img/morph.gif)  
-
-Now moving around
+Now play  
 
 ![Play](./img/play.gif)  
 
-It unbelievable that simply handling those two types of walls renders the Mission, it is very impressive to see a 2D map transform into a 3D view this way. It makes me wonder how they came up with this back in 1993.  
-All those ceilings and floors that are drawn in black are known as Visplanes. But, those are for an upcoming week.
-What I would like to do now is to give the DOOM guy proper walking code. You may have noticed that his Z coordinate doesn't change when he goes up or down stairs.
+Even switching to E1M3 now or other maps you will be standing on the floor  
+a look at E1M3  
+
+![E1M3](./img/E1M3C.png)  
+
+Next, I will start exploring how we could read the textures from the WAD files and see if we could possibly give the walls some texture.  
+[DOOMReboot](https://twitter.com/DOOMReboot) has been working on a WAD Media Viewer, he has shared the source code with me and he is currently writing an article how to read/view media out of WADs.
 
 ## Other Notes
-The above code is implemented in the original Chocolate DOOM in r_segs.c, R_StoreWallRange, and r_main.c. This is just part of what this function does.
-Drawing Portals was easier than I had expected. It may sound complex at the beginning, but if you break it down and go slow it should be easy to understand
+I would recommend reading about "drawsegs" in Fabian book "GAME ENGINE BLACK BOOK DOOM" v1.1 section 5.12.9.2. If you are not clear why we need to keep track of the drawing history I would recommend watching the videos at [fabiensanglard.net](http://fabiensanglard.net/doomIphone/doomClassicRenderer.php), for doom rendering under the "Things and transparent walls". You will notice that "Things" and partial see thought segs gets drawn in a similar behavior to back to front.  
+In classic / Chocolate Doom there is a limit to the history array "drawsegs" could have up to 256 entry which could cause some issues in custom maps, later ports removed the limit.  
+
+Now looking at my code, it is very obvious that the design is missed up, there is allot of stuff happening in ViewRenderer class, we should have a separate class to handle a segment and draw it (similar to DOOM code), also having the player as a separate class is not a good idea. I see that we should have a Things class, then the player should be sub-class. All things will need to know its sector height, they will also need to move around.  
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-https://doom.fandom.com/wiki/Seg
+[Drawsegs overflow](https://doomwiki.org/wiki/Seg)   
+[fabiensanglard.net DOOM](http://fabiensanglard.net/doomIphone/doomClassicRenderer.php)  
+[GAME ENGINE BLACK BOOK DOOM](http://fabiensanglard.net/gebbdoom/index.html)  
