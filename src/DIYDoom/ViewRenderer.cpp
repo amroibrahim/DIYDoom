@@ -62,6 +62,7 @@ void ViewRenderer::Render(bool IsRenderAutoMap)
     else
     {
         Render3DView();
+        DrawStoredSegs();
     }
 
     SDL_RenderPresent(m_pRenderer);
@@ -73,6 +74,7 @@ void ViewRenderer::InitFrame()
     SDL_RenderClear(m_pRenderer);
 
     m_SolidWallRanges.clear();
+    m_FrameSegsDrawData.clear();
 
     SolidSegmentRange WallLeftSide;
     SolidSegmentRange WallRightSide;
@@ -394,9 +396,9 @@ void ViewRenderer::CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScr
     CalculateCeilingFloorHeight(seg, V1XScreen, DistanceToV1, CeilingV1OnScreen, FloorV1OnScreen);
     CalculateCeilingFloorHeight(seg, V2XScreen, DistanceToV2, CeilingV2OnScreen, FloorV2OnScreen);
 
+    SetSectionColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
     //SDL_Color color = { 255,255,255 };
-    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
-    SetDrawColor(color.r, color.g, color.b);
+    //SetDrawColor(color.r, color.g, color.b);
 
     SDL_RenderDrawLine(m_pRenderer, V1XScreen, CeilingV1OnScreen, V1XScreen, FloorV1OnScreen);
     SDL_RenderDrawLine(m_pRenderer, V2XScreen, CeilingV2OnScreen, V2XScreen, FloorV2OnScreen);
@@ -459,12 +461,13 @@ void ViewRenderer::PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &D
 
 void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
 {
-    SDL_Color color;
-    int iXCurrent;
+    FrameSegDrawData SegDrawData;
+    SegDrawData.seg = &seg;
+    SegDrawData.bDrawUpperSection = RenderData.bDrawUpperSection;
+    SegDrawData.bDrawMiddleSection = !seg.pBackSector;
+    SegDrawData.bDrawLowerSection = RenderData.bDrawLowerSection;
 
-    iXCurrent = V1XScreen;
-
-    SelectColor(seg, color);
+    int iXCurrent = V1XScreen;
 
     while (iXCurrent <= V2XScreen)
     {
@@ -478,42 +481,43 @@ void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRe
 
         if (seg.pBackSector)
         {
-            DrawUpperSection(RenderData, iXCurrent, CurrentCeilingEnd);
-            DrawLowerSection(RenderData, iXCurrent, CurrentFloorStart);
+            RenderUpperSection(RenderData, iXCurrent, CurrentCeilingEnd, SegDrawData);
+            RenderLowerSection(RenderData, iXCurrent, CurrentFloorStart, SegDrawData);
         }
         else
         {
-            DrawMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
+            RenderMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart, SegDrawData);
         }
 
         RenderData.CeilingEnd += RenderData.CeilingStep;
         RenderData.FloorStart += RenderData.FloorStep;
         ++iXCurrent;
     }
-}
 
-void ViewRenderer::SelectColor(Seg &seg, SDL_Color &color)
-{
-    if (seg.pBackSector)
+    if (SegDrawData.bDrawUpperSection | SegDrawData.bDrawMiddleSection | SegDrawData.bDrawLowerSection)
     {
-        color = GetWallColor(seg.pLinedef->pFrontSidedef->UpperTexture);
-        SetDrawColor(color.r, color.g, color.b);
-    }
-    else
-    {
-        color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
-        SetDrawColor(color.r, color.g, color.b);
+        m_FrameSegsDrawData.push_back(SegDrawData);
     }
 }
 
-void ViewRenderer::DrawMiddleSection(int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart)
+void ViewRenderer::RenderMiddleSection(int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart, FrameSegDrawData &SegDrawData)
 {
-    SDL_RenderDrawLine(m_pRenderer, iXCurrent, CurrentCeilingEnd, iXCurrent, CurrentFloorStart);
+    AddLineToSection(SegDrawData.MiddleSection, iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
     m_CeilingClipHeight[iXCurrent] = m_iRenderYSize;
     m_FloorClipHeight[iXCurrent] = -1;
 }
 
-void ViewRenderer::DrawLowerSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentFloorStart)
+void ViewRenderer::AddLineToSection(std::list<SingleDrawLine> &Section, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart)
+{
+    SingleDrawLine line;
+    line.x1 = iXCurrent;
+    line.y1 = CurrentCeilingEnd;
+    line.x2 = iXCurrent;
+    line.y2 = CurrentFloorStart;
+    Section.push_back(line);
+}
+
+void ViewRenderer::RenderLowerSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentFloorStart, FrameSegDrawData &SegDrawData)
 {
     if (RenderData.bDrawLowerSection)
     {
@@ -527,7 +531,7 @@ void ViewRenderer::DrawLowerSection(ViewRenderer::FrameRenderData &RenderData, i
 
         if (iLowerHeight <= CurrentFloorStart)
         {
-            SDL_RenderDrawLine(m_pRenderer, iXCurrent, iLowerHeight, iXCurrent, CurrentFloorStart);
+            AddLineToSection(SegDrawData.LowerSection, iXCurrent, iLowerHeight, CurrentFloorStart);
             m_FloorClipHeight[iXCurrent] = iLowerHeight;
         }
         else
@@ -539,7 +543,7 @@ void ViewRenderer::DrawLowerSection(ViewRenderer::FrameRenderData &RenderData, i
     }
 }
 
-void ViewRenderer::DrawUpperSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd)
+void ViewRenderer::RenderUpperSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd, FrameSegDrawData &SegDrawData)
 {
     if (RenderData.bDrawUpperSection)
     {
@@ -553,11 +557,14 @@ void ViewRenderer::DrawUpperSection(ViewRenderer::FrameRenderData &RenderData, i
 
         if (iUpperHeight >= CurrentCeilingEnd)
         {
-            SDL_RenderDrawLine(m_pRenderer, iXCurrent, CurrentCeilingEnd, iXCurrent, iUpperHeight);
+            AddLineToSection(SegDrawData.UpperSection, iXCurrent, CurrentCeilingEnd, iUpperHeight);
             m_CeilingClipHeight[iXCurrent] = iUpperHeight;
         }
         else
+        {
             m_CeilingClipHeight[iXCurrent] = CurrentCeilingEnd - 1;
+        }
+
     }
     else if (RenderData.UpdateCeiling)
     {
@@ -585,18 +592,6 @@ bool ViewRenderer::ValidateRange(ViewRenderer::FrameRenderData & RenderData, int
         return false;
     }
     return true;
-}
-
-void ViewRenderer::RenderSolidWall(Seg &seg, int XStart, int XStop)
-{
-    int iXCurrent = XStart;
-    SDL_Color color = GetWallColor(seg.pLinedef->pFrontSidedef->MiddleTexture);
-    SetDrawColor(color.r, color.g, color.b);
-    while (iXCurrent <= XStop)
-    {
-        SDL_RenderDrawLine(m_pRenderer, iXCurrent, 10, iXCurrent, 20);
-        ++iXCurrent;
-    }
 }
 
 void ViewRenderer::RenderAutoMap()
@@ -656,16 +651,52 @@ void ViewRenderer::DrawLine(int X1, int Y1, int X2, int Y2)
         RemapYToScreen(Y2));
 }
 
-SDL_Color ViewRenderer::GetWallColor(std::string textureName)
+void ViewRenderer::SetSectionColor(std::string textureName)
 {
+    SDL_Color color;
     if (m_WallColor.count(textureName))
     {
-        return m_WallColor[textureName];
+        color = m_WallColor[textureName];
     }
     else
     {
-        SDL_Color color{ rand() % 255, rand() % 255, rand() % 255 };
+        color.r = rand() % 255;
+        color.g = rand() % 255;
+        color.b = rand() % 255;
         m_WallColor[textureName] = color;
-        return color;
+    };
+
+    SetDrawColor(color.r, color.g, color.b);
+}
+
+void ViewRenderer::DrawStoredSegs()
+{
+    for (std::list<FrameSegDrawData>::iterator SegDrawData = m_FrameSegsDrawData.begin(); SegDrawData != m_FrameSegsDrawData.end(); ++SegDrawData)
+    {
+        if (SegDrawData->bDrawUpperSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->UpperTexture);
+            DrawSection(SegDrawData->UpperSection);
+        }
+
+        if (SegDrawData->bDrawMiddleSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->MiddleTexture);
+            DrawSection(SegDrawData->MiddleSection);
+        }
+
+        if (SegDrawData->bDrawLowerSection)
+        {
+            SetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->LowerTexture);
+            DrawSection(SegDrawData->LowerSection);
+        }
+    }
+}
+
+void ViewRenderer::DrawSection(std::list<ViewRenderer::SingleDrawLine> &Section)
+{
+    for (std::list<SingleDrawLine>::iterator line = Section.begin(); line != Section.end(); ++line)
+    {
+        SDL_RenderDrawLine(m_pRenderer, line->x1, line->y1, line->x2, line->y2);
     }
 }

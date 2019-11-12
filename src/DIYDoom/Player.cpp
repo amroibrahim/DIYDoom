@@ -1,8 +1,9 @@
 #include "Player.h"
 #include <math.h>
 
-Player::Player(ViewRenderer *pViewRenderer, int iID) : m_pViewRenderer(pViewRenderer), m_iPlayerID(iID), m_FOV(90), m_iRotationSpeed(4), m_iMoveSpeed(4), m_ZPosition(41)
+Player::Player(ViewRenderer *pViewRenderer, int iID) : m_pViewRenderer(pViewRenderer), m_iPlayerID(iID), m_FOV(90), m_iRotationSpeed(4), m_iMoveSpeed(4), m_EyeLevel(41)
 {
+    m_ZPosition = m_EyeLevel;
 }
 
 Player::~Player()
@@ -87,8 +88,6 @@ bool Player::ClipVertexesInFOV(Vertex &V1, Vertex &V2, Angle &V1Angle, Angle &V2
     // Rotate every thing.
     V1AngleFromPlayer = V1Angle - m_Angle;
     V2AngleFromPlayer = V2Angle - m_Angle;
-
-    
 
     // Validate and Clip V1
     // shift angles to be between 0 and 90 (now virtualy we shifted FOV to be in that range)
@@ -177,4 +176,9 @@ float Player::DistanceToPoint(Vertex &V)
 int Player::GetFOV()
 {
     return m_FOV;
+}
+
+void Player::Think(int iSubSectorHieght)
+{
+    m_ZPosition = iSubSectorHieght + m_EyeLevel;
 }

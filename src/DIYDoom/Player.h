@@ -22,6 +22,7 @@ public:
     void Fly();
     void Sink();
     void RenderAutoMap();
+    void Think(int iSubSectorHieght);
 
     int GetID();
     int GetXPosition();
@@ -42,6 +43,7 @@ protected:
     int m_XPosition;
     int m_YPosition;
     int m_ZPosition;
+    int m_EyeLevel;
     int m_FOV;
     int m_iRotationSpeed;
     int m_iMoveSpeed;

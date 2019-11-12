@@ -340,3 +340,26 @@ Things* Map::GetThings()
 {
     return m_pThings;
 }
+
+int Map::GetPlayerSubSectorHieght()
+{
+    int iSubsectorID = m_Nodes.size() - 1;
+    while (!(iSubsectorID & SUBSECTORIDENTIFIER))
+    {
+
+        bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iSubsectorID);
+
+        if (isOnBack)
+        {
+            iSubsectorID = m_Nodes[iSubsectorID].BackChildID;
+        }
+        else
+        {
+            iSubsectorID = m_Nodes[iSubsectorID].FrontChildID;
+        }
+    }
+    Subsector &subsector = m_Subsector[iSubsectorID & (~SUBSECTORIDENTIFIER)];
+    Seg &seg = m_Segs[subsector.FirstSegID];
+    return seg.pFrontSector->FloorHeight;
+    
+}
