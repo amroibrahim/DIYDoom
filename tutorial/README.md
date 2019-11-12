@@ -91,7 +91,7 @@ protected:
     bool OpenAndLoad();     // Open the file and load it to memory
     bool ReadDirectories(); // A function what will iterate though the directory section 
 
-    std::string m_sWADFilePath; // Sore the file name passed to the constructor 
+    std::string m_sWADFilePath; // Store the file name passed to the constructor 
     std::ifstream m_WADFile;    // The file stream that will pint to the WAD file.
     uint8_t *m_WADData;         // let's load the file and keep it in memory! It is just a few MBs!
     std::vector<Directory> m_WADDirectories; //let's store all the directories in this vector.
@@ -205,12 +205,12 @@ Oh! there is a catch, WAD files are a big-endian format, that means we need to s
 Let's add 2 functions to accomplish this, one to handle 2 bytes (16 bits), and one to handle 4 bytes (32 bits), there is nothing to do if we only need to read 1 byte.  
 
 ``` cpp
-uint16_t WADReader::bytesToShort(const uint8_t *pWADData, int offset)
+uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
 {
     return (pWADData[offset + 1] << 8) | pWADData[offset];
 }
 
-uint32_t WADReader::bytesToInteger(const uint8_t *pWADData, int offset)
+uint32_t WADReader::Read4Bytes(const uint8_t *pWADData, int offset)
 {
     return (pWADData[offset + 3] << 24) | (pWADData[offset + 2] << 16) | (pWADData[offset + 1] << 8) | pWADData[offset];
 }
@@ -229,10 +229,10 @@ void WADReader::ReadHeaderData(const uint8_t *pWADData, int offset, Header &head
     header.WADType[4] = '\0';
 
     //0x04 to 0x07
-    header.DirectoryCount = bytesToInteger(pWADData, offset + 4);
+    header.DirectoryCount = Read4Bytes(pWADData, offset + 4);
 
     //0x08 to 0x0b
-    header.DirectoryOffset = bytesToInteger(pWADData, offset + 8);
+    header.DirectoryOffset = Read4Bytes(pWADData, offset + 8);
 }
 ```
 
