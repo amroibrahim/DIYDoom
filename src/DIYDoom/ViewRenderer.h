@@ -24,7 +24,7 @@ public:
     void AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle, Angle V1AngleFromPlayer, Angle V2AngleFromPlayer);
     void InitFrame();
     void SetDrawColor(int R, int G, int B);
-    void DrawRect(int X, int Y, int Width, int Height);
+    void DrawRect(int X1, int Y1, int X2, int Y2);
     void DrawLine(int X1, int Y1, int X2, int Y2);
 
 protected:
