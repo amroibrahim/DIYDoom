@@ -4,7 +4,7 @@
 
 using namespace std;
 
-Map::Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer, Things *pThings) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iLumpIndex(-1), m_pPlayer(pPlayer), m_pThings(pThings), m_pViewRenderer(pViewRenderer)
+Map::Map(ViewRenderer *pViewRenderer, const std::string &sName, Player *pPlayer, Things *pThings) : m_sName(sName), m_XMin(INT_MAX), m_XMax(INT_MIN), m_YMin(INT_MAX), m_YMax(INT_MIN), m_iLumpIndex(-1), m_pPlayer(pPlayer), m_pThings(pThings), m_pViewRenderer(pViewRenderer)
 {
     m_pSectors = new std::vector<WADSector>();
     m_pSidedefs = new std::vector<WADSidedef>();
@@ -242,19 +242,6 @@ string Map::GetName()
     return m_sName;
 }
 
-void Map::RenderAutoMap()
-{
-    m_pViewRenderer->SetDrawColor(255, 255, 255);
-
-    for (Linedef &l : m_Linedefs)
-    {
-        Vertex vStart = *(l.pStartVertex);
-        Vertex vEnd = *(l.pEndVertex);
-
-        m_pViewRenderer->DrawLine(vStart.XPosition, vStart.YPosition, vEnd.XPosition, vEnd.YPosition);
-    }
-}
-
 void Map::Render3DView()
 {
     RenderBSPNodes();
@@ -310,20 +297,6 @@ bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)
     int dy = YPosition - m_Nodes[iNodeID].YPartition;
 
     return (((dx * m_Nodes[iNodeID].ChangeYPartition) - (dy * m_Nodes[iNodeID].ChangeXPartition)) <= 0);
-}
-
-void Map::RenderAutoMapNode(int iNodeID)
-{
-    Node &node = m_Nodes[iNodeID];
-
-    m_pViewRenderer->SetDrawColor(0, 255, 0);
-    m_pViewRenderer->DrawRect(node.FrontBoxLeft, node.FrontBoxTop, node.FrontBoxRight, node.FrontBoxBottom);
-
-    m_pViewRenderer->SetDrawColor(255, 0, 0);
-    m_pViewRenderer->DrawRect(node.BackBoxLeft, node.BackBoxTop, node.BackBoxRight, node.BackBoxLeft);
-
-    m_pViewRenderer->SetDrawColor(0, 0, 255);
-    m_pViewRenderer->DrawLine(node.XPartition, node.YPartition, node.XPartition + node.ChangeXPartition, node.YPartition + node.ChangeYPartition);
 }
 
 void Map::SetLumpIndex(int iIndex)

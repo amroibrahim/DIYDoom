@@ -11,7 +11,7 @@
 class Map
 {
 public:
-    Map(ViewRenderer *pViewRenderer, std::string sName, Player *pPlayer, Things *pThings);
+    Map(ViewRenderer *pViewRenderer, const std::string &sName, Player *pPlayer, Things *pThings);
     ~Map();
 
     std::string GetName();
@@ -22,7 +22,6 @@ public:
     void AddSeg(WADSeg &seg);
     void AddSidedef(WADSidedef &sidedef);
     void AddSector(WADSector &sector);
-    void RenderAutoMap();
     void Render3DView();
     void SetLumpIndex(int iIndex);
     void Init();
@@ -42,7 +41,6 @@ protected:
     void BuildLinedef();
     void BuildSeg();
     void RenderBSPNodes();
-    void RenderAutoMapNode(int iNodeID);
     void RenderBSPNodes(int iNodeID);
     void RenderSubsector(int iSubsectorID);
 

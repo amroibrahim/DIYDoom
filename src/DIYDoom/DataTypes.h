@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL.h>
+
 #include <cstdint>
 #include "Angle.h"
 
@@ -178,4 +180,9 @@ struct Node
 
     uint16_t FrontChildID;
     uint16_t BackChildID;
+};
+
+struct WADPalette
+{
+    SDL_Color Colors[256];
 };

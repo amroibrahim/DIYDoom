@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <SDL.h>
 
@@ -16,16 +17,13 @@ class Player;
 class ViewRenderer
 {
 public:
-    ViewRenderer(SDL_Renderer *pRenderer);
+    ViewRenderer();
     ~ViewRenderer();
 
     void Init(Map *pMap, Player *pPlayer);
-    void Render(bool IsAutomap);
+    void Render(uint8_t *pScreenBuffer, int iBufferPitch);
     void AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle, Angle V1AngleFromPlayer, Angle V2AngleFromPlayer);
     void InitFrame();
-    void SetDrawColor(int R, int G, int B);
-    void DrawRect(int X1, int Y1, int X2, int Y2);
-    void DrawLine(int X1, int Y1, int X2, int Y2);
 
 protected:
     struct SolidSegmentRange
@@ -33,7 +31,6 @@ protected:
         int XStart;
         int XEnd;
     };
-
 
     struct FrameRenderData
     {
@@ -86,18 +83,16 @@ protected:
         std::list<SingleDrawLine> MiddleSection;
     };
 
-    void RenderAutoMap();
     void Render3DView();
-    void DrawStoredSegs();
+    void DrawStoredSegs(uint8_t *pScreenBuffer, int iBufferPitch);
 
-    void DrawSection(std::list<ViewRenderer::SingleDrawLine> &Section);
+    void DrawSection(uint8_t *pScreenBuffer, int iBufferPitch, std::list<ViewRenderer::SingleDrawLine> &Section, uint8_t color);
 
     void ClipSolidWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg);
-    void CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen);
     void PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &DistanceToV1, bool IsLeftSide);
     void RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData);
@@ -105,19 +100,17 @@ protected:
     void RenderMiddleSection(int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart, FrameSegDrawData &SegDrawData);
     void AddLineToSection(std::list<SingleDrawLine> &Section, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart);
     void RenderLowerSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentFloorStart, FrameSegDrawData &SegDrawData);
-    void SetSectionColor(std::string textureName);
+    
+    uint8_t GetSectionColor(const std::string &TextureName);
 
     bool ValidateRange(ViewRenderer::FrameRenderData &RenderData, int &iXCurrent, int &CurrentCeilingEnd, int &CurrentFloorStart);
 
     float GetScaleFactor(int VXScreen, Angle NormalAngle, float NormalDistance);
 
     int AngleToScreen(Angle angle);
-    int RemapXToScreen(int XMapPosition);
-    int RemapYToScreen(int YMapPosition);
 
     int m_iRenderXSize;
     int m_iRenderYSize;
-    int m_iAutoMapScaleFactor;
     int m_iDistancePlayerToScreen;
     int m_HalfScreenWidth;
     int m_HalfScreenHeight;
@@ -125,14 +118,12 @@ protected:
     Map *m_pMap;
     Player *m_pPlayer;
 
-    SDL_Renderer *m_pRenderer;
-
     std::list<SolidSegmentRange> m_SolidWallRanges;
     std::list<FrameSegDrawData> m_FrameSegsDrawData;
     std::vector<int> m_FloorClipHeight;
     std::vector<int> m_CeilingClipHeight;
-    std::map<std::string, SDL_Color> m_WallColor;
+    
+    std::map<std::string, uint8_t> m_WallColor;
     std::map<int, Angle> m_ScreenXToAngle;
     bool m_UseClassicDoomScreenToAngle;
 };
-
