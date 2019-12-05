@@ -20,7 +20,8 @@ public:
     void ReadNodeData(const uint8_t *pWADData, int offset, Node &node);
     void ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector);
     void ReadSegData(const uint8_t *pWADData, int offset, WADSeg &seg);
-
+    void ReadPalette(const uint8_t *pWADData, int offset, WADPalette &palette);
+    
 protected:
     uint16_t Read2Bytes(const uint8_t *pWADData, int offset);
     uint32_t Read4Bytes(const uint8_t *pWADData, int offset);

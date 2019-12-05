@@ -21,7 +21,6 @@ public:
     void RotateRight();
     void Fly();
     void Sink();
-    void RenderAutoMap();
     void Think(int iSubSectorHieght);
 
     int GetID();

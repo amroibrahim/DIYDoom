@@ -181,3 +181,14 @@ void WADReader::ReadSegData(const uint8_t *pWADData, int offset, WADSeg &seg)
     seg.Direction = Read2Bytes(pWADData, offset + 8);
     seg.Offset = Read2Bytes(pWADData, offset + 10);
 }
+
+void WADReader::ReadPalette(const uint8_t * pWADData, int offset, WADPalette &palette)
+{
+    for (int i = 0; i < 256; ++i)
+    {
+        palette.Colors[i].r = pWADData[offset++];
+        palette.Colors[i].g = pWADData[offset++];
+        palette.Colors[i].b = pWADData[offset++];
+        palette.Colors[i].a = 255;
+    }
+}

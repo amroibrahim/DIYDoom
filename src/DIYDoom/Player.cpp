@@ -158,13 +158,6 @@ void Player::Sink()
     m_ZPosition -= 1;
 }
 
-void Player::RenderAutoMap()
-{
-    m_pViewRenderer->SetDrawColor(255, 0, 0);
-
-    m_pViewRenderer->DrawLine(m_XPosition, m_YPosition, m_XPosition + 5, m_YPosition + 5);
-}
-
 float Player::DistanceToPoint(Vertex &V)
 {
     // We have two points, where the player is and the vertex passed.

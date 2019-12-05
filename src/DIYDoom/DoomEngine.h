@@ -2,16 +2,18 @@
 
 #include <SDL.h>
 #include <string>
+#include <memory>
 
 #include "Map.h"
 #include "Player.h"
 #include "WADLoader.h"
+#include "DisplayManager.h"
 #include "ViewRenderer.h"
 
 class DoomEngine
 {
 public:
-    DoomEngine(SDL_Renderer *pRenderer);
+    DoomEngine();
     ~DoomEngine();
 
     virtual void Render();
@@ -24,24 +26,27 @@ public:
     virtual bool IsOver();
     virtual bool Init();
 
+    void LoadWAD();
+
     virtual int GetRenderWidth();
     virtual int GetRenderHeight();
     virtual int GetTimePerFrame();
 
     virtual std::string GetWADFileName();
-    virtual std::string GetName();
+    virtual std::string GetAppName();
 
 protected:
     int m_iRenderWidth;
     int m_iRenderHeight;
 
     bool m_bIsOver;
-    bool m_bRenderAutoMap;
 
-    SDL_Renderer *m_pRenderer;
+    std::string m_sAppName;
     WADLoader m_WADLoader;
-    Map *m_pMap;
-    Player *m_pPlayer;
-    Things *m_pThings;
-    ViewRenderer *m_pViewRenderer;
+
+    std::unique_ptr<Map> m_pMap;
+    std::unique_ptr<Player> m_pPlayer;
+    std::unique_ptr<Things> m_pThings;
+    std::unique_ptr<DisplayManager> m_pDisplayManager;
+    std::unique_ptr<ViewRenderer> m_pViewRenderer;
 };

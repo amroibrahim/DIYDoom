@@ -2,39 +2,41 @@
 
 using namespace std;
 
-DoomEngine::DoomEngine(SDL_Renderer *pRenderer) : m_pRenderer(pRenderer), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200), m_pMap(nullptr), m_bRenderAutoMap(false)
+DoomEngine::DoomEngine() : m_sAppName("DIYDoom"), m_bIsOver(false), m_iRenderWidth(320), m_iRenderHeight(200), m_pMap(nullptr), m_pPlayer(nullptr)
 {
 }
 
 DoomEngine::~DoomEngine()
 {
-    delete m_pMap;
-    delete m_pPlayer;
-    delete m_pViewRenderer;
 }
 
 bool DoomEngine::Init()
 {
+    m_pDisplayManager = std::unique_ptr < DisplayManager>(new DisplayManager(m_iRenderWidth, m_iRenderHeight));
+    m_pDisplayManager->Init(GetAppName());
+
     // Delay object creation to this point so renderer is inistilized correctly
-    m_pViewRenderer = new ViewRenderer(m_pRenderer);
+    m_pViewRenderer = unique_ptr<ViewRenderer> (new ViewRenderer());
+    m_pThings = unique_ptr<Things>(new Things());
+    m_pPlayer = unique_ptr<Player>(new Player(m_pViewRenderer.get(), 1));
+    m_pMap = unique_ptr<Map>( new Map(m_pViewRenderer.get(), "E1M1", m_pPlayer.get(), m_pThings.get()));
 
-    m_pPlayer = new Player(m_pViewRenderer, 1);
-    m_pThings = new Things();
+    m_pViewRenderer->Init(m_pMap.get(), m_pPlayer.get());
 
-    m_pMap = new Map(m_pViewRenderer, "E1M1", m_pPlayer, m_pThings);
-
-    m_pViewRenderer->Init(m_pMap, m_pPlayer);
-
-    m_WADLoader.SetWADFilePath(GetWADFileName());
-    m_WADLoader.LoadWAD();
-    m_WADLoader.LoadMapData(m_pMap);
-
-    Thing thing = (m_pMap->GetThings())->GetThingByID(m_pPlayer->GetID());
-
-    m_pPlayer->Init(thing);
+    LoadWAD();
+  
+    m_pPlayer->Init((m_pMap->GetThings())->GetThingByID(m_pPlayer->GetID()));
     m_pMap->Init();
 
     return true;
+}
+
+void DoomEngine::LoadWAD()
+{
+    m_WADLoader.SetWADFilePath(GetWADFileName());
+    m_WADLoader.LoadWADToMemory();
+    m_WADLoader.LoadPalette(m_pDisplayManager.get());
+    m_WADLoader.LoadMapData(m_pMap.get());
 }
 
 std::string DoomEngine::GetWADFileName()
@@ -44,32 +46,20 @@ std::string DoomEngine::GetWADFileName()
 
 void DoomEngine::Render()
 {
-    m_pViewRenderer->InitFrame();
-    m_pViewRenderer->Render(m_bRenderAutoMap);
+    uint8_t *pScreenBuffer = m_pDisplayManager->GetScreenBuffer();
+
+    m_pDisplayManager->InitFrame();
+    m_pViewRenderer->Render(pScreenBuffer, m_iRenderWidth);
+
+    m_pDisplayManager->Render();
 }
 
 void DoomEngine::KeyPressed(SDL_Event &event)
 {
     switch (event.key.keysym.sym)
     {
-    case SDLK_UP:
-        //m_pPlayer->MoveForward();
-        break;
-
-    case SDLK_DOWN:
-        //m_pPlayer->MoveBackward();
-        break;
-
-    case SDLK_LEFT:
-        //m_pPlayer->RotateLeft();
-        break;
-
-    case SDLK_RIGHT:
-        //m_pPlayer->RotateRight();
-        break;
-
     case SDLK_TAB:
-        m_bRenderAutoMap = true;
+        //m_bRenderAutoMap = true;
         break;
 
     case SDLK_ESCAPE:
@@ -119,7 +109,7 @@ void DoomEngine::KeyReleased(SDL_Event &event)
     switch (event.key.keysym.sym)
     {
     case SDLK_TAB:
-        m_bRenderAutoMap = false;
+        //m_bRenderAutoMap = false;
         break;
 
     default:
@@ -152,9 +142,9 @@ int DoomEngine::GetRenderHeight()
     return m_iRenderHeight;
 }
 
-string DoomEngine::GetName()
+string DoomEngine::GetAppName()
 {
-    return "DIYDoom";
+    return m_sAppName;
 }
 
 int DoomEngine::GetTimePerFrame()
