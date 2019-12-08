@@ -1,5 +1,7 @@
+__Proofreader:__ Matt ([misnor](https://github.com/misnor))  
+
 # Week 018 - Color Palette
-So with the world being rendered in 3D at this point, it would be nice to draw some texture instead of just having a solid color segs. You would expect that the texture is some image that is stored in the WAD and all you have to do is just read that texture and draw it on the screen, your close but that is not exactly it, there is much more into it than that.
+So with the world being rendered in 3D at this point, it would be nice to draw some textures instead of just having a solid color segs. You would expect that the texture is some image that is stored in the WAD and all you have to do is just read that texture and draw it on the screen, you're close but that is not exactly it, there is much more into it than that.
 
 Now a days (with a lot of memory) it is very common to store a pixel in an image in a 4 byte (Red, Green, Blue and Alpha), back then it wasn't the case. Due to many limitations colors was limited to a predefined palette, each color in the palette has an index which is used to represent a single pixel. 
 DOOM utilize palettes to represent colors. DOOM has a total of 14 different palettes with each palette indexing 256 colors.
@@ -90,7 +92,7 @@ void WADReader::ReadPalette(const uint8_t * pWADData, int offset, WADPalette &pa
 }
 ```
 
-Now that we can read the palettes, we need to implement DisplayManager class to store those palettes and create an 8-bit memory that we could use as screen buffer. We will also move all windows creation from DOOMEngine class into the DisplayManager class.  
+Now that we can read the palettes, we need to implement the DisplayManager class to store those palettes and create an 8-bit memory that we could use as screen buffer. We will also move all window creation from DOOMEngine class into the DisplayManager class.  
 
 ``` cpp
 SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
@@ -126,7 +128,7 @@ SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
 ```
 
 Up to this point it is just moving code from DOOMEngine class that we previously wrote to create the window.  
-What we should do next is create an SDL_Surface. SDL_Serface is a buffer that is created in main memory (not on the GPU). SDL_Surface can be created by calling SDL_CreateRGBSurface and specifying the depth which in this case 8-bit and we are calling it m_pScreenBuffer. We will also create another surface that is a full RGB which we will call m_pRGBBuffer. The goal of this surface is after we draw everything to the 8-bit surface we will have to convert it to RGB using the palette to a temporary buffer. When we have the surface in full RGB color, there is a final stage of copying this to the GPU memory and SDL_Texture, and get it rendered.
+What we should do next is create an SDL_Surface. SDL_Surface is a buffer that is created in main memory (not on the GPU). SDL_Surface can be created by calling SDL_CreateRGBSurface and specifying the depth which in this case 8-bit and we are calling it m_pScreenBuffer. We will also create another surface that is a full RGB which we will call m_pRGBBuffer. The goal of this surface is after we draw everything to the 8-bit surface we will have to convert it to RGB using the palette to a temporary buffer. When we have the surface in full RGB color, there is a final stage of copying this to the GPU memory and SDL_Texture, and get it rendered.
 
 ``` cpp
     
@@ -166,7 +168,7 @@ What we should do next is create an SDL_Surface. SDL_Serface is a buffer that is
 }
 ```
 
-Now getting the screen puffer from the 8-bit screen buffer should be very simple  
+Now getting the screen buffer from the 8-bit screen buffer should be very simple  
 
 ``` cpp
 uint8_t *DisplayManager::GetScreenBuffer()
@@ -175,8 +177,8 @@ uint8_t *DisplayManager::GetScreenBuffer()
 }
 ```
 
-So to clean up thing, lets wrap any SDL rendering in a class and if any component needs to draw anything it should get a pointer to a 8-bit surface to draw on
-I had to go thought the code and remove any call to the renderer, all we should pass now is just the 8-bit screen buffer for components to draw on. 
+So to clean things up, lets wrap any SDL rendering in a class and if any component needs to draw anything it should get a pointer to a 8-bit surface to draw on
+I had to go through the code and remove any call to the renderer, all we should pass now is just the 8-bit screen buffer for components to draw on. 
 Switching from a SDL_Renderer to SDL_Surface you would notice that SDL_RenderDrawLine will not work anymore, so we will need to implement our own drawing routine.  
 
 ``` cpp
@@ -216,7 +218,7 @@ uint8_t ViewRenderer::GetSectionColor(const std::string &TextureName)
 }
 ```
 
-Finally, after all those clean up and changes just update the render calls, which should much cleaner now, get the screen buffer and pass it to be drawn on.
+Finally, after all that clean up and changes - just update the render calls. To do this, get the screen buffer and pass it to be drawn on. Much cleaner!
 
 ``` cpp
 void DoomEngine::Render()
@@ -254,10 +256,10 @@ a quick run though the level
 
 ![Retro](./img/retro.gif)  
 
-Since we go the colors sorted out, it is time to read some of the pictures in the WAD and draw them to screen! 
+Since we have the colors sorted out, it is time to read some of the pictures in the WAD and draw them to screen! 
 
 ## Other Notes
-Yes, in chocolate DOOM this is all there, it is all implemented in ```i_video.c```, I have learned allot looking at that code I was not aware that SDL had palette implementation (I guess no tutorials cover it and rarely such a feature is used). As a practice with palettes I have updated my [DOOMFire](https://github.com/amroibrahim/DOOMFire), and played around even more will palettes [Palette Cycling Demos](https://github.com/amroibrahim/PaletteCycling).
+Yes, in chocolate DOOM this is all there, it is all implemented in ```i_video.c```, I have learned a lot looking at that code I was not aware that SDL had palette implementation (I guess no tutorials cover it and rarely such a feature is used). As a practice with palettes I have updated my [DOOMFire](https://github.com/amroibrahim/DOOMFire), and played around even more will palettes [Palette Cycling Demos](https://github.com/amroibrahim/PaletteCycling).
 
 The Chocolate DOOM implementation has an extra SDL_Surface to stretch the final rendering.
 
