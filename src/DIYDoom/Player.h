@@ -3,6 +3,7 @@
 #include "Angle.h"
 #include "DataTypes.h"
 #include "ViewRenderer.h"
+#include "Weapon.h"
 
 class Player
 {
@@ -22,6 +23,7 @@ public:
     void Fly();
     void Sink();
     void Think(int iSubSectorHieght);
+    void Render(uint8_t *pScreenBuffer, int iBufferPitch);
 
     int GetID();
     int GetXPosition();
@@ -50,4 +52,5 @@ protected:
     Angle m_Angle;
     Angle m_HalfFOV;
     ViewRenderer *m_pViewRenderer;
+    std::unique_ptr <Weapon> m_pWeapon;
 };

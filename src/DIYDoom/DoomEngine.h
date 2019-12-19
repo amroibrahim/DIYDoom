@@ -9,6 +9,7 @@
 #include "WADLoader.h"
 #include "DisplayManager.h"
 #include "ViewRenderer.h"
+#include "AssetsManager.h"
 
 class DoomEngine
 {
@@ -26,8 +27,6 @@ public:
     virtual bool IsOver();
     virtual bool Init();
 
-    void LoadWAD();
-
     virtual int GetRenderWidth();
     virtual int GetRenderHeight();
     virtual int GetTimePerFrame();
@@ -36,6 +35,9 @@ public:
     virtual std::string GetAppName();
 
 protected:
+    void LoadWAD();
+    void ReadDataFromWAD();
+
     int m_iRenderWidth;
     int m_iRenderHeight;
 

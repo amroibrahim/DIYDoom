@@ -21,6 +21,9 @@ public:
     void ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector);
     void ReadSegData(const uint8_t *pWADData, int offset, WADSeg &seg);
     void ReadPalette(const uint8_t *pWADData, int offset, WADPalette &palette);
+	void ReadPatchHeader(const uint8_t *pWADData, int offset, WADPatchHeader &patchheader);
+
+    int ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColumn &patch);
     
 protected:
     uint16_t Read2Bytes(const uint8_t *pWADData, int offset);

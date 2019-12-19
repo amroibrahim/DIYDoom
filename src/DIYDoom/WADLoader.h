@@ -18,6 +18,7 @@ public:
     bool LoadWADToMemory();
     bool LoadMapData(Map *pMap);
     bool LoadPalette(DisplayManager *pDisplayManager);
+    bool LoadPatch(const std::string &sPatchName);
     
     ~WADLoader();
 
@@ -34,7 +35,6 @@ protected:
     bool ReadMapSegs(Map *pMap);
 
     int FindMapIndex(Map *pMap);
-
     int FindLumpByName(const std::string &LumpName);
 
     std::string m_sWADFilePath;

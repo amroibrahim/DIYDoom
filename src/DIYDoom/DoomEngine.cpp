@@ -12,6 +12,10 @@ DoomEngine::~DoomEngine()
 
 bool DoomEngine::Init()
 {
+    // Load WAD 
+    LoadWAD();
+    AssetsManager::GetInstance()->Init(&m_WADLoader);
+
     m_pDisplayManager = std::unique_ptr < DisplayManager>(new DisplayManager(m_iRenderWidth, m_iRenderHeight));
     m_pDisplayManager->Init(GetAppName());
 
@@ -20,11 +24,10 @@ bool DoomEngine::Init()
     m_pThings = unique_ptr<Things>(new Things());
     m_pPlayer = unique_ptr<Player>(new Player(m_pViewRenderer.get(), 1));
     m_pMap = unique_ptr<Map>( new Map(m_pViewRenderer.get(), "E1M1", m_pPlayer.get(), m_pThings.get()));
+   
+    ReadDataFromWAD();
 
     m_pViewRenderer->Init(m_pMap.get(), m_pPlayer.get());
-
-    LoadWAD();
-  
     m_pPlayer->Init((m_pMap->GetThings())->GetThingByID(m_pPlayer->GetID()));
     m_pMap->Init();
 
@@ -35,8 +38,6 @@ void DoomEngine::LoadWAD()
 {
     m_WADLoader.SetWADFilePath(GetWADFileName());
     m_WADLoader.LoadWADToMemory();
-    m_WADLoader.LoadPalette(m_pDisplayManager.get());
-    m_WADLoader.LoadMapData(m_pMap.get());
 }
 
 std::string DoomEngine::GetWADFileName()
@@ -50,6 +51,7 @@ void DoomEngine::Render()
 
     m_pDisplayManager->InitFrame();
     m_pViewRenderer->Render(pScreenBuffer, m_iRenderWidth);
+    m_pPlayer->Render(pScreenBuffer, m_iRenderWidth);
 
     m_pDisplayManager->Render();
 }
@@ -145,6 +147,12 @@ int DoomEngine::GetRenderHeight()
 string DoomEngine::GetAppName()
 {
     return m_sAppName;
+}
+
+void DoomEngine::ReadDataFromWAD()
+{
+    m_WADLoader.LoadPalette(m_pDisplayManager.get());
+    m_WADLoader.LoadMapData(m_pMap.get());
 }
 
 int DoomEngine::GetTimePerFrame()
