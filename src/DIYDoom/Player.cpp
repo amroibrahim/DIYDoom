@@ -4,6 +4,7 @@
 Player::Player(ViewRenderer *pViewRenderer, int iID) : m_pViewRenderer(pViewRenderer), m_iPlayerID(iID), m_FOV(90), m_iRotationSpeed(4), m_iMoveSpeed(4), m_EyeLevel(41)
 {
     m_ZPosition = m_EyeLevel;
+    m_pWeapon = std::unique_ptr<Weapon>(new Weapon("PISGA0"));
 }
 
 Player::~Player()
@@ -174,4 +175,9 @@ int Player::GetFOV()
 void Player::Think(int iSubSectorHieght)
 {
     m_ZPosition = iSubSectorHieght + m_EyeLevel;
+}
+
+void Player::Render(uint8_t *pScreenBuffer, int iBufferPitch)
+{
+    m_pWeapon->Render(pScreenBuffer, iBufferPitch);
 }

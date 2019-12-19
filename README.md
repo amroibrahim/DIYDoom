@@ -20,3 +20,4 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 016 - Portals](../Week016/tutorial)  
 [Week 017 - History](../Week017/tutorial)  
 [Week 018 - Color Palette](../Week018/tutorial)  
+[Week 019 - Patch Format](../Week019/tutorial)  

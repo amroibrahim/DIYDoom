@@ -1,5 +1,7 @@
 #include "WADLoader.h"
 
+#include "AssetsManager.h"
+
 #include <iostream>
 
 using namespace std;
@@ -429,3 +431,33 @@ bool WADLoader::LoadPalette(DisplayManager *pDisplayManager)
     
     return true;
 }
+
+bool WADLoader::LoadPatch(const std::string &sPatchName)
+{
+    AssetsManager *pAssetsManager = AssetsManager::GetInstance();
+    int iPatchIndex = FindLumpByName(sPatchName);
+    if (strcmp(m_WADDirectories[iPatchIndex].LumpName, sPatchName.c_str()) != 0)
+    {
+        return false;
+    }
+
+    WADPatchHeader PatchHeader;
+    m_Reader.ReadPatchHeader(m_pWADData, m_WADDirectories[iPatchIndex].LumpOffset, PatchHeader);
+
+    Patch *pPatch = pAssetsManager->AddPatch(sPatchName, PatchHeader);
+
+    WADPatchColumn PatchColumn;
+
+    for (int i = 0; i < PatchHeader.Width; ++i)
+    {
+        int Offset = m_WADDirectories[iPatchIndex].LumpOffset + PatchHeader.ColumnOffset[i];
+        do
+        {
+            Offset = m_Reader.ReadPatchColumn(m_pWADData, Offset, PatchColumn);
+            pPatch->AppendPatchColumn(PatchColumn);
+        } while (PatchColumn.TopDelta != 0xFF);
+    }
+
+    return true;
+}
+

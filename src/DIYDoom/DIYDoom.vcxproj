@@ -160,30 +160,36 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Angle.cpp" />
+    <ClCompile Include="AssetsManager.cpp" />
     <ClCompile Include="DisplayManager.cpp" />
     <ClCompile Include="DoomEngine.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="DIYDoom.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Things.cpp" />
     <ClCompile Include="ViewRenderer.cpp" />
     <ClCompile Include="WADLoader.cpp" />
     <ClCompile Include="WADReader.cpp" />
+    <ClCompile Include="Weapon.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Angle.h" />
+    <ClInclude Include="AssetsManager.h" />
     <ClInclude Include="ClassicDefs.h" />
     <ClInclude Include="DataTypes.h" />
     <ClInclude Include="DisplayManager.h" />
     <ClInclude Include="DoomEngine.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="Patch.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Things.h" />
     <ClInclude Include="ViewRenderer.h" />
     <ClInclude Include="WADLoader.h" />
     <ClInclude Include="WADReader.h" />
+    <ClInclude Include="Weapon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

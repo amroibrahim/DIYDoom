@@ -182,7 +182,7 @@ void WADReader::ReadSegData(const uint8_t *pWADData, int offset, WADSeg &seg)
     seg.Offset = Read2Bytes(pWADData, offset + 10);
 }
 
-void WADReader::ReadPalette(const uint8_t * pWADData, int offset, WADPalette &palette)
+void WADReader::ReadPalette(const uint8_t *pWADData, int offset, WADPalette &palette)
 {
     for (int i = 0; i < 256; ++i)
     {
@@ -192,3 +192,47 @@ void WADReader::ReadPalette(const uint8_t * pWADData, int offset, WADPalette &pa
         palette.Colors[i].a = 255;
     }
 }
+
+void WADReader::ReadPatchHeader(const uint8_t *pWADData, int offset, WADPatchHeader &patchheader)
+{
+    //0x00 to 0x01
+    patchheader.Width = Read2Bytes(pWADData, offset);
+
+    //0x02 to 0x03
+    patchheader.Height = Read2Bytes(pWADData, offset + 2);
+
+    patchheader.LeftOffset = Read2Bytes(pWADData, offset + 4);
+    patchheader.TopOffset = Read2Bytes(pWADData, offset + 6);
+    patchheader.ColumnOffset = new uint32_t[patchheader.Width];
+
+    offset = offset + 8;
+    for (int i = 0; i < patchheader.Width; ++i)
+    {
+        patchheader.ColumnOffset[i] = Read4Bytes(pWADData, offset);
+        offset += 4;
+    }
+}
+
+int WADReader::ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColumn &patch)
+{
+    patch.TopDelta = pWADData[offset++];
+    int iDataIndex = 0;
+    if (patch.TopDelta != 0xFF)
+    {
+        patch.Length = pWADData[offset++];
+        patch.PaddingPre = pWADData[offset++];
+
+        // The patch class instance if responsible to free memory on distruction
+        // TODO: use smart pointer
+        patch.pColumnData = new uint8_t[patch.Length];
+
+        for (int i = 0; i < patch.Length; ++i)
+        {
+            patch.pColumnData[i] = pWADData[offset++];
+        }
+
+        patch.PaddingPost = pWADData[offset++];
+    }
+    return offset;
+}
+

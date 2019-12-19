@@ -182,6 +182,24 @@ struct Node
     uint16_t BackChildID;
 };
 
+struct WADPatchHeader
+{
+    uint16_t Width;
+    uint16_t Height;
+    int16_t LeftOffset;
+    int16_t TopOffset;
+    uint32_t *ColumnOffset;
+};
+
+struct WADPatchColumn
+{
+    uint8_t TopDelta;
+    uint8_t Length;
+    uint8_t	PaddingPre;
+    uint8_t *pColumnData;
+    uint8_t PaddingPost;
+};
+
 struct WADPalette
 {
     SDL_Color Colors[256];
