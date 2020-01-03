@@ -66,8 +66,8 @@ The WAD file has 3 main parts, header, lumps, and directories.
 4. Read all the directories and print them.  
 
 ## Design  
-let's keep things simple for now.  
-let's have a class to just open and load the WAD and call it WADLoader.  
+Let's keep things simple for now.  
+Let's have a class to just open and load the WAD and call it WADLoader.  
 Then let's have a class responsible for reading the Data based on their formats and call it WADReader.  
 We will also need a simple main function that calls those classes.   
 
@@ -78,8 +78,8 @@ So, let's start by creating an empty C++ Project, in a visual studio just click 
 
 ![New Project](./img/newproject.PNG)  
 
-let's add two new classes WADLoader, and WADReader.  
-let's start by implementing WADLoader.  
+We'll add two new classes WADLoader, and WADReader.  
+And we'll start by implementing WADLoader.  
 
 ``` cpp
 class WADLoader
@@ -107,7 +107,7 @@ WADLoader::WADLoader(string sWADFilePath) : m_WADData(NULL), m_sWADFilePath(sWAD
 {
 }
 ```
-Now let's start implementing the helper load function OpenAndLoad, just let's try to open the file as binary, and print an error if we fail.  
+Now let's start implementing the helper load function OpenAndLoad, and try to open the file as binary, and print an error if we fail.  
 
 ``` cpp
 m_WADFile.open(m_sWADFilePath, ifstream::binary);
@@ -118,7 +118,7 @@ if (!m_WADFile.is_open())
 }
 ```
 
-if all is going fine and we were able to find and open the file, we need to know the file size so we could allocate memory to copy the file to.  
+if all is going fine and we were able to find and open the file, we need to know the file size so we can allocate memory to copy the file to.  
 
 ``` cpp
 m_WADFile.seekg(0, m_WADFile.end);
@@ -160,7 +160,7 @@ bool WADLoader::LoadWAD()
 }
 ```
 
-And let's add somebody in our main function that creates an instance of our class and try and load the WAD  
+And in our main function we will create an instance of our class and try and load the WAD  
 
 ``` cpp
 int main()
@@ -192,7 +192,7 @@ The header has a total of 12 bytes (0x00 to 0x0b), this 12-bytes is divided to 3
 Next 4 bytes is an unsigned int that will hold the total count of directories at the end of the file.
 Next 4 bytes will represent the offset of the first directory.  
 
-let's add a struct that would hold this information for us. I'm adding a new header file and call it "DataTypes.h" there we will define any structs we need.  
+Now add a struct that will hold this information for us. I'm adding a new header file called "DataTypes.h" there we will define any structs we need.  
 
 ``` cpp
 struct Header
@@ -204,8 +204,11 @@ struct Header
 ```
 
 Now we need to implement the WADReader class, this class will read data from the loaded WAD bytes array.  
-Oh! there is a catch, WAD files are a big-endian format, that means we need to shift the bytes to make them little-endian (most systems nowadays are little endian).  
-Let's add 2 functions to accomplish this, one to handle 2 bytes (16 bits), and one to handle 4 bytes (32 bits), there is nothing to do if we only need to read 1 byte.  
+Oh! there is a catch, WAD files are a big-endian format, that means we need to shift the bytes to make them little-endian (most systems nowadays are little endian).
+
+What this means in the context of Doom is not that the bits are shifted, rather, the bytes are shifted. So a 16-bit int is made up of two bytes which are stored broken down to two bytes, with the left-most byte stored first, followed by the next left-most byte and so on. A 16-bit int that looks like `0000000000011101` is stored as `00011101, 00000000`.
+
+Let's add 2 functions to accomplish this, one to handle 2 bytes (16 bits), and one to handle 4 bytes (32 bits), there is nothing to do if we only need to read 1 byte. 
 
 ``` cpp
 uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
@@ -239,7 +242,7 @@ void WADReader::ReadHeaderData(const uint8_t *pWADData, int offset, Header &head
 }
 ```
 
-let's stitch everything together and call those functions and print out the results  
+now stitch everything together and call those functions to print out the results  
 
 ``` cpp
 bool WADLoader::ReadDirectories()
