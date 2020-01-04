@@ -48,9 +48,9 @@ The WAD file has 3 main parts, header, lumps, and directories.
 ### Header Format  
 | Field Size | Data Type    | Content                                                        |  
 |------------|--------------|----------------------------------------------------------------|  
-| 0x00-0x03  | 4 ASCII char | ASCII string (with values "IWAD" or "PWAD").                   |  
-| 0x04-0x07  | unsigned int | The number of directories entry.                               |  
-| 0x08-0x0b  | unsigned int | Offset value to the directory in the WAD file.                 |  
+| 0x00-0x03  | 4 ASCII char | *Must* be an ASCII string (either "IWAD" or "PWAD").           |  
+| 0x04-0x07  | unsigned int | The number entries in the directory.                           |  
+| 0x08-0x0b  | unsigned int | Offset in bytes to the directory in the WAD file.              |  
 
 ### Directories Format  
 | Field Size | Data Type    | Content                                                        |  
