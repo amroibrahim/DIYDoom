@@ -18,31 +18,31 @@ The WAD file has 3 main parts, header, lumps, and directories.
 3. Directories  
    This is an organizational structure to find data in the lump section.  
 ```
-                       <---- 32 bits  ---->          
-                       /------------------\          
-            --->  0x00 |  ASCII WAD Type  | 0X03     
-            |          |------------------|          
-    Header -|     0x04 | # of directories | 0x07     
-            |          |------------------|          
-            --->  0x08 | directory offset | 0x0B --  
-            --->       |------------------| <--    | 
-            |     0x0C |     Lump Data    |    |   | 
-            |          |------------------|    |   | 
-    Lumps - |          |        .         |    |   | 
-            |          |        .         |    |   | 
-            |          |        .         |    |   | 
-            --->       |        .         |    |   | 
-            --->       |------------------| <--|---  
-            |          |    Lump offset   |    |     
-            |          |------------------|    |     
- Directory -|          | directory offset | ---      
-    List    |          |------------------|          
-            |          |    Lump Name     |   
-            |          |------------------| 
-            |          |        .         |        
-            |          |        .         | 
-            |          |        .         | 
-            --->       \------------------/          
+                       <───── 32 bits ──────>
+                       ┌────────────────────┐
+            ┌──── 0x00 |  ASCII WAD Type    | 0x03
+            |          | ────────────────── |
+    Header ─┤     0x04 | # of directories   | 0x07
+            |          | ────────────────── |
+            └──── 0x08 | offset to listing ───0x0B ──┐
+            ┌────────  | ────────────────── |        |
+            |     0x0C | ┌────────────────┐ |        |
+            |          | |   Lump Bytes   |<─────┐   |
+    Lumps ──┤          | |       .        | |    |   |
+            |          | └────────────────┘ |    |   |
+            |          |         .          |    |   |
+            └────────  |         .          |    |   |
+            ┌────────  | ┌────────────────┐ | <──────┘
+            |          | |   Lump Offset  |──────┘
+            |          | |----------------| |
+ Directory ─┤          | |   Lump Size    | |
+    List    |          | |----------------| |
+            |          | |   Lump Name    | |
+            |          | └────────────────┘ |
+            |          |         .          |
+            |          |         .          |
+            |          |         .          |
+            └────────  └────────────────────┘      
 ```
 
 ### Header Format  
