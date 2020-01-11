@@ -44,7 +44,7 @@ protected:
     void RenderBSPNodes(int iNodeID);
     void RenderSubsector(int iSubsectorID);
 
-    bool IsPointOnBackSide(int XPosition, int YPosition, int iNodeID);
+    bool IsPointOnLeftSide(int XPosition, int YPosition, int iNodeID);
 
     std::string m_sName;
 

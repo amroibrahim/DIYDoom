@@ -132,8 +132,8 @@ void WADReader::ReadLinedefData(const uint8_t *pWADData, int offset, WADLinedef 
     linedef.Flags = Read2Bytes(pWADData, offset + 4);
     linedef.LineType = Read2Bytes(pWADData, offset + 6);
     linedef.SectorTag = Read2Bytes(pWADData, offset + 8);
-    linedef.FrontSidedef = Read2Bytes(pWADData, offset + 10);
-    linedef.BackSidedef = Read2Bytes(pWADData, offset + 12);
+    linedef.RightSidedef = Read2Bytes(pWADData, offset + 10);
+    linedef.LeftSidedef = Read2Bytes(pWADData, offset + 12);
 }
 
 void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
@@ -152,18 +152,18 @@ void WADReader::ReadNodeData(const uint8_t *pWADData, int offset, Node &node)
     node.ChangeXPartition = Read2Bytes(pWADData, offset + 4);
     node.ChangeYPartition = Read2Bytes(pWADData, offset + 6);
 
-    node.FrontBoxTop = Read2Bytes(pWADData, offset + 8);
-    node.FrontBoxBottom = Read2Bytes(pWADData, offset + 10);
-    node.FrontBoxLeft = Read2Bytes(pWADData, offset + 12);
-    node.FrontBoxRight = Read2Bytes(pWADData, offset + 14);
+    node.RightBoxTop = Read2Bytes(pWADData, offset + 8);
+    node.RightBoxBottom = Read2Bytes(pWADData, offset + 10);
+    node.RightBoxLeft = Read2Bytes(pWADData, offset + 12);
+    node.RightBoxRight = Read2Bytes(pWADData, offset + 14);
 
-    node.BackBoxTop = Read2Bytes(pWADData, offset + 16);
-    node.BackBoxBottom = Read2Bytes(pWADData, offset + 18);
-    node.BackBoxLeft = Read2Bytes(pWADData, offset + 20);
-    node.BackBoxRight = Read2Bytes(pWADData, offset + 22);
+    node.LeftBoxTop = Read2Bytes(pWADData, offset + 16);
+    node.LeftBoxBottom = Read2Bytes(pWADData, offset + 18);
+    node.LeftBoxLeft = Read2Bytes(pWADData, offset + 20);
+    node.LeftBoxRight = Read2Bytes(pWADData, offset + 22);
 
-    node.FrontChildID = Read2Bytes(pWADData, offset + 24);
-    node.BackChildID = Read2Bytes(pWADData, offset + 26);
+    node.RightChildID = Read2Bytes(pWADData, offset + 24);
+    node.LeftChildID = Read2Bytes(pWADData, offset + 26);
 }
 
 void WADReader::ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector)
