@@ -42,13 +42,13 @@ If you noticed the last field is just a pointer to a pixels column/post, an imag
 Now let’s look at the more complicated part of the picture format.  
 
 ### Patch Column Data
-| Field Size | Data Type | Content                                |  
-|------------|-----------|----------------------------------------|  
-| 0x00-0x01  |    byte   | Offset (Y Offset) terminated with 0xFF |
-| 0x02-0x03  |    byte   | Length of data                         |
-| 0x04-0x05  |    byte   | Padding byte (not used)                |
-| 0x06-0x??  |   Length  | (Data) pixels; an index into  palette  |
-| 0x00-0x01  |    byte   | Padding byte (not used)                |
+| Field Size | Data Type | Content                                        |  
+|------------|-----------|------------------------------------------------|  
+| 0x00-0x01  |    byte   | Offset (Y Offset) terminated with 0xFF         |  
+| 0x02-0x03  |    byte   | Length of data                                 |  
+| 0x04-0x05  |    byte   | Padding byte (not used)                        |  
+| 0x06-0x??  |   Length  | Pixel Data, each byte is an index into palette |  
+| 0x00-0x01  |    byte   | Padding byte (not used)                        |  
 
 The column data might look simple at the first glance, but let’s have a deeper look. First let’s look at the first field, the Y offset. A single column of pixels can be stored into multiple patch data, we must keep reading consecutive Patch column Data until we read an offset with the value 0xFF. So, this field serves two purposes, 
 * Tell us the Y offset of the pixels we are about to read.  
