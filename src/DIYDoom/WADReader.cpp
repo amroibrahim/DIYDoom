@@ -132,8 +132,8 @@ void WADReader::ReadLinedefData(const uint8_t *pWADData, int offset, WADLinedef 
     linedef.Flags = Read2Bytes(pWADData, offset + 4);
     linedef.LineType = Read2Bytes(pWADData, offset + 6);
     linedef.SectorTag = Read2Bytes(pWADData, offset + 8);
-    linedef.RightSidedef = Read2Bytes(pWADData, offset + 10);
-    linedef.LeftSidedef = Read2Bytes(pWADData, offset + 12);
+    linedef.FrontSidedef = Read2Bytes(pWADData, offset + 10);
+    linedef.BackSidedef = Read2Bytes(pWADData, offset + 12);
 }
 
 void WADReader::ReadThingData(const uint8_t *pWADData, int offset, Thing &thing)
@@ -152,18 +152,18 @@ void WADReader::ReadNodeData(const uint8_t *pWADData, int offset, Node &node)
     node.ChangeXPartition = Read2Bytes(pWADData, offset + 4);
     node.ChangeYPartition = Read2Bytes(pWADData, offset + 6);
 
-    node.RightBoxTop = Read2Bytes(pWADData, offset + 8);
-    node.RightBoxBottom = Read2Bytes(pWADData, offset + 10);
-    node.RightBoxLeft = Read2Bytes(pWADData, offset + 12);
-    node.RightBoxRight = Read2Bytes(pWADData, offset + 14);
+    node.FrontBoxTop = Read2Bytes(pWADData, offset + 8);
+    node.FrontBoxBottom = Read2Bytes(pWADData, offset + 10);
+    node.FrontBoxLeft = Read2Bytes(pWADData, offset + 12);
+    node.FrontBoxRight = Read2Bytes(pWADData, offset + 14);
 
-    node.LeftBoxTop = Read2Bytes(pWADData, offset + 16);
-    node.LeftBoxBottom = Read2Bytes(pWADData, offset + 18);
-    node.LeftBoxLeft = Read2Bytes(pWADData, offset + 20);
-    node.LeftBoxRight = Read2Bytes(pWADData, offset + 22);
+    node.BackBoxTop = Read2Bytes(pWADData, offset + 16);
+    node.BackBoxBottom = Read2Bytes(pWADData, offset + 18);
+    node.BackBoxLeft = Read2Bytes(pWADData, offset + 20);
+    node.BackBoxRight = Read2Bytes(pWADData, offset + 22);
 
-    node.RightChildID = Read2Bytes(pWADData, offset + 24);
-    node.LeftChildID = Read2Bytes(pWADData, offset + 26);
+    node.FrontChildID = Read2Bytes(pWADData, offset + 24);
+    node.BackChildID = Read2Bytes(pWADData, offset + 26);
 }
 
 void WADReader::ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector)
@@ -203,17 +203,36 @@ void WADReader::ReadPatchHeader(const uint8_t *pWADData, int offset, WADPatchHea
 
     patchheader.LeftOffset = Read2Bytes(pWADData, offset + 4);
     patchheader.TopOffset = Read2Bytes(pWADData, offset + 6);
-    patchheader.ColumnOffset = new uint32_t[patchheader.Width];
+    patchheader.pColumnOffsets = new uint32_t[patchheader.Width];
 
     offset = offset + 8;
     for (int i = 0; i < patchheader.Width; ++i)
     {
-        patchheader.ColumnOffset[i] = Read4Bytes(pWADData, offset);
+        patchheader.pColumnOffsets[i] = Read4Bytes(pWADData, offset);
         offset += 4;
     }
 }
 
-int WADReader::ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColumn &patch)
+void WADReader::ReadPName(const uint8_t *pWADData, int offset, WADPNames &PNames)
+{
+    PNames.PNameCount = Read4Bytes(pWADData, offset);
+    PNames.PNameOffset = offset + 4;
+}
+
+void WADReader::ReadTextureHeader(const uint8_t *pWADData, int offset, WADTextureHeader &textureheader)
+{
+    textureheader.TexturesCount = Read4Bytes(pWADData, offset);
+    textureheader.TexturesOffset = Read4Bytes(pWADData, offset + 4);
+    textureheader.pTexturesDataOffset = new uint32_t[textureheader.TexturesCount];
+    offset = offset + 4;
+    for (int i = 0; i < textureheader.TexturesCount; ++i)
+    {
+        textureheader.pTexturesDataOffset[i] = Read4Bytes(pWADData, offset);
+        offset += 4;
+    }
+}
+
+int WADReader::ReadPatchColumn(const uint8_t *pWADData, int offset, PatchColumnData &patch)
 {
     patch.TopDelta = pWADData[offset++];
     int iDataIndex = 0;
@@ -222,7 +241,6 @@ int WADReader::ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColu
         patch.Length = pWADData[offset++];
         patch.PaddingPre = pWADData[offset++];
 
-        // The patch class instance if responsible to free memory on distruction
         // TODO: use smart pointer
         patch.pColumnData = new uint8_t[patch.Length];
 
@@ -236,3 +254,51 @@ int WADReader::ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColu
     return offset;
 }
 
+
+void WADReader::ReadTextureData(const uint8_t *pWADData, int offset, WADTextureData &texture)
+{
+    texture.TextureName[0] = pWADData[offset];
+    texture.TextureName[1] = pWADData[offset + 1];
+    texture.TextureName[2] = pWADData[offset + 2];
+    texture.TextureName[3] = pWADData[offset + 3];
+    texture.TextureName[4] = pWADData[offset + 4];
+    texture.TextureName[5] = pWADData[offset + 5];
+    texture.TextureName[6] = pWADData[offset + 6];
+    texture.TextureName[7] = pWADData[offset + 7];
+    texture.TextureName[8] = '\0';
+
+    texture.Flags = Read4Bytes(pWADData, offset + 8);
+    texture.Width = Read2Bytes(pWADData, offset + 12);
+    texture.Height = Read2Bytes(pWADData, offset + 14);
+    texture.ColumnDirectory = Read4Bytes(pWADData, offset + 16);
+    texture.PatchCount = Read2Bytes(pWADData, offset + 20);
+    texture.pTexturePatch = new WADTexturePatch[texture.PatchCount];
+
+    offset += 22;
+    for (int i = 0; i < texture.PatchCount; ++i)
+    {
+        ReadTexturePatch(pWADData, offset, texture.pTexturePatch[i]);
+        offset += 10;
+    }
+}
+
+void WADReader::ReadTexturePatch(const uint8_t *pWADData, int offset, WADTexturePatch &texturepatch)
+{
+    texturepatch.XOffset = Read2Bytes(pWADData, offset);
+    texturepatch.YOffset = Read2Bytes(pWADData, offset + 2);
+    texturepatch.PNameIndex = Read2Bytes(pWADData, offset + 4);
+    texturepatch.StepDir = Read2Bytes(pWADData, offset + 6);
+    texturepatch.ColorMap = Read2Bytes(pWADData, offset + 8);
+}
+
+void WADReader::Read8Characters(const uint8_t * pWADData, int offset, char *pName)
+{
+    pName[0] = pWADData[offset++];
+    pName[1] = pWADData[offset++];
+    pName[2] = pWADData[offset++];
+    pName[3] = pWADData[offset++];
+    pName[4] = pWADData[offset++];
+    pName[5] = pWADData[offset++];
+    pName[6] = pWADData[offset++];
+    pName[7] = pWADData[offset];
+}

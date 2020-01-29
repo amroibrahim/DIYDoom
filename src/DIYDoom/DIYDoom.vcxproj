@@ -168,6 +168,7 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Things.cpp" />
     <ClCompile Include="ViewRenderer.cpp" />
     <ClCompile Include="WADLoader.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="Patch.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Things.h" />
     <ClInclude Include="ViewRenderer.h" />
     <ClInclude Include="WADLoader.h" />

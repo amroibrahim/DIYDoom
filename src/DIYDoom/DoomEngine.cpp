@@ -23,7 +23,7 @@ bool DoomEngine::Init()
     m_pViewRenderer = unique_ptr<ViewRenderer> (new ViewRenderer());
     m_pThings = unique_ptr<Things>(new Things());
     m_pPlayer = unique_ptr<Player>(new Player(m_pViewRenderer.get(), 1));
-    m_pMap = unique_ptr<Map>( new Map(m_pViewRenderer.get(), "E1M1", m_pPlayer.get(), m_pThings.get()));
+    m_pMap = unique_ptr<Map>(new Map(m_pViewRenderer.get(), "E1M1", m_pPlayer.get(), m_pThings.get()));
    
     ReadDataFromWAD();
 

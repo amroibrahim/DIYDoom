@@ -83,22 +83,22 @@ void Map::BuildLinedef()
         linedef.LineType = wadlinedef.LineType;
         linedef.SectorTag = wadlinedef.SectorTag;
 
-        if (wadlinedef.RightSidedef == 0xFFFF)
+        if (wadlinedef.FrontSidedef == 0xFFFF)
         {
-            linedef.pRightSidedef = nullptr;
+            linedef.pFrontSidedef = nullptr;
         }
         else
         {
-            linedef.pRightSidedef = &m_Sidedefs[wadlinedef.RightSidedef];
+            linedef.pFrontSidedef = &m_Sidedefs[wadlinedef.FrontSidedef];
         }
 
-        if (wadlinedef.LeftSidedef == 0xFFFF)
+        if (wadlinedef.BackSidedef == 0xFFFF)
         {
-            linedef.pLeftSidedef = nullptr;
+            linedef.pBackSidedef = nullptr;
         }
         else
         {
-            linedef.pLeftSidedef = &m_Sidedefs[wadlinedef.LeftSidedef];
+            linedef.pBackSidedef = &m_Sidedefs[wadlinedef.BackSidedef];
         }
 
         m_Linedefs.push_back(linedef);
@@ -119,42 +119,42 @@ void Map::BuildSeg()
 
         seg.pStartVertex = &m_Vertexes[wadseg.StartVertexID];
         seg.pEndVertex = &m_Vertexes[wadseg.EndVertexID];
-        // 8.38190317e-8 is to conver from Binary angles (BAMS) to float
+        // 8.38190317e-8 is to convert from Binary angles (BAMS) to float
         seg.SlopeAngle = ((float)(wadseg.SlopeAngle << 16) * 8.38190317e-8);
         seg.pLinedef = &m_Linedefs[wadseg.LinedefID];
         seg.Direction = wadseg.Direction;
         seg.Offset = (float)(wadseg.Offset << 16) / (float)(1 << 16);
 
-        Sidedef *pRightSidedef;
-        Sidedef *pLeftSidedef;
+        Sidedef *pFrontSidedef;
+        Sidedef *pBackSidedef;
 
         if (seg.Direction)
         {
-            pRightSidedef = seg.pLinedef->pLeftSidedef;
-            pLeftSidedef = seg.pLinedef->pRightSidedef;
+            pFrontSidedef = seg.pLinedef->pBackSidedef;
+            pBackSidedef = seg.pLinedef->pFrontSidedef;
         }
         else
         {
-            pRightSidedef = seg.pLinedef->pRightSidedef;
-            pLeftSidedef = seg.pLinedef->pLeftSidedef;
+            pFrontSidedef = seg.pLinedef->pFrontSidedef;
+            pBackSidedef = seg.pLinedef->pBackSidedef;
         }
 
-        if (pRightSidedef)
+        if (pFrontSidedef)
         {
-            seg.pRightSector = pRightSidedef->pSector;
+            seg.pFrontSector = pFrontSidedef->pSector;
         }
         else
         {
-            seg.pRightSector = nullptr;
+            seg.pFrontSector = nullptr;
         }
 
-        if (pLeftSidedef)
+        if (pBackSidedef)
         {
-            seg.pLeftSector = pLeftSidedef->pSector;
+            seg.pBackSector = pBackSidedef->pSector;
         }
         else
         {
-            seg.pLeftSector = nullptr;
+            seg.pBackSector = nullptr;
         }
 
         m_Segs.push_back(seg);
@@ -262,17 +262,17 @@ void Map::RenderBSPNodes(int iNodeID)
         return;
     }
 
-    bool isOnLeft = IsPointOnLeftSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iNodeID);
+    bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iNodeID);
 
-    if (isOnLeft)
+    if (isOnBack)
     {
-        RenderBSPNodes(m_Nodes[iNodeID].LeftChildID);
-        RenderBSPNodes(m_Nodes[iNodeID].RightChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
     }
     else
     {
-        RenderBSPNodes(m_Nodes[iNodeID].RightChildID);
-        RenderBSPNodes(m_Nodes[iNodeID].LeftChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].FrontChildID);
+        RenderBSPNodes(m_Nodes[iNodeID].BackChildID);
     }
 }
 
@@ -291,7 +291,7 @@ void Map::RenderSubsector(int iSubsectorID)
     }
 }
 
-bool Map::IsPointOnLeftSide(int XPosition, int YPosition, int iNodeID)
+bool Map::IsPointOnBackSide(int XPosition, int YPosition, int iNodeID)
 {
     int dx = XPosition - m_Nodes[iNodeID].XPartition;
     int dy = YPosition - m_Nodes[iNodeID].YPartition;
@@ -320,19 +320,19 @@ int Map::GetPlayerSubSectorHieght()
     while (!(iSubsectorID & SUBSECTORIDENTIFIER))
     {
 
-        bool isOnLeft = IsPointOnLeftSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iSubsectorID);
+        bool isOnBack = IsPointOnBackSide(m_pPlayer->GetXPosition(), m_pPlayer->GetYPosition(), iSubsectorID);
 
-        if (isOnLeft)
+        if (isOnBack)
         {
-            iSubsectorID = m_Nodes[iSubsectorID].LeftChildID;
+            iSubsectorID = m_Nodes[iSubsectorID].BackChildID;
         }
         else
         {
-            iSubsectorID = m_Nodes[iSubsectorID].RightChildID;
+            iSubsectorID = m_Nodes[iSubsectorID].FrontChildID;
         }
     }
     Subsector &subsector = m_Subsector[iSubsectorID & (~SUBSECTORIDENTIFIER)];
     Seg &seg = m_Segs[subsector.FirstSegID];
-    return seg.pRightSector->FloorHeight;
+    return seg.pFrontSector->FloorHeight;
     
 }

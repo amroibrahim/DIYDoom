@@ -21,9 +21,14 @@ public:
     void ReadSubsectorData(const uint8_t *pWADData, int offset, Subsector &subsector);
     void ReadSegData(const uint8_t *pWADData, int offset, WADSeg &seg);
     void ReadPalette(const uint8_t *pWADData, int offset, WADPalette &palette);
-	void ReadPatchHeader(const uint8_t *pWADData, int offset, WADPatchHeader &patchheader);
+    void ReadPatchHeader(const uint8_t *pWADData, int offset, WADPatchHeader &patchheader);
+    void ReadPName(const uint8_t *pWADData, int offset, WADPNames &PNames);
+    void ReadTextureHeader(const uint8_t *pWADData, int offset, WADTextureHeader &textureheader);
+    void ReadTextureData(const uint8_t *pWADData, int offset, WADTextureData &texture);
+    void ReadTexturePatch(const uint8_t *pWADData, int offset, WADTexturePatch &texturepatch);
+    void Read8Characters(const uint8_t *pWADData, int offset, char *pName);
 
-    int ReadPatchColumn(const uint8_t *pWADData, int offset, WADPatchColumn &patch);
+    int ReadPatchColumn(const uint8_t *pWADData, int offset, PatchColumnData &patch);
     
 protected:
     uint16_t Read2Bytes(const uint8_t *pWADData, int offset);

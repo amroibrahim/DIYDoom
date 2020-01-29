@@ -118,8 +118,8 @@ struct WADLinedef
     uint16_t Flags;
     uint16_t LineType;
     uint16_t SectorTag;
-    uint16_t RightSidedef; //0xFFFF means there is no sidedef
-    uint16_t LeftSidedef;  //0xFFFF means there is no sidedef
+    uint16_t FrontSidedef; //0xFFFF means there is no sidedef
+    uint16_t BackSidedef;  //0xFFFF means there is no sidedef
 };
 
 struct Linedef
@@ -129,8 +129,8 @@ struct Linedef
     uint16_t Flags;
     uint16_t LineType;
     uint16_t SectorTag;
-    Sidedef *pRightSidedef;
-    Sidedef *pLeftSidedef;
+    Sidedef *pFrontSidedef;
+    Sidedef *pBackSidedef;
 };
 
 struct WADSeg
@@ -151,8 +151,8 @@ struct Seg
     Linedef *pLinedef;
     uint16_t Direction; // 0 same as linedef, 1 opposite of linedef
     uint16_t Offset; // distance along linedef to start of seg    
-    Sector *pRightSector;
-    Sector *pLeftSector;
+    Sector *pFrontSector;
+    Sector *pBackSector;
 };
 
 struct Subsector
@@ -168,18 +168,18 @@ struct Node
     int16_t ChangeXPartition;
     int16_t ChangeYPartition;
 
-    int16_t RightBoxTop;
-    int16_t RightBoxBottom;
-    int16_t RightBoxLeft;
-    int16_t RightBoxRight;
+    int16_t FrontBoxTop;
+    int16_t FrontBoxBottom;
+    int16_t FrontBoxLeft;
+    int16_t FrontBoxRight;
 
-    int16_t LeftBoxTop;
-    int16_t LeftBoxBottom;
-    int16_t LeftBoxLeft;
-    int16_t LeftBoxRight;
+    int16_t BackBoxTop;
+    int16_t BackBoxBottom;
+    int16_t BackBoxLeft;
+    int16_t BackBoxRight;
 
-    uint16_t RightChildID;
-    uint16_t LeftChildID;
+    uint16_t FrontChildID;
+    uint16_t BackChildID;
 };
 
 struct WADPatchHeader
@@ -188,16 +188,49 @@ struct WADPatchHeader
     uint16_t Height;
     int16_t LeftOffset;
     int16_t TopOffset;
-    uint32_t *ColumnOffset;
+    uint32_t *pColumnOffsets;
 };
 
-struct WADPatchColumn
+struct PatchColumnData
 {
     uint8_t TopDelta;
     uint8_t Length;
     uint8_t	PaddingPre;
     uint8_t *pColumnData;
     uint8_t PaddingPost;
+};
+
+struct WADPNames
+{
+    uint32_t PNameCount;
+    uint32_t PNameOffset;
+};
+
+struct WADTextureHeader
+{
+    uint32_t TexturesCount;
+    uint32_t TexturesOffset;
+    uint32_t *pTexturesDataOffset;
+};
+
+struct WADTexturePatch
+{
+    int16_t XOffset;
+    int16_t YOffset;
+    uint16_t PNameIndex;
+    uint16_t StepDir; // Unused value.
+    uint16_t ColorMap; // Unused value.
+};
+
+struct WADTextureData
+{
+    char TextureName[9];
+    uint32_t Flags;
+    uint16_t Width;
+    uint16_t Height;
+    uint32_t ColumnDirectory; // Unused value.
+    uint16_t PatchCount;
+    WADTexturePatch *pTexturePatch;
 };
 
 struct WADPalette

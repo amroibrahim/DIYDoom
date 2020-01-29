@@ -1,256 +1,369 @@
-# Week 019 - Patch Format
+# Week 020 - Texture Format
 
-We were able to read the palette that has all the colors we will need to draw an image on the screen, but we are not there yet to draw textures on walls. A texture is composed of multiple patches combined aka "multipatch texture". For now, let’s focus on a patch and their format as a first step.  
+Now it’s time to start looking into how texture is formatted in DOOM. The texture format and implementation are very interesting to study and learn about. With our knowledge about patch/picture format, it is time to dig deeper and look how textures are composed on run time. So, let’s get started.
 
-A patch is just a picture/image. The patch format in DOOM is interesting, its focus is a mix between transparency, compression, and performance.
-It is common to see transparency implemented as designating a color that is checked for while drawing. For example, in Wolfenstein 3D the color (RGB 152, 0, 136) was used to tell if a pixel is transparent.  
+A texture is composed of a single or multiple patch, that get formatted and overlapped to form the final texture.  
+Let’s have a look at a simple example given the following patches  
 
-![Wolfenstein 3D](./img/sprite.png)
+![WALL02_2](./img/WALL02_2.png) ![SW3S0](./img/SW3S0.png) ![SW4S0](./img/SW4S0.png)   
 
-One down side of using such an approach, is going over every pixel and checking if you need to draw it, (even with optimized solutions, and an X-OR is used instead of a check, you will still have to loop though every pixel in the sprite).   
+The two textures below are composed of the above patches
 
-DOOM patch/picture format solved the problem in a different way. So, let’s jump on.  
-The picture format consists of two parts, a header and the actual pixels that make the pictures. Let’s start with the header.  
+![SW1BRN1](./img/SW1BRN1.png)   
 
-### Patch Header Format  
-| Field Size | Data Type      | Content                         |  
-|------------|----------------|---------------------------------|  
-| 0x00-0x01  | Unsigned short | Patch (image) Width             |  
-| 0x02-0x03  | Unsigned short | Patch (image) Height            |  
-| 0x04-0x05  | signed short   | Left Offset (X Offset)          |  
-| 0x06-0x07  | signed short   | Top Offset (Y Offset)           | 
-| 0x08-0x0C* | 4 * Width      | Column/Post Data pointer offset |
+![SW1BRN2](./img/SW1BRN2.png)  
 
-let’s have a look at a very basic example.  
-The following is "WALL01_7" which can be found in the WAD (use Slade3)  
-Note: The images I'm using are resized for clarity  
+Did you start having a sense how powerfully this could be?  
 
-![Wall01_7](./img/WALL01_7.png)  
+Few things to note: 
+* Texture has its own size that is not dependent on the patch size.
+* The order of drawing patches will affect the final texture.
+* Such a LEGO design gives the map designer more flexibility when designing a wall texture.  
+* WAD size will be small (since you don't need to prebake those textures).
 
-The header content of the above patch/picture contains the following  
-* Width of 16 pixels, and a height of 72 pixels.
-* X offset from the origin is 7 and the y offset from the origin is 67.
-* Finally, a total of 16 offsets pointing to the patch columns data.
+Before we jump into how to compose the texture lets first have a look at the texture format in the WAD.
 
-Visualizing the header would look something like this  
+In the shareware version only TEXTURE1 lump exist, but for retail it also gets TEXTURE2 lump. So, to get a complete list of textures for retail version we must read both TEXTURE1, TEXTURE2 lumps (both lumps have exact same format).
 
-![Header](./img/header.png)  
+### Texture Header
+| Field Size | Size | Data Type    | Content                                                        |  
+|------------|------|--------------|----------------------------------------------------------------|  
+| 0x00-0x03  | 4    | unsigned int | Number of textures                                             |  
+| 0x04-0x07  | 4\*    | unsigned int | Array of offsets of textures data structure                  |  
 
-Reading the header will require a loop equal to the width of the image to read the offset for each column.  
-If you noticed the last field is just a pointer to a pixels column/post, an image with the same repeating column of pixels, can be stored only once and it can be refereed to multiple times, this can achieve some kind of compression.  
+### Texture Data
+| Field Size | Size | Data Type      | Content                                                                   |  
+|------------|------|----------------|---------------------------------------------------------------------------|  
+| 0x00-0x07	 |  8   | ASCII          | Name of texture                                                           |  
+| 0x08-0x0B  |  4   | unsigned int   | Ignored                                                                   |  
+| 0x0C-0x0D  |  2   | unsigned short | Texture width                                                             |  
+| 0x0E-0x0F	 |  2   | unsigned short | Texture height                                                            |  
+| 0x10-0x13  |  4   | unsigned int   | Ignored                                                                   |  
+| 0x14-0x15  |  2   | unsigned short | Number of patches used by the textures                                    |  
+| 0x16-0x17  |  10\* | Patch layout  | A structure that formats how the patch is drawn on the texture            |  
 
-Now let’s look at the more complicated part of the picture format.  
+### Patch layout
+This is how the patch should be drawn on the texture, the order affects final texture.
 
-### Patch Column Data
-| Field Size | Data Type | Content                                        |  
-|------------|-----------|------------------------------------------------|  
-| 0x00-0x01  |    byte   | Offset (Y Offset) terminated with 0xFF         |  
-| 0x02-0x03  |    byte   | Length of data                                 |  
-| 0x04-0x05  |    byte   | Padding byte (not used)                        |  
-| 0x06-0x??  |   Length  | Pixel Data, each byte is an index into palette |  
-| 0x00-0x01  |    byte   | Padding byte (not used)                        |  
+| Field Size | Size | Data Type    | Content                                                                   |  
+|------------|------|--------------|---------------------------------------------------------------------------|  
+| 0x00-0x01  |  2   | short int    | Horizontal offset of the patch relative to the upper-left of the texture  |  
+| 0x02-0x03  |  2   | short int    | Vertical offset of the patch relative to the upper-left of the texture    |  
+| 0x04-0x05  |  2   | short int    | Patch index as listed in patch names (PNAMES, see below)                  |  
+| 0x06-0x07  |  2   | short int    | Ignored                                                                   |  
+| 0x08-0x09  |  2   | short int    | Ignored                                                                   |  
 
-The column data might look simple at the first glance, but let’s have a deeper look. First let’s look at the first field, the Y offset. A single column of pixels can be stored into multiple patch data, we must keep reading consecutive Patch column Data until we read an offset with the value 0xFF. So, this field serves two purposes, 
-* Tell us the Y offset of the pixels we are about to read.  
-* Tell us if this is the end of the pixel columns.   
-The second field will give us the length of the data in the current Patch column data to read, and the data is an index to the colors in the palette.  
-The simple example we chose has two Patch column data for each column which look something like this for the first column/post  
+### Patch Names 
+| Field Size | Size | Data Type      | Content                               |  
+|------------|------|----------------|---------------------------------------|  
+| 0x00-0x03  |  4   | unsigned int   | Number of patches                     |  
+| 0x04-0x0A  |  8\* | unsigned short | Patch name, maximum 8 characters      |  
 
-![Patch Data](./img/patchdata.png)
+Visualizing all the above
 
-But what is the point of such an implementation? This is how transparency is implemented. If a pixel is transparent just don't have a Patch column data for it, and the Y offset will indicate a gap.  
-Visualizing this with an image with transparency.  
-Note: For clarity cayenne color is just added to visualize transparency.  
+![Texture](./img/Texture.png)  
 
-![Transparency](./img/trans.png)
+Now with all this information the simplest possible way we can generate the final texture is allocate a memory that matches the size of the texture and simple draw (copy) its patches into it, and we are done. Do you think this is what DOOM does? Of course not! The biggest problem with such approach is wasting memory. 
 
-Neat trick isn't it?  
-Now with all this information it should be easy write some code to read a patch and draw it on the screen.  
-I found the nicest thing to draw on the screen for now would be the player weapon, we will not make it function, we will just want some code to make sure we are reading the patch file correctly.  
+Let me explain, we said a texture could be composed of one or multiple patches. Let’s take the simplest case possible, a texture composed of one single patch. That mean if we allocate memory for the texture matching the texture size, then just copying the patch into it the texture we will have a duplication of exact same thing in memory. Once for the patch and once for the texture.   
+
+Memory allocated for the patch  
+
+![WALL02_2](./img/WALL02_2s.png)
+
+Memory allocated for the texture  
+
+![WALL02_2](./img/WALL02_2s.png)
+
+Do you see the problem?
+
+Let’s take another example let’s say we have a texture that is composed of two the same patch, next to each other  
+
+Memory allocated for the patch  
+
+![WALL02_2](./img/WALL02_2s.png)
+
+Memory allocated for the texture  
+
+![WALL02_2](./img/WALL02_22.png)
+
+Do you see the problem yet? It is just wasting memory with duplicate data!
+   
+Note: Some constrains for now, no transparency in textures.  
+
+Before we jump into how DOOM solved this problem, lets refresh how patch structure looked like
+
+![Patch](./img/Patch.png)
+
+The patch column is decoupled from the patch and just pointed to by the patch. Texture can use this to its own advantage, but just pointing to those patch column data (but that won’t work in all cases, we will explain more as we go on).
+
+Let’s start by a simple example, a texture that is composed of a single patch. All the texture needs to do is just point to those columns and reuse those data
+
+![Patch](./img/TexturePatch.png)  
+
+Notice No need to reallocate memory for the texture, just use pointers to the patch data.
+
+Now let’s move to another simple texture, a texture with 2 patches (those patches column don't overlap at all, they are next to each other)
+
+![WALL02_2](./img/WALL02_22.png)
+
+Again, you can use the above the same technic and just use pointers and save memory
+
+![Patch](./img/TexturePatch2.png)  
+
+So, where does the above technic fails? When two or more patches overlap in columns, look at the following example
+
+![Patch Overlap](./img/WALL02_o2.png)  
+
+The green area is unmodified (data in texture is same as in patch), but the red highlighted area has overlapping textures.
+
+![Patch High](./img/WALL02_col.png)
+
+For such case we need to allocate memory and re-construct the overlap area, and the rest of the texture can simply reuse the original patch data.
+
+![Patch](./img/TexturePatch3.png)  
+
+Some textures need all columns to be recomposed, a good example of this is the following (there is an overlap in every column).
+
+![WALL02_2](./img/SW1BRN1.png)
+
+Now, with all of this being said and you have an idea of how textures are represented, but there is an important step we have not talked about yet, which is detecting how to tell if a column has multiple textures. This is done in an initialization stage where we have an array size equal to the width of the texture, and we go through every patch in the texture keeping track which column it occupies, and when we go through all patches, any column that has a number more than 1 patch then it needs to be composed.
+
+On final thing before we move to implementation, transparency, all the above works fine if there is no transparency. Digging though DOOM code it seems the code doesn't expect transparency patches to overlap, nor I found any texture that has overlapping transparent textures. They are always next to each other with no overlap (so it seems that was a constrain). So, the current rendering code in previous week should take care of transparency.  
+
+Note: If I was implementing textures with current hardware, I would simple just allocate memory for each texture and compose it (the memory saved is not worth the trouble). It took quite a while to get this implemented the same way DOOM does.
 
 ## Goals
-* Create a class to manage the game assets (pictures/sprites).  
-* Read a patch
-* Weapon class (that just draws the weapon)
-* Cleanup and reorganize code
+* Refactoring
+* Read TEXTURE1/TEXTURE2
+* Add texture class
+* Compose a texture
 
 ## Code
-First things first, Reading and loading the Patch header and data, add the structs that will read the data from the WAD 
+First things first, the structures where we are going to read data from the WAD file. They should match what we stated above.
+Reading from the WAD in nothing special at this point, you can still peak at the code in WADReader and WADLoader.
 
 ``` cpp
-struct WADPatchHeader
+struct WADPNames
 {
+    uint32_t PNameCount;
+    uint32_t PNameOffset;
+};
+
+struct WADTextureHeader
+{
+    uint32_t TexturesCount;
+    uint32_t TexturesOffset;
+    uint32_t *pTexturesDataOffset;
+};
+
+struct WADTexturePatch
+{
+    int16_t XOffset;
+    int16_t YOffset;
+    uint16_t PNameIndex;
+    uint16_t StepDir;  // Ignored
+    uint16_t ColorMap;  // Ignored
+};
+
+struct WADTextureData
+{
+    char TextureName[9];
+    uint32_t Flags;           // Ignored
     uint16_t Width;
     uint16_t Height;
-    int16_t LeftOffset;
-    int16_t TopOffset;
-    uint32_t *ColumnOffset;
+    uint32_t ColumnDirectory;  // Ignored
+    uint16_t PatchCount;
+    WADTexturePatch *pTexturePatch;
 };
-
-struct WADPatchColumn
-{
-    uint8_t TopDelta;
-    uint8_t Length;
-    uint8_t	PaddingPre;
-    uint8_t *pColumnData;
-    uint8_t PaddingPost;
-};
-
 ```
+Note: You might notice there are some fields that are ignored (this is how things are in Classic/Chocolate DOOM), it makes me believe that texture format gone under some kind of modification and changes during development, and this was a dead code left over.  
 
-Loading the patch would be different than what we have done before, we don't know the size of the data that we will be reading so we need a more dynamic way to read and append that data.  
-The patch class will wrap few functions that will help us accomplish that, to load a patch you have to know its name in the WAD, also we need to read the patch header so we have an idea what we will be reading. As we are reading the patch data column, we need a function to append it to the patch class object.  
+Now the important stuff, I have added a class to wrap all the texture variables and functions.
+The texture composition is done in DOOM with a lazy approach, which means it would composed when the texture needs to be drawn, and once it is compose no need to recompose it.
 
 ``` cpp
-class Patch
+class Texture
 {
 public:
-    Patch(std::string sName); // Patch must have a name
-    ~Patch();
+    Texture(WADTextureData &TextureData);
+    ~Texture();
 
-    void Initialize(WADPatchHeader &PatchHeader); // We need to know that patch header information 
-    void AppendPatchColumn(WADPatchColumn &PatchColumn); // call for every time you have a patch data
+    bool IsComposed(); // Was this texture composed pre
+    bool Initialize(); // Does all the calculations needed for a texture
+    bool Compose();
 
-    // A render function that knows all about the patch, its transparency implementation and the internal details
+    // Draw a texture on Screen X and Y (no scaling)
     void Render(uint8_t *pScreenBuffer, int iBufferPitch, int iXScreenLocation, int iYScreenLocation); 
 
-    int GetHeight();
-    int GetWidth();
-    int GetXOffset();
-    int GetYOffset();
+    // Draw a specific texture column on screen X and Y.
+    void RenderColumn(uint8_t *pScreenBuffer, int iBufferPitch, int iXScreenLocation, int iYScreenLocation, int iCurrentColumnIndex);
 
 protected:
-    int m_iHeight;
+    //int m_Flags; // Ignored
     int m_iWidth;
-    int m_iXOffset;
-    int m_iYOffset;
+    int m_iHeight;
+    int m_iOverLapSize; // Keeps track of the total height of overlapping columns
+
+    bool m_IsComposed;
 
     std::string m_sName;
-    std::vector<WADPatchColumn> m_PatchData;
+
+    std::vector<int> m_ColumnPatchCount;
+    std::vector<int> m_ColumnIndex;
+    std::vector<int> m_ColumnPatch;
+    std::vector<WADTexturePatch> m_TexturePatches; // Patches that compose the texture
+    std::unique_ptr<uint8_t[]> m_pOverLapColumnData;
+
 };
 ```
 
-So, once we read the header lets store its contents to make use of this information to render the patch when needed.
+Few things to note so you don't get lost, ```m_iOverLapSize```, is the total height of overlapping columns, you will need this value so you know how much memory needs to be allocated where the overlap patches will be composed.
 
 ``` cpp
-void Patch::Initialize(WADPatchHeader &PatchHeader)
+bool Texture::Compose()
 {
-    m_iWidth = PatchHeader.Width;
-    m_iHeight = PatchHeader.Height;
-    m_iXOffset = PatchHeader.LeftOffset;
-    m_iYOffset = PatchHeader.TopOffset;
-}
-```
+    // Initialize will figure out how many patches is there per column, 
+    // and total amount of memory needed to be allocated
+    Initialize();
 
-Simply append all the patch data into a vector.
+    // allocate required memory for 
+    m_pOverLapColumnData = std::unique_ptr<uint8_t[]>(new uint8_t[m_iOverLapSize]);
 
-``` cpp
-void Patch::AppendPatchColumn(WADPatchColumn &PatchColumn)
-{
-    m_PatchData.push_back(PatchColumn);
-}
-```
+    AssetsManager *pAssetsManager = AssetsManager::GetInstance();
 
-When it is time to render, we need to utilize the values we stored to draw the image correctly.  
-we know that 0xFF is the end of a column/post, this will be our key to increment to draw the next column
-
-``` cpp
-void Patch::Render(uint8_t *pScreenBuffer, int iBufferPitch, int iXScreenLocation, int iYScreenLocation)
-{
-    int iXIndex = 0;
-    for (size_t iPatchColumnIndex = 0; iPatchColumnIndex < m_PatchData.size(); iPatchColumnIndex++)
+    // To compose to though all the patches that compose the texture
+    for (int i = 0; i < m_TexturePatches.size(); ++i)
     {
-        // Increment if we are done with current post
-        if (m_PatchData[iPatchColumnIndex].TopDelta == 0xFF)
+        //Lookup patch
+        Patch *pPatch = pAssetsManager->GetPatch(pAssetsManager->GetPName(m_TexturePatches[i].PNameIndex));
+
+        int iXStart = m_TexturePatches[i].XOffset;
+        int iMaxWidth = iXStart + pPatch->GetWidth();
+
+
+        int iXIndex = iXStart;
+
+        if (iXStart < 0)
         {
-            ++iXIndex;
-            continue;
+            iXIndex = 0;
         }
 
-        // Draw the data in the correct Y position, remember to add the Y offset (TopDelta)
-        for (int iYIndex = 0; iYIndex < m_PatchData[iPatchColumnIndex].Length; ++iYIndex)
+        //Does this patch extend outside the Texture?
+        if (iMaxWidth > m_iWidth)
         {
-            pScreenBuffer[320 * (iYScreenLocation + m_PatchData[iPatchColumnIndex].TopDelta + iYIndex) + (iXScreenLocation + iXIndex)] = m_PatchData[iPatchColumnIndex].pColumnData[iYIndex];
+            iMaxWidth = m_iWidth;
+        }
+
+        while (iXIndex < iMaxWidth)
+        {
+            // Does this column have more than one patch?
+            // if yes compose it, else skip it,
+            // remember any column with more than 2 patches was set to -1
+            // -1 means needs to be composed.
+            if (m_ColumnPatch[iXIndex] < 0)
+            {
+                int iPatchColumnIndex = pPatch->GetColumnDataIndex(iXIndex - iXStart);
+
+                // Ask to patch to compose one of its columns on a buffer
+                pPatch->ComposeColumn(m_pOverLapColumnData.get(), m_iHeight, iPatchColumnIndex, m_ColumnIndex[iXIndex], m_TexturePatches[i].YOffset);
+            }
+
+            ++iXIndex;
         }
     }
-}
 
-```
-Now we have added the functionality to store and draw a patch!
-
-All the other classes are cosmetic, in the past few weeks the code has turned ugly, and the minimum we can do is just and a more organized code.
-
-class AssetsManager will take responsibility to load and cache patches, once we have a patch loaded, it is cached.   
-AssetsManager is a simple singleton class that will load and keep track of the patchs in a map data structure, nothing special about it.
-Note: Each patch has a unique name, so that should be our key  
-
-``` cpp
-class AssetsManager
-{
-public:
-    static AssetsManager* GetInstance();
-    void Init(WADLoader* pWADLoader);
-
-    ~AssetsManager();
-
-    Patch* AddPatch(const std::string &sPatchName, WADPatchHeader &PatchHeader);
-    Patch* GetPatch(const std::string &sPatchName);
-
-protected:
-    static bool m_bInitialized;
-    static std::unique_ptr <AssetsManager> m_pInstance;
-
-    AssetsManager();
-
-    void LoadPatch(const std::string &sPatchName);
-
-    std::map<std::string, std::unique_ptr<Patch>> m_PatchesCache;
-
-    WADLoader* m_pWADLoader;
-};
-```
-
-Weapon is another cosmetic class, it literary doesn't do anything, it is just a place holder for the patch.
-``` cpp
-class Weapon
-{
-public:
-    Weapon(const std::string &sWeaponPatch);
-    virtual ~Weapon();
-
-    void Render(uint8_t *pScreenBuffer, int iBufferPitch);
-
-protected:
-    Patch *m_pPatch;
-};
-
-
-void Weapon::Render(uint8_t *pScreenBuffer, int iBufferPitch)
-{
-    m_pPatch->Render(pScreenBuffer, iBufferPitch, -m_pPatch->GetXOffset(), -m_pPatch->GetYOffset());
+    m_IsComposed = true;
+    return m_IsComposed;
 }
 ```
 
-Now all we need to do is add a Weapon to the player, I just passed the patch name for the handgun ```PISGA0```
+Now like patch rendering we have done last week, this time you want to draw on a buffer instead of screen buffer. Remember the you want to compose a texture patches in same order they show in the WAD. How the Texture is composed in a painter’s algorithm manner. 
+
+The patch ComposeColumn is nothing special, is very similar to drawing on screen.
 
 ``` cpp
-m_pWeapon = std::unique_ptr<Weapon>(new Weapon("PISGA0"));
+void Patch::ComposeColumn(uint8_t *pOverLapColumnData, int iHeight, int &iPatchColumnIndex, int iColumnOffsetIndex, int iYOrigin)
+{
+    while (m_PatchData[iPatchColumnIndex].TopDelta != 0xFF)
+    {
+        int iYPosition = iYOrigin + m_PatchData[iPatchColumnIndex].TopDelta;
+        int iMaxRun = m_PatchData[iPatchColumnIndex].Length;
+
+        if (iYPosition < 0)
+        {
+            iMaxRun += iYPosition;
+            iYPosition = 0;
+        }
+
+        if (iYPosition + iMaxRun > iHeight)
+        {
+            iMaxRun = iHeight - iYPosition;
+        }
+
+        for (int iYIndex = 0; iYIndex < iMaxRun; ++iYIndex)
+        {
+            pOverLapColumnData[iColumnOffsetIndex + iYPosition + iYIndex] = m_PatchData[iPatchColumnIndex].pColumnData[iYIndex];
+        }
+        ++iPatchColumnIndex;
+    }
+}
 ```
+In last week we rendered a complete patch, this is just a slim version where you can ask only a specific column to be rendered instead of the full patch
 
-Now running and moving around makes things look cooler :)
+``` cpp
+void Patch::RenderColumn(uint8_t *pScreenBuffer, int iBufferPitch, int iColumn, int iXScreenLocation, int iYScreenLocation, int iMaxHeight, int iYOffset)
+{
+    int iTotalHeight = 0;
+    int iYIndex = 0;
 
-![Play](./img/play.gif)
+    if (iYOffset < 0)
+    {
+        iYIndex = iYOffset * -1;
+    }
 
-We can play around with the patch and with very little modification we can load the DOOM main screen. If you have some time create a splash screen class and use "TITLEPIC" for the patch name, or just modify "PISGA0" to "TITLEPIC" in weapon and remember to change the rendering offset to 0 (just make sure when you draw the patch with an offset within the screen boundaries).
-
+    while (m_PatchData[iColumn].TopDelta != 0xFF && iTotalHeight < iMaxHeight)
+    {
+        while (iYIndex < m_PatchData[iColumn].Length && iTotalHeight < iMaxHeight)
+        {
+            pScreenBuffer[iBufferPitch * (iYScreenLocation + m_PatchData[iColumn].TopDelta + iYIndex + iYOffset) + iXScreenLocation] = m_PatchData[iColumn].pColumnData[iYIndex];
+            ++iTotalHeight;
+            ++iYIndex;
+        }
+        ++iColumn;
+        iYIndex = 0;
+    }
+}
 ```
-m_pPatch->Render(pScreenBuffer, iBufferPitch, 0, 0);
+Just to test all those changes, I thought the best place to draw a texture is in ViewRenderer for now. Here are some of the textures I tested with.
+
+``` cpp
+void ViewRenderer::Render(uint8_t *pScreenBuffer, int iBufferPitch)
+{
+    InitFrame();
+    Render3DView();
+    DrawStoredSegs(pScreenBuffer, iBufferPitch);
+
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("AASTINKY");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWNPIP");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN144");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR4");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("COMP2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNSMAL1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNBIGC");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNPOIS");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNPOIS2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("EXITDOOR");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("SKY1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("TEKWALL5");
+    Texture *pTexture = AssetsManager::GetInstance()->GetTexture("SW1DIRT");
+    pTexture->Render(pScreenBuffer, iBufferPitch, 10, 10);    
+}
 ```
-
-![Title](./img/title.png)
-
-It is good to try out few patches to validate that the code works correctly.
-Here are some screens with different patches. 
+Now if you got everything right you should see the textures getting drawn.
 
 ![Screen 1](./img/screen1.png)
 
@@ -258,46 +371,23 @@ Here are some screens with different patches.
 
 ![Screen 3](./img/screen3.png)
 
-Transparency seems to be working well!
+![Screen 4](./img/screen4.png)
+
+![Screen 5](./img/screen5.png)
+
+We are very close to give the walls some textures :)
+
+__Join us on [Discord](https://discord.gg/SWDtJJ)__
 
 ## Other Notes
-The patch format is really intreating format, with such format it is really easy and fast to draw a patch on the screen buffer, just go to the correct offset and place the column data content. 
-That patch drawing function in doom chocolate code is called ```void V_DrawPatch(int x, int y, patch_t *patch)```. It works very similarly to our implementation
+Here are the same functions in Chocolate DOOM, texture initialization is split to 2 functions ```R_InitTextures``` and ```R_GenerateLookup```.  
+Texture composition is process start when ```R_GenerateComposite``` is called, and the function that draws overlapping textures columns to new allocated memory is ```R_DrawColumnInCache```.
 
-``` cpp
-void V_DrawPatch(int x, int y, patch_t *patch)
-{
-    .....
-    
-    for ( ; col<w ; x++, col++, desttop++)
-    {
-        column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
-
-        // step through the posts in a column
-        while (column->topdelta != 0xff)
-        {
-            source = (byte *)column + 3;
-            dest = desttop + column->topdelta*SCREENWIDTH;
-            count = column->length;
-
-            while (count--)
-            {
-                *dest = *source++;
-                dest += SCREENWIDTH;
-            }
-            column = (column_t *)((byte *)column + column->length + 4);
-        }
-    }
-}
-```
-
-If you feel that the frame rate has dropped and the player is moving slower, there are few work arounds you could try, the easiest it try a release build, it will run faster. Second (which I hope to implement for next week) fix the game loop, the poorly implemented game loop just forces a delay that would cap the frame rate to a MAX of 60 FPS (it reality it will usually be less than 60). We should calculate the time each frame and factor that into player move speed, to have a more consistent behavior.
-DOOM caps the frame rate at 35 FPS, this is covered in Fabians DOOM book v1.1 section 5.4 "Fixed Time Steps".
+This design is very focused on minimizing memory consumption, but added some complexity, again if I was implementing this on modern hardware I will simple allocated memory that match the texture size (height x width), then iterate thought every patch to compose the final texture. 
 
 ## Source code
 [Source code](../src)  
 
 ## Reference
-https://doom.fandom.com/wiki/TEXTURE1_and_TEXTURE2
-https://doom.fandom.com/wiki/Picture_format
-https://doomwiki.org/wiki/Picture_format
+[Fandom TEXTURE1 TEXTURE2](https://doom.fandom.com/wiki/TEXTURE1_and_TEXTURE2)
+[Fandom PNames ](https://doom.fandom.com/wiki/PNAMES)

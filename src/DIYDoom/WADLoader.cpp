@@ -12,7 +12,6 @@ WADLoader::WADLoader() : m_pWADData(nullptr)
 
 WADLoader::~WADLoader()
 {
-    delete[] m_pWADData;
 }
 
 void WADLoader::SetWADFilePath(const string &sWADFilePath)
@@ -49,20 +48,15 @@ bool WADLoader::OpenAndLoad()
     m_WADFile.seekg(0, m_WADFile.end);
     size_t length = m_WADFile.tellg();
 
-    if (m_pWADData)
-    {
-        delete[] m_pWADData;
-    }
-
-    m_pWADData = new uint8_t[length];
+    m_pWADData = std::unique_ptr<uint8_t[]>(new uint8_t[length]);
     if (m_pWADData == nullptr)
     {
-        cout << "Error: Failed alocate memory for WAD file of size " << length << endl;
+        cout << "Error: Failed allocate memory for WAD file of size " << length << endl;
         return false;
     }
 
     m_WADFile.seekg(ifstream::beg);
-    m_WADFile.read((char *)m_pWADData, length);
+    m_WADFile.read((char *)m_pWADData.get(), length);
 
     m_WADFile.close();
 
@@ -74,13 +68,13 @@ bool WADLoader::OpenAndLoad()
 bool WADLoader::ReadDirectories()
 {
     Header header;
-    m_Reader.ReadHeaderData(m_pWADData, 0, header);
+    m_Reader.ReadHeaderData(m_pWADData.get(), 0, header);
 
     Directory directory;
 
     for (unsigned int i = 0; i < header.DirectoryCount; ++i)
     {
-        m_Reader.ReadDirectoryData(m_pWADData, header.DirectoryOffset + i * 16, directory);
+        m_Reader.ReadDirectoryData(m_pWADData.get(), header.DirectoryOffset + i * 16, directory);
         m_WADDirectories.push_back(directory);
     }
 
@@ -198,7 +192,7 @@ bool WADLoader::ReadMapVertexes(Map *pMap)
     Vertex vertex;
     for (int i = 0; i < iVertexesCount; ++i)
     {
-        m_Reader.ReadVertexData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iVertexSizeInBytes, vertex);
+        m_Reader.ReadVertexData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iVertexSizeInBytes, vertex);
         pMap->AddVertex(vertex);
     }
 
@@ -227,7 +221,7 @@ bool WADLoader::ReadMapSectors(Map *pMap)
     WADSector sector;
     for (int i = 0; i < iSectorsCount; ++i)
     {
-        m_Reader.ReadSectorData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSectorSizeInBytes, sector);
+        m_Reader.ReadSectorData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iSectorSizeInBytes, sector);
         pMap->AddSector(sector);
     }
 
@@ -256,7 +250,7 @@ bool WADLoader::ReadMapSidedefs(Map *pMap)
     WADSidedef sidedef;
     for (int i = 0; i < iSidedefsCount; ++i)
     {
-        m_Reader.ReadSidedefData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSidedefSizeInBytes, sidedef);
+        m_Reader.ReadSidedefData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iSidedefSizeInBytes, sidedef);
         pMap->AddSidedef(sidedef);
     }
 
@@ -285,7 +279,7 @@ bool WADLoader::ReadMapLinedefs(Map *pMap)
     WADLinedef linedef;
     for (int i = 0; i < iLinedefCount; ++i)
     {
-        m_Reader.ReadLinedefData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iLinedefSizeInBytes, linedef);
+        m_Reader.ReadLinedefData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iLinedefSizeInBytes, linedef);
         pMap->AddLinedef(linedef);
     }
 
@@ -315,7 +309,7 @@ bool WADLoader::ReadMapThings(Map *pMap)
     Thing thing;
     for (int i = 0; i < iThingsCount; ++i)
     {
-        m_Reader.ReadThingData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
+        m_Reader.ReadThingData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
         (pMap->GetThings())->AddThing(thing);
     }
 
@@ -344,7 +338,7 @@ bool WADLoader::ReadMapNodes(Map *pMap)
     Node node;
     for (int i = 0; i < iNodesCount; ++i)
     {
-        m_Reader.ReadNodeData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iNodesSizeInBytes, node);
+        m_Reader.ReadNodeData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iNodesSizeInBytes, node);
 
         pMap->AddNode(node);
     }
@@ -374,7 +368,7 @@ bool WADLoader::ReadMapSubsectors(Map *pMap)
     Subsector subsector;
     for (int i = 0; i < iSubsectorsCount; ++i)
     {
-        m_Reader.ReadSubsectorData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSubsectorsSizeInBytes, subsector);
+        m_Reader.ReadSubsectorData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iSubsectorsSizeInBytes, subsector);
 
         pMap->AddSubsector(subsector);
     }
@@ -404,7 +398,7 @@ bool WADLoader::ReadMapSegs(Map *pMap)
     WADSeg seg;
     for (int i = 0; i < iSegsCount; ++i)
     {
-        m_Reader.ReadSegData(m_pWADData, m_WADDirectories[iMapIndex].LumpOffset + i * iSegsSizeInBytes, seg);
+        m_Reader.ReadSegData(m_pWADData.get(), m_WADDirectories[iMapIndex].LumpOffset + i * iSegsSizeInBytes, seg);
 
         pMap->AddSeg(seg);
     }
@@ -425,7 +419,7 @@ bool WADLoader::LoadPalette(DisplayManager *pDisplayManager)
     WADPalette palette;
     for (int i = 0; i < 14; ++i)
     {
-        m_Reader.ReadPalette(m_pWADData, m_WADDirectories[iPlaypalIndex].LumpOffset + (i * 3 * 256 ), palette);
+        m_Reader.ReadPalette(m_pWADData.get(), m_WADDirectories[iPlaypalIndex].LumpOffset + (i * 3 * 256 ), palette);
         pDisplayManager->AddColorPalette(palette);
     }
     
@@ -442,20 +436,70 @@ bool WADLoader::LoadPatch(const std::string &sPatchName)
     }
 
     WADPatchHeader PatchHeader;
-    m_Reader.ReadPatchHeader(m_pWADData, m_WADDirectories[iPatchIndex].LumpOffset, PatchHeader);
+    m_Reader.ReadPatchHeader(m_pWADData.get(), m_WADDirectories[iPatchIndex].LumpOffset, PatchHeader);
 
     Patch *pPatch = pAssetsManager->AddPatch(sPatchName, PatchHeader);
 
-    WADPatchColumn PatchColumn;
+    PatchColumnData PatchColumn;
 
     for (int i = 0; i < PatchHeader.Width; ++i)
     {
-        int Offset = m_WADDirectories[iPatchIndex].LumpOffset + PatchHeader.ColumnOffset[i];
+        int Offset = m_WADDirectories[iPatchIndex].LumpOffset + PatchHeader.pColumnOffsets[i];
+        pPatch->AppendColumnStartIndex();
         do
         {
-            Offset = m_Reader.ReadPatchColumn(m_pWADData, Offset, PatchColumn);
+            Offset = m_Reader.ReadPatchColumn(m_pWADData.get(), Offset, PatchColumn);
             pPatch->AppendPatchColumn(PatchColumn);
         } while (PatchColumn.TopDelta != 0xFF);
+    }
+
+    return true;
+}
+
+bool WADLoader::LoadTextures(const std::string &sTextureName)
+{
+    AssetsManager *pAssetsManager = AssetsManager::GetInstance();
+    int iTextureIndex = FindLumpByName(sTextureName);
+    if (strcmp(m_WADDirectories[iTextureIndex].LumpName, sTextureName.c_str()) != 0)
+    {
+        return false;
+    }
+
+    WADTextureHeader TextureHeader;
+    m_Reader.ReadTextureHeader(m_pWADData.get(), m_WADDirectories[iTextureIndex].LumpOffset, TextureHeader);
+
+    WADTextureData TextureData;
+    for (int i = 0; i < TextureHeader.TexturesCount; ++i)
+    {
+        m_Reader.ReadTextureData(m_pWADData.get(), m_WADDirectories[iTextureIndex].LumpOffset + TextureHeader.pTexturesDataOffset[i], TextureData);
+        pAssetsManager->AddTexture(TextureData);
+        delete[] TextureData.pTexturePatch;
+        TextureData.pTexturePatch = nullptr;
+    }
+
+    delete[] TextureHeader.pTexturesDataOffset;
+    TextureHeader.pTexturesDataOffset = nullptr;
+    return true;
+}
+
+bool WADLoader::LoadPNames()
+{
+    AssetsManager *pAssetsManager = AssetsManager::GetInstance();
+    int iPNameIndex = FindLumpByName("PNAMES");
+    if (strcmp(m_WADDirectories[iPNameIndex].LumpName, "PNAMES") != 0)
+    {
+        return false;
+    }
+
+    WADPNames PNames;
+    m_Reader.ReadPName(m_pWADData.get(), m_WADDirectories[iPNameIndex].LumpOffset, PNames);
+    char Name[9];
+    Name[8] = '\0';
+    for (int i = 0; i < PNames.PNameCount; ++i)
+    {
+        m_Reader.Read8Characters(m_pWADData.get(), PNames.PNameOffset, Name);
+        pAssetsManager->AddPName(Name);
+        PNames.PNameOffset += 8;
     }
 
     return true;

@@ -6,6 +6,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "ClassicDefs.h"
+#include "AssetsManager.h"
 
 ViewRenderer::ViewRenderer() : m_UseClassicDoomScreenToAngle(true)
 {
@@ -49,6 +50,25 @@ void ViewRenderer::Render(uint8_t *pScreenBuffer, int iBufferPitch)
     InitFrame();
     Render3DView();
     DrawStoredSegs(pScreenBuffer, iBufferPitch);
+
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("AASTINKY");
+    Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWNPIP");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN144");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BIGDOOR4");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("COMP2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNSMAL1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNBIGC");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNPOIS");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BRNPOIS2");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("EXITDOOR");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("SKY1");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("TEKWALL5");
+    //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("SW1DIRT");
+	pTexture->Render(pScreenBuffer, iBufferPitch, 10, 10);
+       
 }
 
 void ViewRenderer::InitFrame()
@@ -82,23 +102,23 @@ void ViewRenderer::AddWallInFOV(Seg &seg, Angle V1Angle, Angle V2Angle, Angle V1
         return;
 
     // Handle solid walls
-    if (seg.pLeftSector == nullptr)
+    if (seg.pBackSector == nullptr)
     {
         ClipSolidWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
         return;
     }
 
     // Handle closed door
-    if (seg.pLeftSector->CeilingHeight <= seg.pRightSector->FloorHeight
-        || seg.pLeftSector->FloorHeight >= seg.pRightSector->CeilingHeight)
+    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight
+        || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
     {
         ClipSolidWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
         return;
     }
 
     // Windowed walls
-    if (seg.pRightSector->CeilingHeight != seg.pLeftSector->CeilingHeight ||
-        seg.pRightSector->FloorHeight != seg.pLeftSector->FloorHeight)
+    if (seg.pFrontSector->CeilingHeight != seg.pBackSector->CeilingHeight ||
+        seg.pFrontSector->FloorHeight != seg.pBackSector->FloorHeight)
     {
         ClipPassWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
         return;
@@ -243,34 +263,34 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 
     RenderData.Steps = (RenderData.V2ScaleFactor - RenderData.V1ScaleFactor) / (V2XScreen - V1XScreen);
 
-    RenderData.RightSectorCeiling = seg.pRightSector->CeilingHeight - m_pPlayer->GetZPosition();
-    RenderData.RightSectorFloor = seg.pRightSector->FloorHeight - m_pPlayer->GetZPosition();
+    RenderData.FrontSectorCeiling = seg.pFrontSector->CeilingHeight - m_pPlayer->GetZPosition();
+    RenderData.FrontSectorFloor = seg.pFrontSector->FloorHeight - m_pPlayer->GetZPosition();
 
-    RenderData.CeilingStep = -(RenderData.RightSectorCeiling * RenderData.Steps);
-    RenderData.CeilingEnd = round(m_HalfScreenHeight - (RenderData.RightSectorCeiling * RenderData.V1ScaleFactor));
+    RenderData.CeilingStep = -(RenderData.FrontSectorCeiling * RenderData.Steps);
+    RenderData.CeilingEnd = round(m_HalfScreenHeight - (RenderData.FrontSectorCeiling * RenderData.V1ScaleFactor));
 
-    RenderData.FloorStep = -(RenderData.RightSectorFloor * RenderData.Steps);
-    RenderData.FloorStart = round(m_HalfScreenHeight - (RenderData.RightSectorFloor * RenderData.V1ScaleFactor));
+    RenderData.FloorStep = -(RenderData.FrontSectorFloor * RenderData.Steps);
+    RenderData.FloorStart = round(m_HalfScreenHeight - (RenderData.FrontSectorFloor * RenderData.V1ScaleFactor));
 
-    if (seg.pLeftSector)
+    if (seg.pBackSector)
     {
-        RenderData.LeftSectorCeiling = seg.pLeftSector->CeilingHeight - m_pPlayer->GetZPosition();
-        RenderData.LeftSectorFloor = seg.pLeftSector->FloorHeight - m_pPlayer->GetZPosition();
+        RenderData.BackSectorCeiling = seg.pBackSector->CeilingHeight - m_pPlayer->GetZPosition();
+        RenderData.BackSectorFloor = seg.pBackSector->FloorHeight - m_pPlayer->GetZPosition();
 
         CeilingFloorUpdate(RenderData, seg);
 
-        if (RenderData.LeftSectorCeiling < RenderData.RightSectorCeiling)
+        if (RenderData.BackSectorCeiling < RenderData.FrontSectorCeiling)
         {
             RenderData.bDrawUpperSection = true;
-            RenderData.UpperHeightStep = -(RenderData.LeftSectorCeiling * RenderData.Steps);
-            RenderData.iUpperHeight = round(m_HalfScreenHeight - (RenderData.LeftSectorCeiling * RenderData.V1ScaleFactor));
+            RenderData.UpperHeightStep = -(RenderData.BackSectorCeiling * RenderData.Steps);
+            RenderData.iUpperHeight = round(m_HalfScreenHeight - (RenderData.BackSectorCeiling * RenderData.V1ScaleFactor));
         }
 
-        if (RenderData.LeftSectorFloor > RenderData.RightSectorFloor)
+        if (RenderData.BackSectorFloor > RenderData.FrontSectorFloor)
         {
             RenderData.bDrawLowerSection = true;
-            RenderData.LowerHeightStep = -(RenderData.LeftSectorFloor * RenderData.Steps);
-            RenderData.iLowerHeight = round(m_HalfScreenHeight - (RenderData.LeftSectorFloor * RenderData.V1ScaleFactor));
+            RenderData.LowerHeightStep = -(RenderData.BackSectorFloor * RenderData.Steps);
+            RenderData.iLowerHeight = round(m_HalfScreenHeight - (RenderData.BackSectorFloor * RenderData.V1ScaleFactor));
         }
     }
 
@@ -279,14 +299,14 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 
 void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg)
 {
-    if (!seg.pLeftSector)
+    if (!seg.pBackSector)
     {
         RenderData.UpdateFloor = true;
         RenderData.UpdateCeiling = true;
         return;
     }
 
-    if (RenderData.LeftSectorCeiling != RenderData.RightSectorCeiling)
+    if (RenderData.BackSectorCeiling != RenderData.FrontSectorCeiling)
     {
         RenderData.UpdateCeiling = true;
     }
@@ -295,7 +315,7 @@ void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData,
         RenderData.UpdateCeiling = false;
     }
 
-    if (RenderData.LeftSectorFloor != RenderData.RightSectorFloor)
+    if (RenderData.BackSectorFloor != RenderData.FrontSectorFloor)
     {
         RenderData.UpdateFloor = true;
     }
@@ -304,19 +324,19 @@ void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData,
         RenderData.UpdateFloor = false;
     }
 
-    if (seg.pLeftSector->CeilingHeight <= seg.pRightSector->FloorHeight || seg.pLeftSector->FloorHeight >= seg.pRightSector->CeilingHeight)
+    if (seg.pBackSector->CeilingHeight <= seg.pFrontSector->FloorHeight || seg.pBackSector->FloorHeight >= seg.pFrontSector->CeilingHeight)
     {
         // closed door
         RenderData.UpdateCeiling = RenderData.UpdateFloor = true;
     }
 
-    if (seg.pRightSector->CeilingHeight <= m_pPlayer->GetZPosition())
+    if (seg.pFrontSector->CeilingHeight <= m_pPlayer->GetZPosition())
     {
         // below view plane
         RenderData.UpdateCeiling = false;
     }
 
-    if (seg.pRightSector->FloorHeight >= m_pPlayer->GetZPosition())
+    if (seg.pFrontSector->FloorHeight >= m_pPlayer->GetZPosition())
     {
         // above view plane
         RenderData.UpdateFloor = false;
@@ -351,8 +371,8 @@ float ViewRenderer::GetScaleFactor(int VXScreen, Angle SegToNormalAngle, float D
 
 void ViewRenderer::CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen)
 {
-    float Ceiling = seg.pRightSector->CeilingHeight - m_pPlayer->GetZPosition();
-    float Floor = seg.pRightSector->FloorHeight - m_pPlayer->GetZPosition();
+    float Ceiling = seg.pFrontSector->CeilingHeight - m_pPlayer->GetZPosition();
+    float Floor = seg.pFrontSector->FloorHeight - m_pPlayer->GetZPosition();
 
     Angle VScreenAngle = m_ScreenXToAngle[VXScreen];
 
@@ -407,7 +427,7 @@ void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRe
     FrameSegDrawData SegDrawData;
     SegDrawData.seg = &seg;
     SegDrawData.bDrawUpperSection = RenderData.bDrawUpperSection;
-    SegDrawData.bDrawMiddleSection = !seg.pLeftSector;
+    SegDrawData.bDrawMiddleSection = !seg.pBackSector;
     SegDrawData.bDrawLowerSection = RenderData.bDrawLowerSection;
 
     int iXCurrent = V1XScreen;
@@ -422,7 +442,7 @@ void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRe
             continue;
         }
 
-        if (seg.pLeftSector)
+        if (seg.pBackSector)
         {
             RenderUpperSection(RenderData, iXCurrent, CurrentCeilingEnd, SegDrawData);
             RenderLowerSection(RenderData, iXCurrent, CurrentFloorStart, SegDrawData);
@@ -583,17 +603,17 @@ void ViewRenderer::DrawStoredSegs(uint8_t *pScreenBuffer, int iBufferPitch)
     {
         if (SegDrawData->bDrawUpperSection)
         {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->UpperSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->UpperTexture));
+            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->UpperSection, GetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->UpperTexture));
         }
 
         if (SegDrawData->bDrawMiddleSection)
         {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->MiddleSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->MiddleTexture));
+            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->MiddleSection, GetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->MiddleTexture));
         }
 
         if (SegDrawData->bDrawLowerSection)
         {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->LowerSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->LowerTexture));
+            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->LowerSection, GetSectionColor(SegDrawData->seg->pLinedef->pFrontSidedef->LowerTexture));
         }
     }
 }

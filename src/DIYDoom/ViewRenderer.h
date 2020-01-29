@@ -40,15 +40,15 @@ protected:
         float V2ScaleFactor;
         float Steps;
 
-        float RightSectorCeiling;
-        float RightSectorFloor;
+        float FrontSectorCeiling;
+        float FrontSectorFloor;
         float CeilingStep;
         float CeilingEnd;
         float FloorStep;
         float FloorStart;
 
-        float LeftSectorCeiling;
-        float LeftSectorFloor;
+        float BackSectorCeiling;
+        float BackSectorFloor;
 
         bool bDrawUpperSection;
         bool bDrawLowerSection;

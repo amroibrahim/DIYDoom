@@ -15,6 +15,7 @@ void Things::AddThing(Thing &thing)
 
 Thing Things::GetThingByID(int iID)
 {
+    //TODO Change this code thing can return uninitialized 
     Thing thing;
     for (std::vector<Thing>::iterator itr = m_Things.begin(); itr != m_Things.end(); ++itr)
     {
