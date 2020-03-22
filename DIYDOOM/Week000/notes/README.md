@@ -26,7 +26,7 @@ I don't know if I can complete this project, but I will try my best. I always be
 My target platform will be windows, but since I'm using SDL, it should be easy to get this to work under other platforms.  
 
 ### Special Thanks
-Though this journey so far, a handful of people has already reached out to me pointing me to spelling mistakes or even rewriting paragraphs of my notes  
+Through this journey, a handful of people has reached out to me pointing me to mistakes or even rewriting paragraphs of my notes, I can’t thank them enough! Sharing your knowledge doesn't take anything from you, and remember we are looking into DOOM code just because John Carmack shared his knowledge by open sourcing DOOM!  
 __DOOMReboot__  
 __Luke Jones__  
 __Matt__  
