@@ -26,7 +26,7 @@ I don't know if I can complete this project, but I will try my best. I always be
 My target platform will be windows, but since I'm using SDL, it should be easy to get this to work under other platforms.  
 
 ### Special Thanks
-Though this journey so far, a handful of people has already reached out to me pointing me to spelling mistakes or even rewriting paragraphs of my notes
-__DOOMReboot__
-__Luke Jones__
-__Matt__
+Though this journey so far, a handful of people has already reached out to me pointing me to spelling mistakes or even rewriting paragraphs of my notes  
+__DOOMReboot__  
+__Luke Jones__  
+__Matt__  
