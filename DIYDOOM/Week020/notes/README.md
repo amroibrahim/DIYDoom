@@ -377,7 +377,7 @@ Now if you got everything right you should see the textures getting drawn.
 
 We are very close to give the walls some textures :)
 
-__Join us on [Discord](https://discordapp.com/channels/662565986729197578/662565986729197581)__
+__Join us on [Discord](https://discord.gg/a8n4Y2z)__
 
 ## Other Notes
 Here are the same functions in Chocolate DOOM, texture initialization is split to 2 functions ```R_InitTextures``` and ```R_GenerateLookup```.  
