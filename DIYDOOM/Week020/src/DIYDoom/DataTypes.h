@@ -118,8 +118,8 @@ struct WADLinedef
     uint16_t Flags;
     uint16_t LineType;
     uint16_t SectorTag;
-    uint16_t FrontSidedef; //0xFFFF means there is no sidedef
-    uint16_t BackSidedef;  //0xFFFF means there is no sidedef
+    uint16_t RightSidedef; //0xFFFF means there is no sidedef
+    uint16_t LeftSidedef;  //0xFFFF means there is no sidedef
 };
 
 struct Linedef
@@ -129,8 +129,8 @@ struct Linedef
     uint16_t Flags;
     uint16_t LineType;
     uint16_t SectorTag;
-    Sidedef *pFrontSidedef;
-    Sidedef *pBackSidedef;
+    Sidedef *pRightSidedef;
+    Sidedef *pLeftSidedef;
 };
 
 struct WADSeg
@@ -151,8 +151,8 @@ struct Seg
     Linedef *pLinedef;
     uint16_t Direction; // 0 same as linedef, 1 opposite of linedef
     uint16_t Offset; // distance along linedef to start of seg    
-    Sector *pFrontSector;
-    Sector *pBackSector;
+    Sector *pRightSector;
+    Sector *pLeftSector;
 };
 
 struct Subsector
@@ -168,18 +168,18 @@ struct Node
     int16_t ChangeXPartition;
     int16_t ChangeYPartition;
 
-    int16_t FrontBoxTop;
-    int16_t FrontBoxBottom;
-    int16_t FrontBoxLeft;
-    int16_t FrontBoxRight;
+    int16_t RightBoxTop;
+    int16_t RightBoxBottom;
+    int16_t RightBoxLeft;
+    int16_t RightBoxRight;
 
-    int16_t BackBoxTop;
-    int16_t BackBoxBottom;
-    int16_t BackBoxLeft;
-    int16_t BackBoxRight;
+    int16_t LeftBoxTop;
+    int16_t LeftBoxBottom;
+    int16_t LeftBoxLeft;
+    int16_t LeftBoxRight;
 
-    uint16_t FrontChildID;
-    uint16_t BackChildID;
+    uint16_t RightChildID;
+    uint16_t LeftChildID;
 };
 
 struct WADPatchHeader

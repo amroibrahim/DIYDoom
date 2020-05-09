@@ -82,7 +82,7 @@ void DoomEngine::UpdateKeyStatus(const Uint8* KeyStates)
 
     if (KeyStates[SDL_SCANCODE_DOWN])
     {
-        m_pPlayer->MoveBackward();
+        m_pPlayer->MoveLeftward();
     }
 
     if (KeyStates[SDL_SCANCODE_LEFT])

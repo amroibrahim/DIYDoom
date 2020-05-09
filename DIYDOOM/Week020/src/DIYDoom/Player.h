@@ -17,7 +17,7 @@ public:
     void SetZPosition(int ZPosition);
     void SetAngle(int Angle);
     void MoveForward();
-    void MoveBackward();
+    void MoveLeftward();
     void RotateLeft();
     void RotateRight();
     void Fly();

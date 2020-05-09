@@ -133,7 +133,7 @@ void Player::MoveForward()
     m_YPosition += m_Angle.GetSinValue() * m_iMoveSpeed;
 }
 
-void Player::MoveBackward()
+void Player::MoveLeftward()
 {
     m_XPosition -= m_Angle.GetCosValue() * m_iMoveSpeed;
     m_YPosition -= m_Angle.GetSinValue() * m_iMoveSpeed;
