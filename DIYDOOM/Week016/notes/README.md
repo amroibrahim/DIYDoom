@@ -249,9 +249,7 @@ The only problem I faced was within the ```SelectColor``` function, within the w
 void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
 {
     SDL_Color color;
-    int iXCurrent;
-
-    iXCurrent = V1XScreen;
+    int iXCurrent = V1XScreen;
 
     SelectColor(seg, color);
 

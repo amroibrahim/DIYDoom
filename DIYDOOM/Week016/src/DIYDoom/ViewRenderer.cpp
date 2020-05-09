@@ -460,9 +460,7 @@ void ViewRenderer::PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &D
 void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
 {
     SDL_Color color;
-    int iXCurrent;
-
-    iXCurrent = V1XScreen;
+    int iXCurrent = V1XScreen;
 
     SelectColor(seg, color);
 
