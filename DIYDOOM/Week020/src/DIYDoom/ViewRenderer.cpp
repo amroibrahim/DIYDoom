@@ -47,9 +47,11 @@ void  ViewRenderer::Init(Map *pMap, Player *pPlayer)
 
 void ViewRenderer::Render(uint8_t *pScreenBuffer, int iBufferPitch)
 {
+	m_pScreenBuffer = pScreenBuffer;
+	m_iBufferPitch = iBufferPitch;
+
     InitFrame();
     Render3DView();
-    DrawStoredSegs(pScreenBuffer, iBufferPitch);
 
     //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("AASTINKY");
     Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN1");
@@ -74,7 +76,6 @@ void ViewRenderer::Render(uint8_t *pScreenBuffer, int iBufferPitch)
 void ViewRenderer::InitFrame()
 {
     m_SolidWallRanges.clear();
-    m_FrameSegsDrawData.clear();
 
     SolidSegmentRange WallLeftSide;
     SolidSegmentRange WallRightSide;
@@ -246,7 +247,7 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 {
     // Calculate the distance to the first edge of the wall
     Angle Angle90(90);
-    FrameRenderData RenderData{ 0 };
+    SegmentRenderData RenderData { 0 };
     Angle SegToNormalAngle = seg.SlopeAngle + Angle90;
 
     //Angle NomalToV1Angle = abs(SegToNormalAngle.GetSignedValue() - V1Angle.GetSignedValue());
@@ -254,6 +255,11 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 
     // Normal angle is 90 degree to wall
     Angle SegToPlayerAngle = Angle90 - NomalToV1Angle;
+
+	RenderData.V1XScreen = V1XScreen;
+	RenderData.V2XScreen = V2XScreen;
+	RenderData.V1Angle = V1Angle;
+	RenderData.V2Angle = V2Angle;
 
     RenderData.DistanceToV1 = m_pPlayer->DistanceToPoint(*seg.pStartVertex);
     RenderData.DistanceToNormal = SegToPlayerAngle.GetSinValue() * RenderData.DistanceToV1;
@@ -272,12 +278,14 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
     RenderData.FloorStep = -(RenderData.RightSectorFloor * RenderData.Steps);
     RenderData.FloorStart = round(m_HalfScreenHeight - (RenderData.RightSectorFloor * RenderData.V1ScaleFactor));
 
+	RenderData.pSeg = &seg;
+
     if (seg.pLeftSector)
     {
         RenderData.LeftSectorCeiling = seg.pLeftSector->CeilingHeight - m_pPlayer->GetZPosition();
         RenderData.LeftSectorFloor = seg.pLeftSector->FloorHeight - m_pPlayer->GetZPosition();
 
-        CeilingFloorUpdate(RenderData, seg);
+        CeilingFloorUpdate(RenderData);
 
         if (RenderData.LeftSectorCeiling < RenderData.RightSectorCeiling)
         {
@@ -294,12 +302,12 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
         }
     }
 
-    RenderSegment(seg, V1XScreen, V2XScreen, RenderData);
+    RenderSegment(RenderData);
 }
 
-void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg)
+void ViewRenderer::CeilingFloorUpdate(SegmentRenderData &RenderData)
 {
-    if (!seg.pLeftSector)
+    if (!RenderData.pSeg->pLeftSector)
     {
         RenderData.UpdateFloor = true;
         RenderData.UpdateCeiling = true;
@@ -324,19 +332,19 @@ void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData,
         RenderData.UpdateFloor = false;
     }
 
-    if (seg.pLeftSector->CeilingHeight <= seg.pRightSector->FloorHeight || seg.pLeftSector->FloorHeight >= seg.pRightSector->CeilingHeight)
+    if (RenderData.pSeg->pLeftSector->CeilingHeight <= RenderData.pSeg->pRightSector->FloorHeight || RenderData.pSeg->pLeftSector->FloorHeight >= RenderData.pSeg->pRightSector->CeilingHeight)
     {
         // closed door
         RenderData.UpdateCeiling = RenderData.UpdateFloor = true;
     }
 
-    if (seg.pRightSector->CeilingHeight <= m_pPlayer->GetZPosition())
+    if (RenderData.pSeg->pRightSector->CeilingHeight <= m_pPlayer->GetZPosition())
     {
         // below view plane
         RenderData.UpdateCeiling = false;
     }
 
-    if (seg.pRightSector->FloorHeight >= m_pPlayer->GetZPosition())
+    if (RenderData.pSeg->pRightSector->FloorHeight >= m_pPlayer->GetZPosition())
     {
         // above view plane
         RenderData.UpdateFloor = false;
@@ -422,17 +430,12 @@ void ViewRenderer::PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &D
     DistanceToV = DistanceToV * AngleA.GetSinValue() / NewAngleB.GetSinValue();
 }
 
-void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
+void ViewRenderer::RenderSegment(SegmentRenderData &RenderData)
 {
-    FrameSegDrawData SegDrawData;
-    SegDrawData.seg = &seg;
-    SegDrawData.bDrawUpperSection = RenderData.bDrawUpperSection;
-    SegDrawData.bDrawMiddleSection = !seg.pLeftSector;
-    SegDrawData.bDrawLowerSection = RenderData.bDrawLowerSection;
+    SDL_Color color;
+    int iXCurrent = RenderData.V1XScreen;
 
-    int iXCurrent = V1XScreen;
-
-    while (iXCurrent <= V2XScreen)
+    while (iXCurrent <= RenderData.V2XScreen)
     {
         int CurrentCeilingEnd = RenderData.CeilingEnd;
         int CurrentFloorStart = RenderData.FloorStart;
@@ -442,49 +445,35 @@ void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRe
             continue;
         }
 
-        if (seg.pLeftSector)
+        if (RenderData.pSeg->pLeftSector)
         {
-            RenderUpperSection(RenderData, iXCurrent, CurrentCeilingEnd, SegDrawData);
-            RenderLowerSection(RenderData, iXCurrent, CurrentFloorStart, SegDrawData);
+            DrawUpperSection(RenderData, iXCurrent, CurrentCeilingEnd);
+            DrawLowerSection(RenderData, iXCurrent, CurrentFloorStart);
         }
         else
         {
-            RenderMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart, SegDrawData);
+            DrawMiddleSection(RenderData, iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
         }
 
         RenderData.CeilingEnd += RenderData.CeilingStep;
         RenderData.FloorStart += RenderData.FloorStep;
         ++iXCurrent;
     }
-
-    if (SegDrawData.bDrawUpperSection | SegDrawData.bDrawMiddleSection | SegDrawData.bDrawLowerSection)
-    {
-        m_FrameSegsDrawData.push_back(SegDrawData);
-    }
 }
 
-void ViewRenderer::RenderMiddleSection(int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart, FrameSegDrawData &SegDrawData)
+void ViewRenderer::DrawMiddleSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart)
 {
-    AddLineToSection(SegDrawData.MiddleSection, iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
+	uint8_t color = GetSectionColor(RenderData.pSeg->pLinedef->pRightSidedef->MiddleTexture);
+	DrawVerticalLine(iXCurrent, CurrentCeilingEnd, CurrentFloorStart, color);
     m_CeilingClipHeight[iXCurrent] = m_iRenderYSize;
     m_FloorClipHeight[iXCurrent] = -1;
 }
 
-void ViewRenderer::AddLineToSection(std::list<SingleDrawLine> &Section, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart)
-{
-    SingleDrawLine line;
-    line.x1 = iXCurrent;
-    line.y1 = CurrentCeilingEnd;
-    line.x2 = iXCurrent;
-    line.y2 = CurrentFloorStart;
-    Section.push_back(line);
-}
-
-void ViewRenderer::RenderLowerSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentFloorStart, FrameSegDrawData &SegDrawData)
+void ViewRenderer::DrawLowerSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentFloorStart)
 {
     if (RenderData.bDrawLowerSection)
     {
-        int iLowerHeight = RenderData.iLowerHeight;
+		int iLowerHeight = RenderData.iLowerHeight;
         RenderData.iLowerHeight += RenderData.LowerHeightStep;
 
         if (iLowerHeight <= m_CeilingClipHeight[iXCurrent])
@@ -494,7 +483,8 @@ void ViewRenderer::RenderLowerSection(ViewRenderer::FrameRenderData &RenderData,
 
         if (iLowerHeight <= CurrentFloorStart)
         {
-            AddLineToSection(SegDrawData.LowerSection, iXCurrent, iLowerHeight, CurrentFloorStart);
+			uint8_t color = GetSectionColor(RenderData.pSeg->pLinedef->pRightSidedef->LowerTexture);
+			DrawVerticalLine(iXCurrent, iLowerHeight, CurrentFloorStart, color);
             m_FloorClipHeight[iXCurrent] = iLowerHeight;
         }
         else
@@ -506,7 +496,7 @@ void ViewRenderer::RenderLowerSection(ViewRenderer::FrameRenderData &RenderData,
     }
 }
 
-void ViewRenderer::RenderUpperSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd, FrameSegDrawData &SegDrawData)
+void ViewRenderer::DrawUpperSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd)
 {
     if (RenderData.bDrawUpperSection)
     {
@@ -520,14 +510,14 @@ void ViewRenderer::RenderUpperSection(ViewRenderer::FrameRenderData &RenderData,
 
         if (iUpperHeight >= CurrentCeilingEnd)
         {
-            AddLineToSection(SegDrawData.UpperSection, iXCurrent, CurrentCeilingEnd, iUpperHeight);
+			uint8_t color = GetSectionColor(RenderData.pSeg->pLinedef->pRightSidedef->UpperTexture);
+			DrawVerticalLine(iXCurrent, CurrentCeilingEnd, iUpperHeight, color);
             m_CeilingClipHeight[iXCurrent] = iUpperHeight;
         }
         else
         {
             m_CeilingClipHeight[iXCurrent] = CurrentCeilingEnd - 1;
         }
-
     }
     else if (RenderData.UpdateCeiling)
     {
@@ -535,7 +525,7 @@ void ViewRenderer::RenderUpperSection(ViewRenderer::FrameRenderData &RenderData,
     }
 }
 
-bool ViewRenderer::ValidateRange(ViewRenderer::FrameRenderData & RenderData, int &iXCurrent, int &CurrentCeilingEnd, int &CurrentFloorStart)
+bool ViewRenderer::ValidateRange(ViewRenderer::SegmentRenderData & RenderData, int &iXCurrent, int &CurrentCeilingEnd, int &CurrentFloorStart)
 {
     if (CurrentCeilingEnd < m_CeilingClipHeight[iXCurrent] + 1)
     {
@@ -597,36 +587,12 @@ uint8_t ViewRenderer::GetSectionColor(const std::string &TextureName)
     return color;
 }
 
-void ViewRenderer::DrawStoredSegs(uint8_t *pScreenBuffer, int iBufferPitch)
+void ViewRenderer::DrawVerticalLine(int iX, int iStartY, int iEndY, uint8_t color)
 {
-    for (std::list<FrameSegDrawData>::iterator SegDrawData = m_FrameSegsDrawData.begin(); SegDrawData != m_FrameSegsDrawData.end(); ++SegDrawData)
-    {
-        if (SegDrawData->bDrawUpperSection)
-        {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->UpperSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->UpperTexture));
-        }
-
-        if (SegDrawData->bDrawMiddleSection)
-        {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->MiddleSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->MiddleTexture));
-        }
-
-        if (SegDrawData->bDrawLowerSection)
-        {
-            DrawSection(pScreenBuffer, iBufferPitch, SegDrawData->LowerSection, GetSectionColor(SegDrawData->seg->pLinedef->pRightSidedef->LowerTexture));
-        }
-    }
-}
-
-void ViewRenderer::DrawSection(uint8_t *pScreenBuffer, int iBufferPitch, std::list<ViewRenderer::SingleDrawLine> &Section, uint8_t color)
-{
-    for (std::list<SingleDrawLine>::iterator line = Section.begin(); line != Section.end(); ++line)
-    {
-        int iStartY = line->y1;
-        while (iStartY < line->y2)
-        {
-            pScreenBuffer[iBufferPitch * iStartY + line->x1] = color;
-            ++iStartY;
-        }
-    }
+	//int iStartY = line->y1;
+	while (iStartY < iEndY)
+	{
+		m_pScreenBuffer[m_iBufferPitch * iStartY + iX] = color;
+		++iStartY;
+	}
 }

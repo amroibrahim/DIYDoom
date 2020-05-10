@@ -18,7 +18,7 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 014 - Solid Walls Height (1/2)](../../tree/master/DIYDOOM/Week014/notes)  
 [Week 015 - Solid Walls Height (2/2)](../../tree/master/DIYDOOM/Week015/notes)  
 [Week 016 - Portals](../../tree/master/DIYDOOM/Week016/notes)  
-[Week 017 - History](../../tree/master/DIYDOOM/Week017/notes)  
+[Week 017 - Player Height](../../tree/master/DIYDOOM/Week017/notes)  
 [Week 018 - Color Palette](../../tree/master/DIYDOOM/Week018/notes)  
 [Week 019 - Picture Format](../../tree/master/DIYDOOM/Week019/notes)  
 [Week 020 - Texture Format](../../tree/master/DIYDOOM/Week020/notes)  

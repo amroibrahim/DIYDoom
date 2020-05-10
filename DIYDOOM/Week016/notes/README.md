@@ -1,17 +1,16 @@
 # Week 016 - Portals
-Now it is time to talk about the second type of walls, Portals, or as I like to call them "Windows".  
+Now it is time to talk about the second type of walls, portals, or as I like to call them "Windows".  
 
-Before explaining what Portals are, let's recap a few things about solid walls.  
+Before explaining what portals are, let's recap a few things about solid walls.  
 * Solid walls are one-sided Linedefs (you are not supposed to go behind them).
 * Once a solid wall is drawn at an X location on the screen, nothing else can be drawn on top of that.  
-* A solid wall has three parts, ceiling, the solid wall itself (which now we will start calling Middle Section), and the floor.  
   
-So, what are Portals? Portals are walls with an opening where you can see through them. They can look like a passageway, a see-through barrier (like grating if a texture is provided), and a step and/or decrease in ceiling height.
+So, what are portals? portals are walls with an opening where you can see through them. They can look like a passageway, a see-through barrier (like grating if a texture is provided), and a step and/or decrease in ceiling height.
 
 ![Portals](./img/portal.png)  
   
-There are two types of Portals, ones that you can see through, and ones you can partially see through.   
-Portals are parts of a Sector (a sector consists of all connected, surrounding Seg)s. A Sector defines the ceilings and floors; a Sector defines both heights and textures of both ceilings and floors).
+There are two types of portals, ones that you can see through, and ones you can partially see through.   
+Portals are parts of a Sector (a sector consists of all connected, surrounding Segs). A Sector defines the ceilings and floors.(A sector defines both heights and textures of both ceilings and floors).
 
 ![Walls](./img/walls.png)  
 
@@ -21,10 +20,10 @@ Top view
 
 ![Wall top](./img/top.png)  
 
-The main difference between see-through Portals and partial see-through Portals, is the see-through part has a middle texture.  
-If you don't know me by now, simplicity is the key to understanding, so forget about the partial see-through walls and let’s assume that all Portals are just see-through (we will just ignore the middle texture).  
+The main difference between see-through portals and partial see-through portals, is the see-through part has a middle texture.  
+If you don't know me by now, simplicity is the key to understanding, so forget about the partial see-through walls and let’s assume that all portals are just see-through (we will just ignore the middle texture).  
 
-So, with that simplification it should be easy to draw a Portal. It's similar to drawing solid walls, but instead of drawing one single solid wall (middle section), let's draw two solid sections: the top and bottom sections. We will not draw anything for the middle, but there is a catch!  
+So, with that simplification it should be easy to draw a portal. It's similar to drawing solid walls, but instead of drawing one single solid wall (middle section), let's draw two solid sections: the top and bottom sections. We will not draw anything for the middle, but there is a catch!  
 
 Portals can be identified by having both a right Sector and a left Sector (since we see through the wall, we need to know some information about the floor and ceiling on the other side of the Portal).  
 In a single-sided Linedef (a solid wall), a single Seg is created which only has a right side, but two Segs are created for a two-sided Linedef, one for the right and one for the left. That means when we try to draw a Seg we must know if it is running along the right Sector or the left Sector. This is where the direction flag in the Seg data becomes handy. The direction flag indicates the type (direction) of the Seg.  
@@ -55,12 +54,12 @@ From the previous week, did you notice that the four pillars look taller than ho
 
 ![Wall top](./img/screen1.png)  
 
-This is due to the ceiling and floors of the Segs that are in right of and behind the clipped Seg (in other words, there is a ceiling or a floor that blocks you from seeing this). 
+This is due to the ceiling and floors of the Segs that are in front clipped the Segs behind them (in other words, there is a ceiling or a floor that blocks you from seeing). 
 The following animation shows the ceiling and the floor for the Segs where the player spawns (those ceilings and floors are not clipping each other).
 
 ![No Clip](./img/no_clip.gif)  
 
-Looking at the same problem from the Portal's point of view, Portals are see-through, so you have to draw what is behind it, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
+Looking at the same problem from the portal's point of view, portals are see-through, so you have to draw what is behind it, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
 We will have two vectors that will keep track of every Y height for every X on the screen.
 
 ``` cpp
@@ -95,53 +94,60 @@ Let’s jump to the code and explain what's happening as we go.
 First things first, clean up! I noticed that I have been passing a lot of parameters around, so I grouped them up in a struct and just pass a pointer to that struct.
 
 ``` cpp
-struct FrameRenderData
-    {
-        float DistanceToV1;
-        float DistanceToNormal;
-        float V1ScaleFactor;
-        float V2ScaleFactor;
-        float Steps;
+struct SegmentRenderData
+{
+    int V1XScreen;
+    int V2XScreen;
+    
+    Angle V1Angle;
+    Angle V2Angle;
 
-        float RightSectorCeiling;
-        float RightSectorFloor;
-        float CeilingStep;
-        float CeilingEnd;
-        float FloorStep;
-        float FloorStart;
+    float DistanceToV1;
+    float DistanceToNormal;
+    float V1ScaleFactor;
+    float V2ScaleFactor;
+    float Steps;
 
-        float LeftSectorCeiling;
-        float LeftSectorFloor;
+    float RightSectorCeiling;
+    float RightSectorFloor;
+    float CeilingStep;
+    float CeilingEnd;
+    float FloorStep;
+    float FloorStart;
 
-        bool bDrawUpperSection;
-        bool bDrawLowerSection;
+    float LeftSectorCeiling;
+    float LeftSectorFloor;
 
-        float UpperHeightStep;
-        float iUpperHeight;
-        float LowerHeightStep;
-        float iLowerHeight;
+    bool bDrawUpperSection;
+    bool bDrawLowerSection;
 
-        bool UpdateFloor;
-        bool UpdateCeiling;
-    };
+    float UpperHeightStep;
+    float iUpperHeight;
+    float LowerHeightStep;
+    float iLowerHeight;
+
+    bool UpdateFloor;
+    bool UpdateCeiling;
+
+    Seg *pSeg;
+};
 ```
 
-Now, we should start processing Portal Segs. Since we used such a check ```if (seg.pLeftSector == nullptr)``` to determine a solid Seg you would expect everything to be a Portal Seg. However, that is not the case. One case is when doors are Portals, so we want to handle them in a special way!
-So, one alternative is to check if the there is a change in ceiling or floor height between the right and left Sector (after all, that is what makes a wall a Portal, a difference between these two heights).
-
+Now, we should start processing Portal Segs. But how can we tell if a seg is a portal. Previously to determine if a seg is solid we used the following check ```if (seg.pLeftSector == nullptr)``` (solid seg have one side), so with that being given you would expect everything else to be a Portal Seg. However, that is not the case.  
+So, one way to check for seg being a portal is to check if the there is a difference in ceiling or floor height between the right and left Sector.
 
 ``` cpp
-    // function AddWallInFOV
-    // Windowed walls
-    if (seg.pRightSector->CeilingHeight != seg.pLeftSector->CeilingHeight ||
-        seg.pRightSector->FloorHeight != seg.pLeftSector->FloorHeight)
-    {
-        ClipPassWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
-        return;
-    }
+// function AddWallInFOV
+// Windowed walls
+if (seg.pRightSector->CeilingHeight != seg.pLeftSector->CeilingHeight ||
+    seg.pRightSector->FloorHeight != seg.pLeftSector->FloorHeight)
+{
+    ClipPassWalls(seg, V1XScreen, V2XScreen, V1Angle, V2Angle);
+    return;
+}
 ```
 
-Now, what we want to do when we detect that a Seg is Portal, is to find out if a solid wall already fills in that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function will think the Seg we are passing in is a solid wall and will fill the area that is supposed to be a Portal, which is something we don't want to do. One solution to this problem is to change ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions are the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
+Now, we detect that a Seg is portal, we need to find out if a solid wall already fills that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function expects the Seg being passed to be a solid wall and will fill the area that is supposed to be a portal, which is something we don't want to do. One solution to this problem is to duplicate code in ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions have the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
 
 ``` cpp
 void ViewRenderer::ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
@@ -155,17 +161,15 @@ Now, after we know that the partial Seg could possibly be drawn in that area we 
 This is where the function ```CeilingFloorUpdate(RenderData, seg);``` comes into play.
 
 ``` cpp
-void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg)
+void ViewRenderer::CeilingFloorUpdate(SegmentRenderData &RenderData)
 {
-    // Is it a solid wall?
-    if (!seg.pLeftSector)
+    if (!RenderData.pSeg->pLeftSector)
     {
-        RenderData.UpdateCeiling = true;
         RenderData.UpdateFloor = true;
+        RenderData.UpdateCeiling = true;
         return;
     }
 
-    // Is there difference in ceiling height?
     if (RenderData.LeftSectorCeiling != RenderData.RightSectorCeiling)
     {
         RenderData.UpdateCeiling = true;
@@ -175,7 +179,6 @@ void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData,
         RenderData.UpdateCeiling = false;
     }
 
-    // Is there difference in floor height?
     if (RenderData.LeftSectorFloor != RenderData.RightSectorFloor)
     {
         RenderData.UpdateFloor = true;
@@ -185,20 +188,19 @@ void ViewRenderer::CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData,
         RenderData.UpdateFloor = false;
     }
 
-    // Is this a closed door?
-    if (seg.pLeftSector->CeilingHeight <= seg.pRightSector->FloorHeight || seg.pLeftSector->FloorHeight >= seg.pRightSector->CeilingHeight)
+    if (RenderData.pSeg->pLeftSector->CeilingHeight <= RenderData.pSeg->pRightSector->FloorHeight || RenderData.pSeg->pLeftSector->FloorHeight >= RenderData.pSeg->pRightSector->CeilingHeight)
     {
+        // closed door
         RenderData.UpdateCeiling = RenderData.UpdateFloor = true;
     }
 
-    // Is the ceiling below the player? (ceiling is always above you)
-    if (seg.pRightSector->CeilingHeight <= m_pPlayer->GetZPosition())
+    if (RenderData.pSeg->pRightSector->CeilingHeight <= m_pPlayer->GetZPosition())
     {
+        // below view plane
         RenderData.UpdateCeiling = false;
     }
 
-    // Is the floor above the player? (floor is always below you)
-    if (seg.pRightSector->FloorHeight >= m_pPlayer->GetZPosition())
+    if (RenderData.pSeg->pRightSector->FloorHeight >= m_pPlayer->GetZPosition())
     {
         // above view plane
         RenderData.UpdateFloor = false;
@@ -243,37 +245,34 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 ```
 
 Now, with the drawing function cleaned up, the drawing of upper and lower sections is basically the same. The drawing of the middle section is also very similar.
-The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next week but, for now, let’s set both the upper and lower sections of each Portal to same color.  
+The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next week but, for now, let’s set both the upper and lower sections of each portal to same color.  
 
 ``` cpp
-void ViewRenderer::RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData)
+void ViewRenderer::RenderSegment(SegmentRenderData &RenderData)
 {
     SDL_Color color;
-    int iXCurrent = V1XScreen;
+    int iXCurrent = RenderData.V1XScreen;
 
-    SelectColor(seg, color);
+    SelectColor(*(RenderData.pSeg), color);
 
-    while (iXCurrent <= V2XScreen)
+    while (iXCurrent <= RenderData.V2XScreen)
     {
         int CurrentCeilingEnd = RenderData.CeilingEnd;
         int CurrentFloorStart = RenderData.FloorStart;
 
-        // Validate with the height of ceiling and floor is within range
         if (!ValidateRange(RenderData, iXCurrent, CurrentCeilingEnd, CurrentFloorStart))
         {
             continue;
         }
 
-        // Is it a Portal?
-        if (seg.pLeftSector)
+        if (RenderData.pSeg->pLeftSector)
         {
             DrawUpperSection(RenderData, iXCurrent, CurrentCeilingEnd);
             DrawLowerSection(RenderData, iXCurrent, CurrentFloorStart);
         }
         else
         {
-            // It is solid
-            DrawMiddleSection(iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
+            DrawMiddleSection(RenderData, iXCurrent, CurrentCeilingEnd, CurrentFloorStart);
         }
 
         RenderData.CeilingEnd += RenderData.CeilingStep;

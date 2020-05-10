@@ -340,9 +340,11 @@ Just to test all those changes, I thought the best place to draw a texture is in
 ``` cpp
 void ViewRenderer::Render(uint8_t *pScreenBuffer, int iBufferPitch)
 {
+	m_pScreenBuffer = pScreenBuffer;
+	m_iBufferPitch = iBufferPitch;
+
     InitFrame();
     Render3DView();
-    DrawStoredSegs(pScreenBuffer, iBufferPitch);
 
     //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("AASTINKY");
     //Texture *pTexture = AssetsManager::GetInstance()->GetTexture("BROWN1");

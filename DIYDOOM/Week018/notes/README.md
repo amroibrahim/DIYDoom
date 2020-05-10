@@ -182,17 +182,13 @@ I had to go through the code and remove any call to the renderer, all we should 
 Switching from a SDL_Renderer to SDL_Surface you would notice that SDL_RenderDrawLine will not work anymore, so we will need to implement our own drawing routine.  
 
 ``` cpp
-void ViewRenderer::DrawSection(uint8_t *pScreenBuffer, int iBufferPitch, std::list<ViewRenderer::SingleDrawLine> &Section, uint8_t color)
+void ViewRenderer::DrawVerticalLine(int iX, int iStartY, int iEndY, uint8_t color)
 {
-    for (std::list<SingleDrawLine>::iterator line = Section.begin(); line != Section.end(); ++line)
-    {
-        int iStartY = line->y1;
-        while (iStartY < line->y2)
-        {
-            pScreenBuffer[iBufferPitch * iStartY + line->x1] = color;
-            ++iStartY;
-        }
-    }
+	while (iStartY < iEndY)
+	{
+		m_pScreenBuffer[m_iBufferPitch * iStartY + iX] = color;
+		++iStartY;
+	}
 }
 ```
 

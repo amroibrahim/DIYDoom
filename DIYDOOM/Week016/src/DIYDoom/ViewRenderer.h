@@ -34,9 +34,12 @@ protected:
         int XEnd;
     };
 
-
-    struct FrameRenderData
+    struct SegmentRenderData
     {
+		int V1XScreen;
+		int V2XScreen;
+		Angle V1Angle;
+		Angle V2Angle;
         float DistanceToV1;
         float DistanceToNormal;
         float V1ScaleFactor;
@@ -63,6 +66,8 @@ protected:
 
         bool UpdateFloor;
         bool UpdateCeiling;
+
+		Seg *pSeg;
     };
 
     void RenderAutoMap();
@@ -73,17 +78,17 @@ protected:
     void ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void StoreWallRange(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
-    void CeilingFloorUpdate(ViewRenderer::FrameRenderData &RenderData, Seg & seg);
+    void CeilingFloorUpdate(ViewRenderer::SegmentRenderData &RenderData);
     void CalculateWallHeightSimple(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle);
     void CalculateCeilingFloorHeight(Seg &seg, int &VXScreen, float &DistanceToV, float &CeilingVOnScreen, float &FloorVOnScreen);
     void PartialSeg(Seg &seg, Angle &V1Angle, Angle &V2Angle, float &DistanceToV1, bool IsLeftSide);
-    void RenderSegment(Seg &seg, int V1XScreen, int V2XScreen, FrameRenderData &RenderData);
-    void DrawMiddleSection(int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart);
-    void DrawLowerSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentFloorStart);
-    void DrawUpperSection(ViewRenderer::FrameRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd);
+    void RenderSegment(SegmentRenderData &RenderData);
+    void DrawMiddleSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd, int CurrentFloorStart);
+    void DrawLowerSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentFloorStart);
+    void DrawUpperSection(ViewRenderer::SegmentRenderData &RenderData, int iXCurrent, int CurrentCeilingEnd);
     void RenderSolidWall(Seg &seg, int XStart, int XStop);
 
-    bool ValidateRange(ViewRenderer::FrameRenderData &RenderData, int &iXCurrent, int &CurrentCeilingEnd , int &CurrentFloorStart);
+    bool ValidateRange(ViewRenderer::SegmentRenderData &RenderData, int &iXCurrent, int &CurrentCeilingEnd, int &CurrentFloorStart);
 
     float GetScaleFactor(int VXScreen, Angle NormalAngle, float NormalDistance);
 
