@@ -391,5 +391,5 @@ This design is very focused on minimizing memory consumption, but added some com
 [Source code](../src)  
 
 ## Reference
-[Fandom TEXTURE1 TEXTURE2](https://doom.fandom.com/wiki/TEXTURE1_and_TEXTURE2)
-[Fandom PNames ](https://doom.fandom.com/wiki/PNAMES)
+[Fandom TEXTURE1 TEXTURE2](https://doom.fandom.com/wiki/TEXTURE1_and_TEXTURE2)  
+[Fandom PNames ](https://doom.fandom.com/wiki/PNAMES)  
