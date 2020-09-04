@@ -3,12 +3,11 @@ The goal of this project is to understand how Chocolate DOOM engine works, I wil
 
 I will be sharing all my notes and my finding, I'm not looking to squeeze performance with my code, I hope to get a working version and later tune and optimize it.    
 
-You're welcome to correct me, suggest changes, or share your concerns and views. You can open an issue or ping me on [twitter](https://twitter.com/AngryCPPCoder)
+I'm not a graphics/game programming, so if spot an error you're welcome to correct me, suggest changes, or share your concerns and views. You can open an issue or ping me on [twitter](https://twitter.com/AngryCPPCoder)
 
 Here is a list of resources and references.  
-[Game Engine Black Book: DOOM by Fabien Sanglard](https://www.amazon.com/Game-Engine-Black-Book-Doom/dp/1987418433)  
-This is one of the best books that dive into DOOM internals.  
-
+[Graphics Programming Black Book By Michael Abrash](https://www.drdobbs.com/parallel/graphics-programming-black-book/184404919) (Chapters 59, 60, 61, 62)  
+[Game Engine Black Book: DOOM by Fabien Sanglard](https://www.amazon.com/Game-Engine-Black-Book-Doom/dp/1987418433) This is one of the best books that dive into DOOM internals.  
 [Doom Wiki](https://doomwiki.org/wiki)  
 [DOOM Source Code](https://github.com/id-Software/DOOM)  
 [Chocolate Doom Source Code](https://github.com/chocolate-doom/chocolate-doom)  
