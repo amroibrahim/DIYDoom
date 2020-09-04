@@ -37,7 +37,7 @@ _Not in source_
 With no constraints at all, you can just stuff data anywhere in the tree, and you will struggle to retrieve it since we don't know where to look for the data. (I.e.., Should you look at the left children or right children?)
 This is where the "Binary search tree" comes into play. (Not every binary tree is a binary search tree).
 
-A binary search tree (AKA sorted binary tree) has its right child always less than its parent, and its left child equal or greater than its parent. With such a property, if you are looking up a number, then every time you make a choice at a sub-tree node you discard half of the tree. That makes trees powerful to look up values. Imagine a tree with one million nodes. You will need only twenty checks (in the worst-case scenario) to find your data (Log(1,000,000) log here is base 2 because every node has 2 children). Compare this to a linear search which could take approximately one million checks to find your data.
+A binary search tree (AKA sorted binary tree) has its left child always equal or less than its parent, and its right child greater than its parent. With such a property, if you are looking up a number, then every time you make a choice at a sub-tree node you discard half of the tree. That makes trees powerful to look up values. Imagine a tree with one million nodes. You will need only twenty checks (in the worst-case scenario) to find your data (Log(1,000,000) log here is base 2 because every node has 2 children). Compare this to a linear search which could take approximately one million checks to find your data.
 
 This is how we would implement recursive binary tree search algorithm:
 
