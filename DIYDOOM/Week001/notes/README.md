@@ -1,3 +1,7 @@
+Reviewers:
+*  Marl [@DOOMReboot](https://twitter.com/DOOMReboot)  
+*  Luke [@flukejones](https://twitter.com/flukejones)
+
 # Week 001 - WAD Files  
 Before we do any coding, let's spend some time setting some goals and think through what we want to achieve.  
 As a start let's see if we can read DOOM assets file. All DOOM assets and resources are in the WAD file.  
@@ -14,33 +18,8 @@ The WAD file has 3 main parts, header, lumps, and directories.
    This is where the game assets get stored, map data, sprites, music, etc.  
 3. Directories  
    This is an organizational structure to find data in the lump section.  
-```
-                       <───── 32 bits ──────>
-                       ┌────────────────────┐
-            ┌──── 0x00 |  ASCII WAD Type    | 0x03
-            |          | ────────────────── |
-    Header ─┤     0x04 | # of directories   | 0x07
-            |          | ────────────────── |
-            └──── 0x08 | offset to listing ───0x0B ──┐
-            ┌────────  | ────────────────── |        |
-            |     0x0C | ┌────────────────┐ |        |
-            |          | |   Lump Bytes   |<─────┐   |
-    Lumps ──┤          | |       .        | |    |   |
-            |          | └────────────────┘ |    |   |
-            |          |         .          |    |   |
-            └────────  |         .          |    |   |
-            ┌────────  | ┌────────────────┐<─────────┘
-            |          | |   Lump Offset  |──────┘
-            |          | |----------------| |
- Directory ─┤          | |   Lump Size    | |
-    List    |          | |----------------| |
-            |          | |   Lump Name    | |
-            |          | └────────────────┘ |
-            |          |         .          |
-            |          |         .          |
-            |          |         .          |
-            └────────  └────────────────────┘      
-```
+
+![WAD Format](./img/WADFormat.PNG)  
 
 ### Header Format  
 | Field Size | Data Type    | Content                                                        |  
