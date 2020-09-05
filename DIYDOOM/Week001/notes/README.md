@@ -182,7 +182,7 @@ struct Header
 
 Now we need to implement the WADReader class, this class will read data from the loaded WAD bytes array.  
 
-Let's add 2 functions to read 16 or 32 bit values for they byte array. 
+Let's add 2 functions to read 16 or 32 bit values from the byte array. 
 
 ``` cpp
 uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
