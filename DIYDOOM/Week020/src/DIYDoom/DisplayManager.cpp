@@ -24,21 +24,21 @@ SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
         std::cout << "SDL failed to initialize! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     m_pWindow = SDL_CreateWindow(sWindowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_iScreenWidth, m_iScreenHeight, SDL_WINDOW_SHOWN);
     if (m_pWindow == nullptr)
     {
         std::cout << "SDL failed to create window! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     m_pRenderer = SDL_CreateRenderer(m_pWindow, -1, 0);
     if (m_pRenderer == nullptr)
     {
         std::cout << "SDL failed to create renderer! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     uint32_t PixelFormat = SDL_GetWindowPixelFormat(m_pWindow);
@@ -48,7 +48,7 @@ SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
     if (m_pScreenBuffer == nullptr)
     {
         std::cout << "SDL failed to create 8-bit surface! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     SDL_FillRect(m_pScreenBuffer, NULL, 0);
@@ -59,7 +59,7 @@ SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
     if (m_pScreenBuffer == nullptr)
     {
         std::cout << "SDL failed to create RGB surface! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     SDL_FillRect(m_pRGBBuffer, NULL, 0);
@@ -68,7 +68,7 @@ SDL_Renderer* DisplayManager::Init(const std::string &sWindowTitle)
     if (m_pTexture == nullptr)
     {
         std::cout << "SDL failed to create texture! SDL_Error: " << SDL_GetError() << std::endl;
-        return false;
+        return nullptr;
     }
 
     return m_pRenderer;

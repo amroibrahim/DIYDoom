@@ -1,4 +1,5 @@
 #include "WADReader.h"
+#include <cstring>
 
 WADReader::WADReader()
 {
@@ -10,14 +11,17 @@ WADReader::~WADReader()
 
 uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
 {
-    return (pWADData[offset + 1] << 8) | pWADData[offset];
+    uint16_t ReadValue;
+    std::memcpy(&ReadValue, pWADData + offset, sizeof(uint16_t));
+    return ReadValue;
 }
 
 uint32_t WADReader::Read4Bytes(const uint8_t *pWADData, int offset)
 {
-    return (pWADData[offset + 3] << 24) | (pWADData[offset + 2] << 16) | (pWADData[offset + 1] << 8) | pWADData[offset];
+    uint32_t ReadValue;
+    std::memcpy(&ReadValue, pWADData + offset, sizeof(uint32_t));
+    return ReadValue;
 }
-
 void WADReader::ReadHeaderData(const uint8_t *pWADData, int offset, Header &header)
 {
     //0x00 to 0x03

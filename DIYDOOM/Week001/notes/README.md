@@ -181,21 +181,22 @@ struct Header
 ```
 
 Now we need to implement the WADReader class, this class will read data from the loaded WAD bytes array.  
-Oh! there is a catch, WAD files are a big-endian format, that means we need to shift the bytes to make them little-endian (most systems nowadays are little endian).
 
-What this means in the context of Doom is not that the bits are shifted, rather, the bytes are shifted. So a 16-bit int is made up of two bytes which are stored broken down to two bytes, with the left-most byte stored first, followed by the next left-most byte and so on. A 16-bit int that looks like `0000000000011101` is stored as `00011101, 00000000`.
-
-Let's add 2 functions to accomplish this, one to handle 2 bytes (16 bits), and one to handle 4 bytes (32 bits), there is nothing to do if we only need to read 1 byte. 
+Let's add 2 functions to read 16 or 32 bit values for they byte array. 
 
 ``` cpp
 uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
 {
-    return (pWADData[offset + 1] << 8) | pWADData[offset];
+    uint16_t ReadValue;
+    std::memcpy(&ReadValue, pWADData + offset, sizeof(uint16_t));
+    return ReadValue;
 }
 
 uint32_t WADReader::Read4Bytes(const uint8_t *pWADData, int offset)
 {
-    return (pWADData[offset + 3] << 24) | (pWADData[offset + 2] << 16) | (pWADData[offset + 1] << 8) | pWADData[offset];
+    uint32_t ReadValue;
+    std::memcpy(&ReadValue, pWADData + offset, sizeof(uint32_t));
+    return ReadValue;
 }
 ```
 
@@ -289,6 +290,71 @@ I think we are good for today!
 Also, one final miss conception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
 * Loading all the WAD files to memory is not the optimal way to do this. It would make more sense to just read the header and directories to memory, then based on the code flow needs we would go back to the WAD file and load the recourses from the disk. Hopefully at some point we learn more about caching.  
 
+In Chocolate DOOM, tracing the WAD loading and reading might be a little hard if you have no experience with C, but let me share what is going on. In the game main loop ```D_DoomMain``` a sequence of steps happen so it the correct WAD file is located and loaded, here is a simple break down of what happens
+* D_FindIWAD is called and checks if the EXE was started with ```-iwad``` argument (you can specify the IWAD to load by passing it as an argument to the DOOM.EXE)
+    * If ```-iwad``` argument if specified it uses that file 
+    * If not, it starts searching for a WAD file and this is what the function ```SearchDirectoryForIWAD``` does.
+* Once a WAD file is found it get open by the function ```W_AddFile``` and assigned to the variable ```wad_file``` which is of type ```wad_file_t```, which you will find defined in w_file.h.
+
+``` cpp
+typedef struct _wad_file_s wad_file_t;
+
+typedef struct
+{
+    // Open a file for reading.
+    wad_file_t *(*OpenFile)(const char *path);
+
+    // Close the specified file.
+    void (*CloseFile)(wad_file_t *file);
+
+    // Read data from the specified position in the file into the 
+    // provided buffer.  Returns the number of bytes read.
+    size_t (*Read)(wad_file_t *file, unsigned int offset,
+                   void *buffer, size_t buffer_len);
+} wad_file_class_t;
+
+struct _wad_file_s
+{
+    // Class of this file.
+    wad_file_class_t *file_class;
+
+    // If this is NULL, the file cannot be mapped into memory.  If this
+    // is non-NULL, it is a pointer to the mapped file.
+    byte *mapped;
+
+    // Length of the file, in bytes.
+    unsigned int length;
+
+    // File's location on disk.
+    const char *path;
+};
+```
+Now here is the tricky part, you will notice at the end the structs are of type ```wad_file_class_t``` which holds pointers to functions, open, close and reading a file. 
+
+But why is this complexity there? What is the advantage? The answer is there is a difference in behavior when it comes to compiling Chocolate DOOM under linux, and windows. Linux supports memory mapped files [MMAP](https://en.wikipedia.org/wiki/Mmap). So at compile time, the compiler takes a decision which version of open, close and read is baked into the EXE, based on what is defined in your complier settings.
+
+```
+extern wad_file_class_t stdc_wad_file;
+
+#ifdef _WIN32
+extern wad_file_class_t win32_wad_file;
+#endif
+
+#ifdef HAVE_MMAP
+extern wad_file_class_t posix_wad_file;
+#endif 
+
+static wad_file_class_t *wad_file_classes[] = 
+{
+#ifdef _WIN32
+    &win32_wad_file,
+#endif
+#ifdef HAVE_MMAP
+    &posix_wad_file,
+#endif
+    &stdc_wad_file,
+};
+```
 
 ## Source code  
 [Source code](../src)  
