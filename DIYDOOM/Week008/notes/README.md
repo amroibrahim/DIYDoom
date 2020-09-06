@@ -1,14 +1,30 @@
 # Week 008 - Finding Walls and BSP Traversal  
+Reviewers:
+*  Marl [@DOOMReboot](https://twitter.com/DOOMReboot)  
+
+**Recommended reading:** [Graphics Programming Black Book By Michael Abrash](https://www.drdobbs.com/parallel/graphics-programming-black-book/184404919) (Chapters 59, 60, 61, 62).  
+
 This week things will start getting serious, our main goal is to render a 3D view of what the player is viewing. To accomplish this, we need to know few things  
 *  Where is the player on the map? We know this (Week005)  
 *  Which walls are around the player? We will be implementing this  
 *  Which of these walls are in the player's field of view? Later week  
 *  Render what the player is seeing. Later week  
 
-So, with us knowing where the player is, the first step of the 3D rendering journey is to figure out which walls are closest to the player. If you have been an ID Software fan you mostly know by now how Wolfenstein 3D rendering works, and the big shift between Wolf3D and DOOM was the utilization of a BSP Tree (BSP was used in Wolf3D SNES version). 
-How things worked in Wolf 3D was using [ray casting](https://en.wikipedia.org/wiki/Ray_casting) technology. But using such a technology has a lot of limitations. This is where BSP trees comes in. BSP trees are used to help us know which walls are closest to the player. So, let us get started.  
+If you have been an ID Software fan you mostly know by now how Wolfenstein 3D rendering works, and the big shift between Wolf3D and DOOM was the utilization of a BSP Tree (BSP was used in Wolf3D SNES version). 
+How things worked in Wolf 3D was using [ray casting](https://en.wikipedia.org/wiki/Ray_casting) technology. But using such a technology has a lot of limitations. This is where BSP trees comes in. BSP trees are used to help us know which walls are closest to the player. So, let us get started. 
 
-With all the info we have from the binary tree traversal it should be easy to understand this. The BSP traversal is based on the modified algorithm we discussed in Week007, with the only difference being that the map space is being split instead of numbers.  
+It is time to have a better understanding of BSP and how they are they the secret behind the success of DOOM.  
+All we know now is that BSP is just a tree that split the map to smaller pieces. Those small pieces (sub-sector), are organized in a tree that makes searching and traversing easy and fast. Sub-sectors are convex, which means walls in the sub-sector will not overlap. But how can this be usefully? The BSP tree is used in visible-surface determination (VSP), in simple words, which wall is visible to the player.
+
+Using the BSP tree you can traverse all the walls in a map ether from furthest to the player to closest (Back to front) or closest to the player to the furthest (front to back).  
+
+DOOM could have used a simple furthest to closest approach (Back to front) which will be an implementation of [Painter's algorithm](https://en.wikipedia.org/wiki/Painter%27s_algorithm). This would have rendered the seen correctly, but the side effect of this is that we will be forced to traverse the complete tree, and redraw part of the screen that have already been drawn by the furthest walls (which translates to performance cost). This approach is simple, no need to maintain what is drawn on the screen just draw every single wall you see in the tree.  
+
+What DOOM does is draw the closest to the player to the furthest (front to back), but with this approach, extra work has to be done to maintain what is already drawn on the screen so it wont be overdrawn later. Also there is a big advantage for font to back, we can skip traversing big chunk of the BSP since we are maintaining what is drawn on the screen.  
+
+What we will implement is a font to back as DOOM does but wont be implementing the function that would make us skip chunks of the BSP tree. 
+
+With all the info we have from the binary tree traversal it should be easy to understand BSPs. The BSP traversal is based on the modified algorithm we discussed in Week007, with the only difference being that the map space is being split instead of numbers.  
 
 Here is how the root node can be visualized.  
 

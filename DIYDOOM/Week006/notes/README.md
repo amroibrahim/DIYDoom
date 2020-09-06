@@ -1,4 +1,4 @@
-# Week 006 - Intro to DOOM BSP Traversal
+# Week 006 - Binary Trees  
 Probably you have heard that Doom rendering uses BSP (Binary Space Partition trees). Moving directly into BSP might be a big jump, so let's break things down a little.  
 
 The core of BSP is a binary trees data structure, so let's start from there.  
@@ -175,11 +175,9 @@ Running with 80 as input:
 80 , 70 , 60 , 50 , 40 , 30 , 20 , 10  
 
 Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way; it is only our input that changes.  
-
-This is how BSP works, but instead of numbers it is splitting 2D or 3D space.  
+  
 But, why does this algorithm work?  What is the logic behind it? The simple answer is after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
 The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got to that node, just move in the opposite direction and print those nodes.
-You will find some books discussing this as a hybrid Pre-Post order tree traversal, I personally find it a modified binary search algorithm.
 
 ## Coding
 There is no major code change, just some refactoring to make things a little easier for now.
@@ -227,9 +225,6 @@ int Map::RemapXToScreen(int XMapPosition)
     return (XMapPosition + (-m_XMin)) / m_iAutoMapScaleFactor;
 }
 ```
-
-## Other Notes
-Lots of things in computer science are just big words for small things ($25 term for a five-cent concept) like cloud computing or dependency injection.  Sadly, BSP is one of them. What is stated above is how BSP search algorithms work.  
 
 ## Source code
 [Source code](../src)  

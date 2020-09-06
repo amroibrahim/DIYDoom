@@ -7,7 +7,7 @@ This is a personal project, in an attempt to understand how Doom engine works.
 [Week 003 - Adding SDL](../../tree/master/DIYDOOM/Week003/notes)  
 [Week 004 - Automap](../../tree/master/DIYDOOM/Week004/notes)  
 [Week 005 - Player and Things](../../tree/master/DIYDOOM/Week005/notes)  
-[Week 006 - Intro to DOOM BSP Traversal](../../tree/master/DIYDOOM/Week006/notes)  
+[Week 006 - Binary Trees](../../tree/master/DIYDOOM/Week006/notes)  
 [Week 007 - BSP Node](../../tree/master/DIYDOOM/Week007/notes)  
 [Week 008 - Finding Walls and BSP Traversal](../../tree/master/DIYDOOM/Week008/notes)  
 [Week 009 - Sector and Subsector](../../tree/master/DIYDOOM/Week009/notes)  
