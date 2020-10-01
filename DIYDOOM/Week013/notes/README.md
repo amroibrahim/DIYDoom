@@ -383,7 +383,7 @@ Now, what we need to do next is to draw the walls with the correct height.
 
 ## Other Notes
 The solid wall clipping is an interesting algorithm, there was a very minimal use of memory, also keeping the list short with merging keeps the sequential search fast.
-If I was to implement this myself, I would have done it differently. I could have possibly used [Interval trees](https://en.wikipedia.org/wiki/Interval_tree) (but, is it worth the more complex data structure?).
+What we have discussed is a common interview question, you can read more here [Merge Intervals](https://leetcode.com/problems/merge-intervals/).
 The implemented algorithm was hard to get bug free in the first try; I have gone though four or five iterations before getting it right.  
 
 The algorithm exists in Chocolate DOOM under the name ```R_ClipSolidWallSegment```. It might look more complex, but in reality, they are both the same. Ours just looks more simple because we are using the built in C++ STD List. Meanwhile, the original code had to shift elements up the array when deleting entries.  
