@@ -158,7 +158,7 @@ If you are tracing or comparing your code to original/chocolate DOOM, there are 
 
 This will remove the optimization and will force the traversal though the BSP tree. This should not impact rendering output, it just makes comparing the output from chocolate DOOM and your code easier.  
 
-It is amazing how much impact on performance that optimization is, I did some testing with E1M1 and playing being in spawn area.  
+It is amazing how much impact on performance that optimization is, I did some testing with E1M1 and player being in spawn area.  
  * Without ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` all the sub-sectors gets traversed 477 sub-sectors.  
  * With the change, only 32 sub-sector traversed!   
 
