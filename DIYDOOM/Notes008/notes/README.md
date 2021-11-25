@@ -71,7 +71,7 @@ __A x B = Ax * By - Ay * Bx__
   
 ![Cross product](./img/crossprod.png)  
 
-Keep in mind A X B = -B X A  
+Keep in mind A X B = -(B X A)  
 
 ## Goals
 1. Traverse the BSP tree!  
