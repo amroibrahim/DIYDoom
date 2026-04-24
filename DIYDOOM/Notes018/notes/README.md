@@ -150,7 +150,7 @@ What we should do next is create an SDL_Surface. SDL_Surface is a buffer that is
 
     // Create a full 32 bit screen buffer for conversion
     m_pRGBBuffer = SDL_CreateRGBSurface(0, m_iScreenWidth, m_iScreenHeight, 32, Rmask, Gmask, Bmask, Amask);
-    if (m_pScreenBuffer == nullptr)
+    if (m_pRGBBuffer == nullptr)
     {
         std::cout << "SDL failed to create RGB surface! SDL_Error: " << SDL_GetError() << std::endl;
         return false;

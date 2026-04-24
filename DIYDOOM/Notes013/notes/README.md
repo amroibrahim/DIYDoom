@@ -101,7 +101,7 @@ Making the linked list look something like this
 
 ```
 [0] INT_MIN, -1  
-[1] 320, INT_MIN
+[1] 320, INT_MAX
 ```
 
 Notice how the struct at index zero just ends at -1, and how the other starts at 320. Both are just one pixel outside screen.  
@@ -149,7 +149,7 @@ Our new values will be inserted, updating the list to look like
 ```
 [0] INT_MIN, -1  
 [1] 68, 80
-[2] 320, INT_MIN
+[2] 320, INT_MAX
 ```
 
 Now, let's try to add 46, 69
@@ -158,7 +158,7 @@ The implementation will update the list to look like this (no new entry will be 
 ```
 [0] INT_MIN, -1  
 [1] 46, 80
-[2] 320, INT_MIN
+[2] 320, INT_MAX
 ```
 
 Now, let's try to add a new seg, starting at 70 and ends 75.  

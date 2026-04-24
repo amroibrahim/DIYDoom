@@ -78,7 +78,7 @@ Keep in mind A X B = -(B X A)
    
 ## Coding
 In previous notes we loaded all the nodes, which are stored in an array form with the root being the last node in the list. Now we need to find the player in this BSP tree. So, we start at the root and figure out whether to go left or right based on player location.  
-To figure out which node of those is a leaf node (a sub-sector node) the original DOOM code had a nice optimization, they used the last bit of the node ID as a flag.   
+To figure out which node of those is a leaf node (a sub-sector node) the original DOOM code had a nice optimization, they used the high bit of the node ID as a flag.   
   
 ``` cpp
 // 0x8000 in binary 1000000000000000
@@ -104,7 +104,7 @@ Now let apply the tree search code we discussed in previous notes, and call it p
 ``` cpp
 void Map::RenderBSPNodes(int iNodeID)
 {
-    // Masking all the bits except the last one
+    // Masking all the bits except the high one
     // to check if this is a subsector
     if (iNodeID & SUBSECTORIDENTIFIER)
     {
@@ -145,7 +145,7 @@ Now let us finish this off, by going through the rest of the tree to give us the
 ```cpp
 void Map::RenderBSPNodes(int iNodeID)
 {
-    // Masking all the bits except the last one
+    // Masking all the bits except the high one
     // to check if this is a subsector
     if (iNodeID & SUBSECTORIDENTIFIER)
     {

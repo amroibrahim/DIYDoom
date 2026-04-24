@@ -37,7 +37,7 @@ First BSP tree level for E1M1
 ![E1M1 BSP4](./img/tree.png)  
 
 This will go all the way until we have a "sub-sector" which is a convex polygon (we will dig deep into that later).  
-The node structure in the WAD has a lot of data stored in it. A node is a sub-sector leaf node if the last bit is set to 1 (a leaf node, indicating that this node is a sub-sector and it will not have more children). 
+The node structure in the WAD has a lot of data stored in it. A node is a sub-sector leaf node if the high bit is set to 1 (a leaf node, indicating that this node is a sub-sector and it will not have more children). 
 
 For now, we will not use this information, but it is critical to figure out the type of the node we are looking at.  
 Something to note here, you can see how a developers back then would utilize every single bit they could, nowadays (and I'm doing that myself) just allocate memory all over the place.  

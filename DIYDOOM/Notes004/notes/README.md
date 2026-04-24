@@ -129,7 +129,7 @@ Cartesian coordinates
 
 <img src="./img/cartesian.png" width="300">
 
-Screen coordinates start from the top left corner, X increase as you go left, and Y increase as you go down.
+Screen coordinates start from the top left corner, X increases as you go right, and Y increases as you go down.
 Screen coordinates  
 
 <img src="./img/screen.png" width="300">

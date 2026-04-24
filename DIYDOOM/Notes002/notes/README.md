@@ -58,8 +58,8 @@ Linedef seems to have more information in it, it shows a line that connect two v
 |  0x04-0x05 | Unsigned short | Flags (details below)                     |
 |  0x06-0x07 | Unsigned short | Line type / Action                        |
 |  0x08-0x09 | Unsigned short | Sector tag                                |
-|  0x10-0x11 | Unsigned short | Right sidedef ( 0xFFFF side not present ) |
-|  0x12-0x13 | Unsigned short | Left sidedef  ( 0xFFFF side not present ) |
+|  0x0A-0x0B | Unsigned short | Right sidedef ( 0xFFFF side not present ) |
+|  0x0C-0x0D | Unsigned short | Left sidedef  ( 0xFFFF side not present ) |
   
 ### Linedef Flags Values
 Note all lines (walls) are to be drawn. Some have special behaviors.  
@@ -161,7 +161,7 @@ enum EMAPLUMPSINDEX
     eLINEDEFS,
     eSIDEDDEFS,
     eVERTEXES,
-    eSEAGS,
+    eSEGS,
     eSSECTORS,
     eNODES,
     eSECTORS,

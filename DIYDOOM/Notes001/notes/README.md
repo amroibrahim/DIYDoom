@@ -119,7 +119,7 @@ m_WADFile.close();
 
 Maybe you have noticed that I have used unint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using unint8_t guarantees the size of a byte (8 bits which are hinted by the name).  
 If we want to allocate 2 bytes (16 bits) we would use unint16_t, which we will come across later! Using such types makes it platform independent.  
-Just to clarify, if we use "int" the actual size of the int in memory will depend on your system. Compiling an "int" under a 32-bit configuration will provide a memory size of 4 bytes (32 bits), and if you compile same code under 64-bit it will provide you with a memory size of 8 bytes (64 bits)! To make things worse if you compile this under a 16-bit platform (maybe you are a DOS fan) it will give you 2 bytes (16 bits)!  
+Just to clarify, if we use "int" the actual size of the int in memory is implementation-defined. On most modern compilers and platforms you will usually see 4 bytes (32 bits), but this can vary by target and ABI.  
 
 Let's give this a quick test and see if things are working! but before we do that, we will need to implement LoadWAD.  
 For now, LoadWAD will call "OpenAndLoad"  

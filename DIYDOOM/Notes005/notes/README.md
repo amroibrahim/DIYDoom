@@ -105,7 +105,7 @@ bool WADLoader::ReadMapThing(Map *pMap)
     int iThingsSizeInBytes = sizeof(Thing);
     int iThingsCount = m_WADDirectories[iMapIndex].LumpSize / iThingsSizeInBytes;
 
-    Thing;
+    Thing thing;
     for (int i = 0; i < iThingsCount; ++i)
     {
         m_Reader.ReadThingData(m_WADData, m_WADDirectories[iMapIndex].LumpOffset + i * iThingsSizeInBytes, thing);
