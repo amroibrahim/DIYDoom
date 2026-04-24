@@ -79,13 +79,13 @@ We can use the distance formula to calculate the distance between the player and
 
 ![Formula](./img/formula.PNG)   
 
- Sqrt((1056 - 1056)^2 + (-3200 -3616)^2) = 440.2    
+ Sqrt((1056 - 1056)^2 + (-3200 - -3616)^2) = 440.2    
 
 Now, doing the math for the upper triangle: (160 * 159) / 440.2 = 57.7 (~58 pixels from center of the screen)    
 The math for the lower triangle: (160 * 41) / 440.2 = 14.9 (~15 pixels from center of the screen)   
 
 Let's do the same thing on another edge at point (1200, -3200)  
-Sqrt((1200 - 1056)^2 + (-3200 -3616)^2) = 416    
+Sqrt((1200 - 1056)^2 + (-3200 - -3616)^2) = 416    
 
 Upper triangle: (160 * 159) / 416 = 61.15 (~61 pixels from center of the screen)   
 Lower triangle: (160 * 41) / 416 = 15.76 (~16 pixels from center of the screen)     
