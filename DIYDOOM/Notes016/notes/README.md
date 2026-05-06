@@ -57,12 +57,12 @@ From the previous notes, did you notice that the four pillars look taller than h
 
 ![Wall top](./img/screen1.png)  
 
-This is due to the ceiling and floors of the Segs that are in front clipped the Segs behind them (in other words, there is a ceiling or a floor that blocks you from seeing). 
+This is due to the ceiling and floors of the Segs that are in front clipping the Segs behind them (in other words, there is a ceiling or a floor that blocks you from seeing). 
 The following animation shows the ceiling and the floor for the Segs where the player spawns (those ceilings and floors are not clipping each other).
 
 ![No Clip](./img/no_clip.gif)  
 
-Looking at the same problem from the portal's point of view, portals are see-through, so you have to draw what is behind it, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
+Looking at the same problem from the portal's point of view, portals are see-through, so you have to draw what is behind them, but we are drawing everything from near to far away. So, we need to keep track of where we can draw on the screen (from the top and the bottom).  
 We will have two vectors that will keep track of every Y height for every X on the screen.
 
 ``` cpp
@@ -136,8 +136,8 @@ struct SegmentRenderData
 };
 ```
 
-Now, we should start processing Portal Segs. But how can we tell if a seg is a portal. Previously to determine if a seg is solid we used the following check ```if (seg.pLeftSector == nullptr)``` (solid seg have one side), so with that being given you would expect everything else to be a Portal Seg. However, that is not the case.  
-So, one way to check for seg being a portal is to check if the there is a difference in ceiling or floor height between the right and left Sector.
+Now, we should start processing Portal Segs. But how can we tell if a seg is a portal. Previously to determine if a seg is solid we used the following check ```if (seg.pLeftSector == nullptr)``` (solid seg has one side), so with that being given you would expect everything else to be a Portal Seg. However, that is not the case.  
+So, one way to check for a seg being a portal is to check if there is a difference in ceiling or floor height between the right and left Sector.
 
 ``` cpp
 // function AddWallInFOV
@@ -150,7 +150,7 @@ if (seg.pRightSector->CeilingHeight != seg.pLeftSector->CeilingHeight ||
 }
 ```
 
-Now, we detect that a Seg is portal, we need to find out if a solid wall already fills that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function expects the Seg being passed to be a solid wall and will fill the area that is supposed to be a portal, which is something we don't want to do. One solution to this problem is to duplicate code in ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions have the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
+Now that we detect that a Seg is a portal, we need to find out if a solid wall already fills that area (remember, once a solid wall is there you can't draw anything over it). We have a function that does this for us ```ClipSolidWalls```, but there is a little problem if we decide to use the same function. The function expects the Seg being passed to be a solid wall and will fill the area that is supposed to be a portal, which is something we don't want to do. One solution to this problem is to duplicate code in ```ClipSolidWalls``` to ```ClipPassWalls``` and simply remove the code that stores the Seg. So, both functions have the same implementation, but removing any insert or delete to the ```m_SolidWallRanges``` vector.
 
 ``` cpp
 void ViewRenderer::ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V1Angle, Angle V2Angle)
@@ -159,7 +159,7 @@ void ViewRenderer::ClipPassWalls(Seg &seg, int V1XScreen, int V2XScreen, Angle V
 }
 ```
 
-Now, after we know that the partial Seg could possibly be drawn in that area we will require some flags to help us decide of what to keep track.
+Now, after we know that the partial Seg could possibly be drawn in that area we will require some flags to help us decide what to keep track of.
 
 This is where the function ```CeilingFloorUpdate(RenderData, seg);``` comes into play.
 
@@ -248,7 +248,7 @@ void ViewRenderer::CalculateWallHeight(Seg &seg, int V1XScreen, int V2XScreen, A
 ```
 
 Now, with the drawing function cleaned up, the drawing of upper and lower sections is basically the same. The drawing of the middle section is also very similar.
-The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next but, for now, let’s set both the upper and lower sections of each portal to same color.  
+The only problem I faced was within the ```SelectColor``` function, within the while loop (to have different colors for the top and bottom sections). The rendering was extremely slow. The function ```SDL_SetRenderDrawColor``` is very time-consuming. We will investigate fixing this next but, for now, let’s set both the upper and lower sections of each portal to the same color.  
 
 ``` cpp
 void ViewRenderer::RenderSegment(SegmentRenderData &RenderData)
@@ -324,7 +324,7 @@ Now moving around
 
 ![Play](./img/play.gif)  
 
-It unbelievable that simply handling those two types of walls renders the Mission, it is very impressive to see a 2D map transform into a 3D view this way. It makes me wonder how they came up with this back in 1993.  
+It is unbelievable that simply handling those two types of walls renders the Mission, it is very impressive to see a 2D map transform into a 3D view this way. It makes me wonder how they came up with this back in 1993.  
 All those ceilings and floors that are drawn in black are known as Visplanes. But, those are for an upcoming notes.
 What I would like to do now is to give the DOOM guy proper walking code. You may have noticed that his Z coordinate doesn't change when he goes up or down stairs.
 

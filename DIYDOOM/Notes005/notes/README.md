@@ -192,7 +192,7 @@ void Map::RenderAutoMapWalls(SDL_Renderer *pRenderer, int iXShift, int iYShift)
 }
 ```
 
-Okay! Now let's render the player. Initially, I wanted to draw the player as a filled circle but there was no function to do so in SDL! So, I tried the second-best thing to draw a cluster of dots of size  3 x 3 to show the player. You could have done a 2 for-loops that draw the same, your free to do so it makes things easier.
+Okay! Now let's render the player. Initially, I wanted to draw the player as a filled circle but there was no function to do so in SDL! So, I tried the second-best thing to draw a cluster of dots of size  3 x 3 to show the player. You could have done 2 for-loops that draw the same, you're free to do so if it makes things easier.
 
 ``` cpp
 void Map::RenderAutoMapPlayer(SDL_Renderer *pRenderer, int iXShift, int iYShift)
@@ -288,7 +288,7 @@ In Chocolate DOOM the function P_LoadThings in p_setup.c does load the things fo
 	}
 ```
 
-This code disables monsters to spawn from non-commercial version. So, if you’re running a shareware version you will not have the full experience as retail/commercial release.
+This code disables monsters from spawning in the non-commercial version. So, if you’re running a shareware version you will not have the full experience as the retail/commercial release.
 
 ## Source code
 [Source code](../src)  

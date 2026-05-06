@@ -6,7 +6,7 @@ So, at this point we know all the walls which are within the player's FOV and we
 
 ![FOV](./img/wall_angle.PNG)  
 
-Where should we draw them on the screen is not the only question, there is still more we need to know: its height, is it a window/portal (see-though and passable), or is it a solid wall (opaque and impassable)? This is too much to do at once, so let's break things down a little.  
+Where should we draw them on the screen is not the only question, there is still more we need to know: its height, is it a window/portal (see-through and passable), or is it a solid wall (opaque and impassable)? This is too much to do at once, so let's break things down a little.  
 All we know at this point is the angle of the wall segments' "edges"! But which angle corresponds with which X coordinate on the screen? Before we jump into the math, let's try to visualize what is going on!  
 Imagine that you are the player and are looking through your monitor, what you see is a "window into the virtual world"; whatever is behind the screen is the virtual world.  
 
@@ -34,7 +34,7 @@ Adjacent = 160
 Let's find out how far the player is from the screen.  
 Now, with that Adjacent side length being known, we can use it to do the math for the X coordinates on the screen.  
 
-Original DOOM used a lookup table to map an angle into its corresponding X coordinate on the screen; the lookup table was built on game start up and calculates the Tan values. The lookup table is possible if you limit the precession of the angles to a predetermined range. ("Lookup tables" were frequently used back then as a performance optimization; it was quicker to perform a memory lookup than to calculate a trigonometric function.  However, this is not as applicable today as most processors' trigonometric functions are run so quickly and efficiently that they are frequently faster than a memory lookup.)
+Original DOOM used a lookup table to map an angle into its corresponding X coordinate on the screen; the lookup table was built on game start up and calculated the Tan values. The lookup table is possible if you limit the precision of the angles to a predetermined range. ("Lookup tables" were frequently used back then as a performance optimization; it was quicker to perform a memory lookup than to calculate a trigonometric function.  However, this is not as applicable today as most processors' trigonometric functions are run so quickly and efficiently that they are frequently faster than a memory lookup.)
 
 So, I will do the second part where we calculate the Tan but will not cache the value.  
 
@@ -46,7 +46,7 @@ What we will have at this point is the edges of the walls and their correspondin
 *  Convert an angle to its X coordinate on screen  
    
 ## Coding
-So, the map class it is becoming complicated; I will move the rendering logic out. This is where the ViewRenderer class comes into play!  
+So, the map class is becoming complicated; I will move the rendering logic out. This is where the ViewRenderer class comes into play!  
 
 ``` cpp
 class ViewRenderer
@@ -164,7 +164,7 @@ Now, when running the program we will see something like this
 ![Walls](./img/walls.png)
 
 So, what are we looking at here? We are looking at the edges of each wall within the player's FOV!  
-They can be represented graphicly as
+They can be represented graphically as
 
 ![Walls](./img/screen_projected.PNG)
 

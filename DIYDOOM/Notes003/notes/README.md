@@ -3,10 +3,10 @@ Reviewers:
 
 # Notes 003 - Adding SDL
 Now that we have read some data from the WAD, we need to draw something on the screen, after all we are trying to make a game.  
-The console windows are nice, but it is text based (it can be hacked to draw graphics), but we need a window where we can draw some graphics. We can use windows APIs but that will add windows as a dependency for us, which I don’t want. This is where SDL comes in play.  
+The console window is nice, but it is text based (it can be hacked to draw graphics), but we need a window where we can draw some graphics. We can use Windows APIs but that will add Windows as a dependency for us, which I don’t want. This is where SDL comes into play.  
 
 ## SDL  
-SDL is a cross platform library to provide a hardware, and OS abstraction for multimedia components. In the previous Notes, we would could have used SDL in opening and reading the WAD file, and endian conversion.  
+SDL is a cross platform library to provide a hardware, and OS abstraction for multimedia components. In the previous Notes, we could have used SDL in opening and reading the WAD file, and endian conversion.  
 For now, we will use SDL to create a window and draw some graphics.  
 
 ## Goals  
@@ -17,7 +17,7 @@ For now, we will use SDL to create a window and draw some graphics.
 
 ## Design    
 First let’s start by adding Game class that would wrap the game's major steps in simple functions.  
-Adding DoomEngine that would hold game objects and aware of the game internals.  
+Adding DoomEngine that would hold game objects and be aware of the game internals.  
 Update DIYDoom.cpp to create and call the Game class, to create a game loop.  
 
 ## Coding
@@ -27,15 +27,15 @@ At the time of writing SDL2 v2.0.9 is the latest stable version, remember to dow
 ![SDK](./img/sdlfolder.PNG)  
 
 You will need to note where include and lib directories are.  
-Now let’s go to our project and update the settings to see and use the SDL library right click on DIYDoom project and select Properties. 
+Now let’s go to our project and update the settings to see and use the SDL library. Right click on DIYDoom project and select Properties. 
    
 ![Properties](./img/properties.PNG)  
 
-Under C/C++, edit the Additional include directories and add where the SDL "include" folder located.  
+Under C/C++, edit the Additional include directories and add where the SDL "include" folder is located.  
 
 ![Include](./img/include.PNG)  
 
-Now under Linker, edit Additional Library Directories and add where the SDL "lib". If you look in those folders the libraries are under x64 and x86 folders, so make sure you have the correct path.  
+Now under Linker, edit Additional Library Directories and add where the SDL "lib" folder is. If you look in those folders the libraries are under x64 and x86 folders, so make sure you have the correct path.  
 
 ![Lib1](./img/lib1.PNG)  
 
@@ -150,8 +150,8 @@ protected:
     int m_iWindowWidth;
     int m_iWindowHeight;
 
-    SDL_Window *m_pWindow; // The windows we will create
-    SDL_Renderer *m_pRenderer; // Were we will render our frames
+    SDL_Window *m_pWindow; // The window we will create
+    SDL_Renderer *m_pRenderer; // Where we will render our frames
     DoomEngine *m_pDoomEngine; // This is an object that knows more details about game internal
 };
 ```
@@ -209,7 +209,7 @@ bool Game::Init()
 one more function I would like to go over in Game class is ProcessInput  
   
 ``` cpp
-// All what process input need to do is just forward the events to the 
+// All process input needs to do is just forward the events to the 
 // DoomEngine to take appropriate action
 void Game::ProcessInput()
 {

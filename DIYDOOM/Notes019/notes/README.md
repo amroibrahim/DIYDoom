@@ -3,16 +3,16 @@ Reviewers:
 
 # Notes 019 - Patch Format
 
-We were able to read the palette that has all the colors we will need to draw an image on the screen, but we are not there yet to draw textures on walls. A texture is composed of multiple patches combined aka "multipatch texture". For now, let’s focus on a patch and their format as a first step.  
+We were able to read the palette that has all the colors we will need to draw an image on the screen, but we are not there yet to draw textures on walls. A texture is composed of multiple patches combined aka "multipatch texture". For now, let’s focus on a patch and its format as a first step.  
 
 A patch is just a picture/image. The patch format in DOOM is interesting, its focus is a mix between transparency, compression, and performance.
 It is common to see transparency implemented as designating a color that is checked for while drawing. For example, in Wolfenstein 3D the color (RGB 152, 0, 136) was used to tell if a pixel is transparent.  
 
 ![Wolfenstein 3D](./img/sprite.png)
 
-One down side of using such an approach, is going over every pixel and checking if you need to draw it, (even with optimized solutions, and an X-OR is used instead of a check, you will still have to loop though every pixel in the sprite).   
+One downside of using such an approach, is going over every pixel and checking if you need to draw it, (even with optimized solutions, and an X-OR is used instead of a check, you will still have to loop through every pixel in the sprite).   
 
-DOOM patch/picture format solved the problem in a different way. So, let’s jump on.  
+DOOM patch/picture format solved the problem in a different way. So, let’s jump in.  
 The picture format consists of two parts, a header and the actual pixels that make the pictures. Let’s start with the header.  
 
 ### Patch Header Format  
@@ -40,7 +40,7 @@ Visualizing the header would look something like this
 ![Header](./img/header.png)  
 
 Reading the header will require a loop equal to the width of the image to read the offset for each column.  
-If you noticed the last field is just a pointer to a pixels column/post, an image with the same repeating column of pixels, can be stored only once and it can be refereed to multiple times, this can achieve some kind of compression.  
+If you noticed the last field is just a pointer to a pixels column/post, an image with the same repeating column of pixels, can be stored only once and it can be referred to multiple times, this can achieve some kind of compression.  
 
 Now let’s look at the more complicated part of the picture format.  
 
@@ -63,13 +63,13 @@ The simple example we chose has two Patch column data for each column which look
 
 But what is the point of such an implementation? This is how transparency is implemented. If a pixel is transparent just don't have a Patch column data for it, and the Y offset will indicate a gap.  
 Visualizing this with an image with transparency.  
-Note: For clarity cayenne color is just added to visualize transparency.  
+Note: For clarity the cayenne color is just added to visualize transparency.  
 
 ![Transparency](./img/trans.png)
 
 Neat trick isn't it?  
-Now with all this information it should be easy write some code to read a patch and draw it on the screen.  
-I found the nicest thing to draw on the screen for now would be the player weapon, we will not make it function, we will just want some code to make sure we are reading the patch file correctly.  
+Now with all this information it should be easy to write some code to read a patch and draw it on the screen.  
+I found that the nicest thing to draw on the screen for now would be the player weapon, we will not make it function, we will just want some code to make sure we are reading the patch file correctly.  
 
 ## Goals
 * Create a class to manage the game assets (pictures/sprites).  
@@ -102,7 +102,7 @@ struct WADPatchColumn
 ```
 
 Loading the patch would be different than what we have done before, we don't know the size of the data that we will be reading so we need a more dynamic way to read and append that data.  
-The patch class will wrap few functions that will help us accomplish that, to load a patch you have to know its name in the WAD, also we need to read the patch header so we have an idea what we will be reading. As we are reading the patch data column, we need a function to append it to the patch class object.  
+The patch class will wrap a few functions that will help us accomplish that, to load a patch you have to know its name in the WAD, also we need to read the patch header so we have an idea what we will be reading. As we are reading the patch data column, we need a function to append it to the patch class object.  
 
 ``` cpp
 class Patch
@@ -133,7 +133,7 @@ protected:
 };
 ```
 
-So, once we read the header lets store its contents to make use of this information to render the patch when needed.
+So, once we read the header let's store its contents to make use of this information to render the patch when needed.
 
 ``` cpp
 void Patch::Initialize(WADPatchHeader &PatchHeader)
@@ -181,10 +181,10 @@ void Patch::Render(uint8_t *pScreenBuffer, int iBufferPitch, int iXScreenLocatio
 ```
 Now we have added the functionality to store and draw a patch!
 
-All the other classes are cosmetic, in the past few notes the code has turned ugly, and the minimum we can do is just and a more organized code.
+All the other classes are cosmetic, in the past few notes the code has turned ugly, and the minimum we can do is just have more organized code.
 
 class AssetsManager will take responsibility to load and cache patches, once we have a patch loaded, it is cached.   
-AssetsManager is a simple singleton class that will load and keep track of the patchs in a map data structure, nothing special about it.
+AssetsManager is a simple singleton class that will load and keep track of the patches in a map data structure, nothing special about it.
 Note: Each patch has a unique name, so that should be our key  
 
 ``` cpp
@@ -213,7 +213,7 @@ protected:
 };
 ```
 
-Weapon is another cosmetic class, it literary doesn't do anything, it is just a place holder for the patch.
+Weapon is another cosmetic class, it literally doesn't do anything, it is just a placeholder for the patch.
 ``` cpp
 class Weapon
 {
@@ -252,7 +252,7 @@ m_pPatch->Render(pScreenBuffer, iBufferPitch, 0, 0);
 
 ![Title](./img/title.png)
 
-It is good to try out few patches to validate that the code works correctly.
+It is good to try out a few patches to validate that the code works correctly.
 Here are some screens with different patches. 
 
 ![Screen 1](./img/screen1.png)
@@ -264,7 +264,7 @@ Here are some screens with different patches.
 Transparency seems to be working well!
 
 ## Other Notes
-The patch format is really intreating format, with such format it is really easy and fast to draw a patch on the screen buffer, just go to the correct offset and place the column data content. 
+The patch format is a really intriguing format, with such format it is really easy and fast to draw a patch on the screen buffer, just go to the correct offset and place the column data content. 
 The patch drawing function in doom chocolate code is called ```void V_DrawPatch(int x, int y, patch_t *patch)```. It works very similarly to our implementation
 
 ``` cpp
@@ -294,8 +294,8 @@ void V_DrawPatch(int x, int y, patch_t *patch)
 }
 ```
 
-If you feel that the frame rate has dropped and the player is moving slower, there are few work arounds you could try, the easiest it try a release build, it will run faster. Second (which I hope to implement for next) fix the game loop, the poorly implemented game loop just forces a delay that would cap the frame rate to a MAX of 60 FPS (it reality it will usually be less than 60). We should calculate the time each frame and factor that into player move speed, to have a more consistent behavior.
-DOOM caps the frame rate at 35 FPS, this is covered in Fabians DOOM book v1.1 section 5.4 "Fixed Time Steps".
+If you feel that the frame rate has dropped and the player is moving slower, there are a few workarounds you could try, the easiest is to try a release build, it will run faster. Second (which I hope to implement for next) fix the game loop, the poorly implemented game loop just forces a delay that would cap the frame rate to a MAX of 60 FPS (in reality it will usually be less than 60). We should calculate the time each frame and factor that into player move speed, to have a more consistent behavior.
+DOOM caps the frame rate at 35 FPS, this is covered in Fabian's DOOM book v1.1 section 5.4 "Fixed Time Steps".
 
 ## Source code
 [Source code](../src)  

@@ -8,7 +8,7 @@ So, the time has come to cover how things work in DOOM. This part has puzzled fa
 * Calculate Wall height the DOOM way  
 
 ## Polar Coordinates 
-To understand the code, I had to look at things as black boxing without trying to understand how they internally work.  
+To understand the code, I had to look at things as a black box without trying to understand how they internally work.  
 Before we move on, we must understand what "polar coordinates" mean.  
 
 The most commonly used coordinate system is Cartesian: define a point using X and Y. In simple English, you define a point by how far left or right and how far up or down it is.  
@@ -98,7 +98,7 @@ We can find the angle at the top of the triangle easily since we have all the gi
     Angle NomalToV1Angle = SegToNormalAngle.GetValue() - V1Angle.GetValue();
 ```
 
-Now it is even more easy to find the angle at the lower right corner of the triangle  
+Now it is even easier to find the angle at the lower right corner of the triangle  
 
 ``` cpp
     // Total sum of angles in a triangle is 180
@@ -197,7 +197,7 @@ float ViewRenderer::GetScaleFactor(int VXScreen, Angle SegToNormalAngle, float D
     return ScaleFactor;
 }
 ```
-Notice: The scaling is clamped between 64 and 0.00390625, this is a texture thing (Which will come in an upcoming notes).
+Notice: The scaling is clamped between 64 and 0.00390625, this is a texture thing (Which will come in upcoming notes).
 
 This example looks simple, and the base of the triangle is nicely at 180 degrees, but that is not the case for most Segs.   
 
@@ -250,7 +250,7 @@ Moving around the map
 
 ![Screen](./img/play.gif)  
 
-We can enable the previous nots height calculation (as a white boarder) to compare it to Doom's technique.
+We can enable the previous notes' height calculation (as a white border) to compare it to Doom's technique.
 It is now easy to notice and compare both ways.  
 
 ![Screen](./img/screen_2.png)  
@@ -258,7 +258,7 @@ It is now easy to notice and compare both ways.
 Looking at this makes me feel very guilty for my poor partial Seg handling, but overall you can see that in most of the cases it works well.  
 
 ## Other Notes
-In the previous notes, I mentioned that DOOM's way was more accurate in calculating wall heights (that was before me understanding this new approach). Actually, I take that back, it is not exactly true, there is an error rate caused by the low precision due to the X to screen angle lookup table. But, does it really matter? No, it doesn't, the error rate is really small and won't be noticeable.  
+In the previous notes, I mentioned that DOOM's way was more accurate in calculating wall heights (that was before I understood this new approach). Actually, I take that back, it is not exactly true, there is an error rate caused by the low precision due to the X to screen angle lookup table. But, does it really matter? No, it doesn't, the error rate is really small and won't be noticeable.  
 
 Notice: this error will only differ in a few pixels (in our current 200-pixel height resolution).
 
@@ -362,7 +362,7 @@ angleb = ANG90 + (viewangle + xtoviewangle[start] - rw_normalangle);
 
 The above code is implemented in the original Chocolate DOOM in r_segs.c, R_StoreWallRange and r_main.c, R_ScaleFromGlobalAngle.  
 Understanding this part of the code in DOOM original/Chocolate code was difficult and here are the factors that I believe contributed to the difficulty  
-* I have not seen someone used such an approach to projection and clipping.  
+* I have not seen someone use such an approach to projection and clipping.  
 * The function that has this implemented does a lot of stuff (texture mapping, handling solid walls, handling portals, etc.).  
 * Looking at a simplified mathematical equation, it is very hard to guess the original meaning before simplification.   
 * Using sine instead of cosine sin(Q)= cos(90 - Q); in our case +90 would also work due to the symmetry around 0.  

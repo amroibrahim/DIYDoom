@@ -10,7 +10,7 @@ Here is the FOV for the player as he spawns in E1M1, the player spawns facing 90
 
 For now, we will only care about horizontal FOV.   
 Doomguy has a 90-degree FOV so we will stick to that.  
-Our previous code was able to iterate though Segs, we colored all of them, now we want to filter them down and the only color the ones that are both within our FOV and facing the player.  
+Our previous code was able to iterate through Segs, we colored all of them, now we want to filter them down and only color the ones that are both within our FOV and facing the player.  
 
 There will be a lot of details, so I will try to keep the explanation in the code section, so we don't get lost. Before we go any further, I would like to mention that Doom uses BAM (binary angular measurement), a 360-degree angle system which increases counterclockwise. To handle that we will write a class to store the angle in a similar way.  
 
@@ -155,7 +155,7 @@ Assuming the player is looking at 90 degrees making the FOV between 45 to 135 de
 * Case D: The left part of the Seg is partially visible to the player (Partially visible, clipping right).
 * Case E: Part of the Seg is visible (Partially visible, clipping both left and right).
 
-Turn's out that there is a simple way to solve this, all we need to do is some simplification to handle all these cases efficiently.  
+Turns out that there is a simple way to solve this, all we need to do is some simplification to handle all these cases efficiently.  
 
 The player could be looking anywhere, so we need to move everything into a specific quadrant.  
 We will move the walls to always rotate as if everything is around 0 degrees, by subtracting the player angle.
@@ -299,7 +299,7 @@ If you have difficulties, the best thing to do is visualize what is going on. Fo
 | (960,-3648)   | (832, -3552)  |  
 | (1088, -3648) | (1024,-3648)  |  
 
-Player spawn's at (1056, -3616), with a 90-degree FOV. Visualizing this on a graph we have
+Player spawns at (1056, -3616), with a 90-degree FOV. Visualizing this on a graph we have
 
 ![Seg76](./img/PSeg76.PNG)  
 
@@ -341,7 +341,7 @@ This method of reading keyboard input is not optimal, when using SDL events, we 
 
 
 So, let's summarize what we have done.
-At this point we can traverse through all the Segs, from near to far, then we are able to determine which ones are actually in the player's FOV. What we need to do next is determine where those sigs would be drawn on the screen. This will be our next step. 
+At this point we can traverse through all the Segs, from near to far, then we are able to determine which ones are actually in the player's FOV. What we need to do next is determine where those segs would be drawn on the screen. This will be our next step. 
 
 ## Other Notes
 The code we have covered today is a part of the R_AddLine function, if you understand what happened today it should be more or less the same.  

@@ -131,7 +131,7 @@ void CBinarySearchTree::printCloseNumbers(CTreeNode* pNode, int iData)
 ```
 _Not in source_
 
-If you re-run the code, with 30 as input, it will find it. Not only that, but it will also output 30 if you look for 31, 32, 33, and 34 because they are the closes value to 30. So, now we know that you don’t have to know the exact value of what you're looking for, just a range will give you a correct value you're looking for.  
+If you re-run the code, with 30 as input, it will find it. Not only that, but it will also output 30 if you look for 31, 32, 33, and 34 because they are the closest values to 30. So, now we know that you don’t have to know the exact value of what you're looking for, just a range will give you a correct value you're looking for.  
 
 Note: You might think "How is this related to DOOM?". The map is broken down to subsector, you have no idea which subsector the player is in, but you know the player position, we can use that to find out which subsector the player is in (if this sounds too complicated don't worry we will go in details and visualize this later).
 
@@ -179,8 +179,8 @@ Running with 80 as input:
 
 Notice the result is just listing the neighbors from closest to furthest (relative to the number we are looking up). The Tree has not been modified in any way; it is only our input that changes.  
   
-But, why does this algorithm work?  What is the logic behind it? The simple answer is after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you took a decision at.
-The advanced answer is, this is a recursive algorithm, the memory stack has the path how we got to that node, just move in the opposite direction and print those nodes.
+But, why does this algorithm work?  What is the logic behind it? The simple answer is after the algorithm finds the leaf closest to our value, you force it to search in the "wrong" branch. When you apply the search on the "wrong" branch it will find the closest value to what you're looking for. Now just keep doing this for all the branches you made a decision at.
+The advanced answer is, this is a recursive algorithm, the memory stack has the path of how we got to that node, just move in the opposite direction and print those nodes.
 
 ## Coding
 There is no major code change, just some refactoring to make things a little easier for now.

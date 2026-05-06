@@ -48,7 +48,7 @@ So, the first thing we need to figure out is the wall height of the virtual wall
 Let's start with a very simple example, let's assume there is a single wall in front of the player, it is segmented to four parts, and it looks like the following   
 ![Wall](./img/wall.PNG)  
 
-the expected output is should be a straight horizontal wall which looks something like this  
+the expected output should be a straight horizontal wall which looks something like this  
 
 ![Wall Screen](./img/wall_screen.png)   
 
@@ -232,7 +232,7 @@ Let's give the player the ability to move within the map. I updated ```void Game
 
 And let the Player class handle those events
 
-Now, if you re-run you will notice that something is not quite right. The Segs that are only partially visible (clipped) are not rendered correctly!
+Now, if you re-run you will notice that something is not quite right. The Segs that are only partially visible (clipped) are not rendered correctly!  
 Can you guess why?
 
 The edge that is outside the view is being calculated with angle 45 or -45 (lookup table) despite its actual value being greater than 45. One option is to calculate precisely where the FOV intersects with the Seg.  
@@ -267,7 +267,7 @@ A visualization of what I had in mind to help you understand the above code
 ![Part of a Seg](./img/partseg.png)
 
 Finding the intersection this way doesn't always give the correct value, but it works for most of the cases. So, you will still find some partial Segs that don't look correct.  
-Running the above code, and moving around the map, you'll see that things looks much better (but not perfect).
+Running the above code, and moving around the map, you'll see that things look much better (but not perfect).
 Note: There are still rendering issues at some angles, but I will not invest any more time fixing this. After all, my goal was just to see if it was possible to use Wolf3D rendering in DOOM!  
 After all remember the goal was to just find out if it was possible to apply Wolf3D logic in DOOM.  
 

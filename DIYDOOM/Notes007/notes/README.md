@@ -10,17 +10,17 @@ Let's take E1M1 as an example
 
 A splitter is chosen, and then everything is on the right or the left of that splitter. 
 The right and left are based on the direction of the first vertex moving to the second vertex (mathematically called vector, the direction you go moving to the second point). 
-Note: left and right are depended on the splitter direction, and not "your" left and right.  
+Note: left and right depend on the splitter direction, and not "your" left and right.  
 
-A spelter/vector moving upwards can be illustrated as following
+A splitter/vector moving upwards can be illustrated as following
 
 ![Vector up](./img/vector_up.png)  
 
-But a vector moving the downward look like this
+But a vector moving downward looks like this
 
 ![Vector down](./img/vector_down.png)  
 
-Note: when you see left or right take a second and think what is the direction of motion, and try to imagine your facing that direction, to get left and right correctly. 
+Note: when you see left or right take a second and think what is the direction of motion, and try to imagine you're facing that direction, to get left and right correctly. 
 
 So, the first splitter in E1M1 is point (2176, -2304), with change in X = 0 and change in Y = -256 (line is moving down). This makes the right of the line to the left and left to the right.  
 
@@ -40,9 +40,9 @@ This will go all the way until we have a "sub-sector" which is a convex polygon 
 The node structure in the WAD has a lot of data stored in it. A node is a sub-sector leaf node if the high bit is set to 1 (a leaf node, indicating that this node is a sub-sector and it will not have more children). 
 
 For now, we will not use this information, but it is critical to figure out the type of the node we are looking at.  
-Something to note here, you can see how a developers back then would utilize every single bit they could, nowadays (and I'm doing that myself) just allocate memory all over the place.  
+Something to note here, you can see how developers back then would utilize every single bit they could, nowadays (and I'm doing that myself) just allocate memory all over the place.  
 
-In my professional life, I have seen how much performance was impacted because developers was too lazy and were just copying variables over and over for function calls (An HTML parser that took 10 sec with passing variables by value over and over dropped down to 3 sec when the code was just changed to pass pointer around).    
+In my professional life, I have seen how much performance was impacted because developers were too lazy and were just copying variables over and over for function calls (An HTML parser that took 10 sec with passing variables by value over and over dropped down to 3 sec when the code was just changed to pass a pointer around).    
 
 ## Goals
 1. Read the Node structure  
@@ -69,9 +69,9 @@ So, let's get started
 | 0x18-0x19  | Right child index                    | Index of the right child + sub-sector indicator  |  
 | 0x1A-0x1B  | Left child index                     | Index of the left child + sub-sector indicator   |  
 
-A lot of data, but there are few interesting things to be noted here. 
+A lot of data, but there are a few interesting things to be noted here. 
 * The splitter is stored as a single point, then the delta in X and Y to the second point. This is an optimization which we will talk about when we start traversing the BSP node.
-* Why in the world would he need to store the right box and the Left box of a splitter? After digging a little bit into the code, it is another brilliant optimization (sadly we will not use for now, but we will cover how it works). On the other had these boxes are used in all those screen shoots to show the right and left of the splitter.
+* Why in the world would they need to store the right box and the Left box of a splitter? After digging a little bit into the code, it is another brilliant optimization (sadly we will not use for now, but we will cover how it works). On the other hand these boxes are used in all those screenshots to show the right and left of the splitter.
 
 ## Coding
 So, nothing is new here, again just the same old task, reading the node data from the WAD.  

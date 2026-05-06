@@ -3,8 +3,8 @@ Reviewers:
 
 # Notes 004 - Automap
 Finally, it is time to draw something! Let's try and see if we can implement a simple automap.  
-Before we start, this is not the same way original DOOM draws its automap, the one released with original game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap drawn all the walls, so we can get an idea what is going on and validate our knowledge about the map.  
-A quick recap, the maps have two core components, vertex, and a Linedef. Vertexes are just corners, and linedefs are walls. All we need is just convert the 2D data to a 2D image.  
+Before we start, this is not the same way original DOOM draws its automap, the one released with original game would draw the map as you visit the area (to be more exact, it will draw a wall in the automap only if it was rendered in the 3D view). Our automap draws all the walls, so we can get an idea what is going on and validate our knowledge about the map.  
+A quick recap, the maps have two core components, vertex, and a Linedef. Vertexes are just corners, and linedefs are walls. All we need is to just convert the 2D data to a 2D image.  
 Let's draw that data and see if we get a top view of the map. If you need more information about reading the map data head back to Notes002.  
 
 ## Goals
@@ -15,8 +15,8 @@ Simply update the map class to render the vertex and linedef!
 Note: You will notice that I drew directly to the renderer, usually you have a buffer you draw to then just copy it to the renderer. That would be much faster, but I love starting simple and when needed just change it.
 
 ## Coding
-So, we have previously seen the list of vertexes. If you look to that list, you know that there is a lot of negative numbers. We need to shift those number to be positive, after all our screen resolution we chose 320 x 200. We need to shift number to be in that range.  
-So, to achieve this I will use simple math, I will find the min point value while adding vertexes, then just invert the singe of that value and add it to each point X value, and same for Y. Let's look at a simple example.  
+So, we have previously seen the list of vertexes. If you look at that list, you know that there are a lot of negative numbers. We need to shift those numbers to be positive, after all our screen resolution we chose 320 x 200. We need to shift the numbers to be in that range.  
+So, to achieve this I will use simple math, I will find the min point value while adding vertexes, then just invert the sign of that value and add it to each point X value, and same for Y. Let's look at a simple example.  
   
 ```
 Point A (3, -5)
@@ -135,7 +135,7 @@ Screen coordinates
 <img src="./img/screen.png" width="300">
 
 In simple words the Y-axis is flipped!  
-A quick fix is to invert the Y access as shown in the code below. Remember that the screen is 200 in height and that it ranges from 0 to 199.  
+A quick fix is to invert the Y axis as shown in the code below. Remember that the screen is 200 in height and that it ranges from 0 to 199.  
 We can use the function ```SDL_RenderGetLogicalSize``` to get the current render view size.  
 
 ``` cpp

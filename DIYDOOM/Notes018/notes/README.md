@@ -3,17 +3,17 @@ Reviewers:
 *  Matt [misnor](https://github.com/misnor)
 
 # Notes 018 - Color Palette
-So with the world being rendered in 3D at this point, it would be nice to draw some textures instead of just having a solid color segs. You would expect that the texture is some image that is stored in the WAD and all you have to do is just read that texture and draw it on the screen, you're close but that is not exactly it, there is much more into it than that.
+So with the world being rendered in 3D at this point, it would be nice to draw some textures instead of just having solid color segs. You would expect that the texture is some image that is stored in the WAD and all you have to do is just read that texture and draw it on the screen, you're close but that is not exactly it, there is much more to it than that.
 
-Now a days (with a lot of memory) it is very common to store a pixel in an image in a 4 byte (Red, Green, Blue and Alpha), back then it wasn't the case. Due to many limitations colors was limited to a predefined palette, each color in the palette has an index which is used to represent a single pixel. 
-DOOM utilize palettes to represent colors. DOOM has a total of 14 different palettes with each palette indexing 256 colors.
+Nowadays (with a lot of memory) it is very common to store a pixel in an image in 4 bytes (Red, Green, Blue and Alpha), back then it wasn't the case. Due to many limitations colors were limited to a predefined palette, each color in the palette has an index which is used to represent a single pixel. 
+DOOM uses palettes to represent colors. DOOM has a total of 14 different palettes with each palette indexing 256 colors.
 It only requires a single byte to represent any index in the palette (0-255).  
 
 Palette 0 (Normal)
 
 ![Palette](./img/palette.png)
 
-With that being said, each pixel on the screen will be represented with a single byte, and we know that we have a total of 320\*200 pixel in any frame. Our current method to draw to screen was using the SDL_Renderer to draw directly to the windows using full RGB colors, we need to replace this with an memory buffer that represents each pixel as 8 bits, then we can pass this around components to draw on. If that is too much to grasp all at once let’s go step by step.  
+With that being said, each pixel on the screen will be represented with a single byte, and we know that we have a total of 320\*200 pixels in any frame. Our current method to draw to screen was using the SDL_Renderer to draw directly to the window using full RGB colors, we need to replace this with a memory buffer that represents each pixel as 8 bits, then we can pass this around to components to draw on. If that is too much to grasp all at once let’s go step by step.  
 
 ## Goals
 * Read palette from WAD
@@ -24,7 +24,7 @@ With that being said, each pixel on the screen will be represented with a single
 * Refactoring / cleanup
 
 ## Code
-First let's have a look at how the palette is formatted in the WAD file. For each palette it is a total of 256 represented in Red, Green and Blue with each being a single byte (So RGB is 3 bytes)
+First let's have a look at how the palette is formatted in the WAD file. For each palette it is a total of 256 colors represented in Red, Green and Blue with each being a single byte (So RGB is 3 bytes)
 
 ```
                         <------ 32 bits ------->
@@ -179,9 +179,9 @@ uint8_t *DisplayManager::GetScreenBuffer()
 }
 ```
 
-So to clean things up, lets wrap any SDL rendering in a class and if any component needs to draw anything it should get a pointer to a 8-bit surface to draw on
+So to clean things up, let's wrap any SDL rendering in a class and if any component needs to draw anything it should get a pointer to an 8-bit surface to draw on.
 I had to go through the code and remove any call to the renderer, all we should pass now is just the 8-bit screen buffer for components to draw on. 
-Switching from a SDL_Renderer to SDL_Surface you would notice that SDL_RenderDrawLine will not work anymore, so we will need to implement our own drawing routine.  
+Switching from an SDL_Renderer to SDL_Surface you would notice that SDL_RenderDrawLine will not work anymore, so we will need to implement our own drawing routine.  
 
 ``` cpp
 void ViewRenderer::DrawVerticalLine(int iX, int iStartY, int iEndY, uint8_t color)
@@ -194,7 +194,7 @@ void ViewRenderer::DrawVerticalLine(int iX, int iStartY, int iEndY, uint8_t colo
 }
 ```
 
-In drawing segs we are in luck! We only draw vertical lines all the time, so that should be easy to implement with a loop. But this is not the case with the AutoMap we currently have implemented, it is time to remove it and have a DOOM like implemented at some point. So, we need to clean all those AutoMap related implementation.   
+In drawing segs we are in luck! We only draw vertical lines all the time, so that should be easy to implement with a loop. But this is not the case with the AutoMap we currently have implemented, it is time to remove it and have a DOOM-like one implemented at some point. So, we need to clean up all those AutoMap related implementations.   
 
 Now setting wall color would change a little, instead of having a full RGB color randomly generated, we will just randomly select a color within the palette color range which would be between 0 to 255.
 
@@ -230,7 +230,7 @@ void DoomEngine::Render()
 }
 ```
 
-The display manager simply takes the screen buffer and the palette and generates a RGB surface, then converting a surface to texture (just copy it to GPU memory), and present it.
+The display manager simply takes the screen buffer and the palette and generates an RGB surface, then converts the surface to a texture (just copy it to GPU memory), and presents it.
 
 ``` cpp
 void DisplayManager::Render()
@@ -246,18 +246,18 @@ void DisplayManager::Render()
 }
 ```
 
-Now there is retro feeling to those colors, after all it looks cooler. 
+Now there is a retro feeling to those colors, after all it looks cooler. 
 
 ![Screen](./img/screen.png)  
 
-a quick run though the level
+a quick run through the level
 
 ![Retro](./img/retro.gif)  
 
 Since we have the colors sorted out, it is time to read some of the pictures in the WAD and draw them to screen! 
 
 ## Other Notes
-Yes, in chocolate DOOM this is all there, it is all implemented in ```i_video.c```, I have learned a lot looking at that code I was not aware that SDL had palette implementation (I guess no tutorials cover it and rarely such a feature is used). As a practice with palettes I have updated my [DOOMFire](https://github.com/amroibrahim/DOOMFire), and played around even more will palettes [Palette Cycling Demos](https://github.com/amroibrahim/PaletteCycling).
+Yes, in chocolate DOOM this is all there, it is all implemented in ```i_video.c```, I have learned a lot looking at that code I was not aware that SDL had palette implementation (I guess no tutorials cover it and rarely such a feature is used). As a practice with palettes I have updated my [DOOMFire](https://github.com/amroibrahim/DOOMFire), and played around even more with palettes [Palette Cycling Demos](https://github.com/amroibrahim/PaletteCycling).
 
 The Chocolate DOOM implementation has an extra SDL_Surface to stretch the final rendering.
 

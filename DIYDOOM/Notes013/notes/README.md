@@ -3,8 +3,8 @@ Reviewers:
 
 # Notes 013 - Clipping Solid Walls  
 Things are heating up; we are getting closer and closer to rendering the 3D view! I can see the excitement in your eyes!   
-Without further do, let's get started.   
-As usual, let's recap what is going on. Up to this point we are able to iterate though the walls in the field of view, and we have filtered only the solid walls. But not all of those are visible, a solid wall will block you from seeing another wall behind it.  
+Without further ado, let's get started.   
+As usual, let's recap what is going on. Up to this point we are able to iterate through the walls in the field of view, and we have filtered only the solid walls. But not all of those are visible, a solid wall will block you from seeing another wall behind it.  
 
 For example, look at this top view.  
 
@@ -23,13 +23,13 @@ Chocolate / Classic Doom has a nice implementation. A good overview about how th
 
 Before we jump to the implementation, the simplest possible way to do this would be to have an array that matches the size of the screen's width. Let's say array of 320 bool elements, and every time you get a Segment you know its starting and ending X position, with a simple for loop you can check if it is already occupied by some other wall (if not update it). Although this method is used elsewhere in DOOM code, it is not used for wall clipping.  
 
-Let's start with an overview of how the Chocolate/Classic Doom algorithm works. At this point we are iterating though the Segs near-to-far, so if a wall fills an area on screen, no other wall can fill same area later.  
-So what we should do is to just keep track of where the Segs are drawn on screen, and if a previous wall already occupied that spot, then the Seg might be clipped or not drawn at all! sounds simple? 
+Let's start with an overview of how the Chocolate/Classic Doom algorithm works. At this point we are iterating through the Segs near-to-far, so if a wall fills an area on screen, no other wall can fill the same area later.  
+So what we should do is to just keep track of where the Segs are drawn on screen, and if a previous wall already occupied that spot, then the Seg might be clipped or not drawn at all! Sounds simple? 
 Let's visualize how this works    
 
 ![Clipping Demo](./img/clip_demo.gif)  
 
-In the above animation each vertical colored rectangle represents a wall. Once it fills an area no other rectangles at a later stage is drawn over it.  
+In the above animation each vertical colored rectangle represents a wall. Once it fills an area no other rectangles at a later stage are drawn over it.  
 If you have a keen eye, this is the view you'll see as soon as Doomguy spawns in E1M1. You can easily see the pillars getting drawn (in blue) first, didn't I say we are getting really close? :)
 
 ## Goals
@@ -110,7 +110,7 @@ This algorithm can be broken down into two main cases:
 * Inserting or Updating to the left of an existing entry in the linked list.
 * Updating or Deleting to right of an existing entry in the linked list.
 
-Let's say our first Seg to track starts at 69 and ends at 80 (which we will call CurrentWall), what we need to do next is to search if that range is occupied in list.  
+Let's say our first Seg to track starts at 69 and ends at 80 (which we will call CurrentWall), what we need to do next is to search if that range is occupied in the list.  
 To achieve this we look into each entry in the linked list. Since we know that the list is always sorted, we linearly search for where the correct position's (CurrentWall) start edge to end edge is within the linked list entries.  
 
 ``` cpp
@@ -245,7 +245,7 @@ updating the linked list to
 [3]	320, INT_MAX
 ```
 
-As more and more walls fill the screen, the more elements will merge, up to a point where all of the screen if filled. A single entry will remain in the list 
+As more and more walls fill the screen, the more elements will merge, up to a point where all of the screen is filled. A single entry will remain in the list 
 
 ```
 [0]	INT_MIN, INT_MAX
@@ -387,10 +387,10 @@ Now, what we need to do next is to draw the walls with the correct height.
 ## Other Notes
 The solid wall clipping is an interesting algorithm, there was a very minimal use of memory, also keeping the list short with merging keeps the sequential search fast.
 What we have discussed is a common interview question, you can read more here [Merge Intervals](https://leetcode.com/problems/merge-intervals/).
-The implemented algorithm was hard to get bug free in the first try; I have gone though four or five iterations before getting it right.  
+The implemented algorithm was hard to get bug free in the first try; I have gone through four or five iterations before getting it right.  
 
-The algorithm exists in Chocolate DOOM under the name ```R_ClipSolidWallSegment```. It might look more complex, but in reality, they are both the same. Ours just looks more simple because we are using the built in C++ STD List. Meanwhile, the original code had to shift elements up the array when deleting entries.  
-One interesting thing I found was that the function ```R_ClipPassWallSegment``` is more or less the same as ```R_ClipSolidWallSegment```, few ``if`` statements and both functions would been merged, but we will talk about ```R_ClipPassWallSegment``` in detail in an upcoming notes.  
+The algorithm exists in Chocolate DOOM under the name ```R_ClipSolidWallSegment```. It might look more complex, but in reality, they are both the same. Ours just looks simpler because we are using the built in C++ STD List. Meanwhile, the original code had to shift elements up the array when deleting entries.  
+One interesting thing I found was that the function ```R_ClipPassWallSegment``` is more or less the same as ```R_ClipSolidWallSegment```, a few ``if`` statements and both functions would have been merged, but we will talk about ```R_ClipPassWallSegment``` in detail in upcoming notes.  
 
 ## Source code
 [Source code](../src)  

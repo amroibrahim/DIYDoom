@@ -24,7 +24,7 @@ Those pillars are solid walls, and there are four sides for each pillar (right s
 
 ![Pillar](./img/pillar2D.png)  
 
-and there is no way for the player to get inside the pillar (where the question mark is on the left side each of the pillar's Linedefs).  
+and there is no way for the player to get inside the pillar (where the question mark is on the left side of each of the pillar's Linedefs).  
 
 Another good example of solid walls are the walls just behind the player.  
 
@@ -58,7 +58,7 @@ int StartVertexXValue  = line.pStartVertex->XPosition;
 
 It will make passing Linedefs or Segs much easier, without need of having access to the vector (and it sure looks cleaner). But, how can we do this?  
 I would load all the data from the WAD file then build those pointers. So, we will still need the old structs to read the data off the WAD file and create new, neater ones to use in code.  
-I suffixed the old ones with "WAD" so they became  
+I prefixed the old ones with "WAD" so they became  
 
 ``` cpp
 struct WADSector
@@ -235,11 +235,11 @@ Now, we have filtered down all the solid walls that are in the FOV! But not all 
 The fun part is about to start!  
 
 ## Other Notes  
-The structs pointing to each other is not my idea, this is how the Chocolate/ Classic Doom was implemented, and building all those structs from day one would just be confusing and it would be easy to get lost, so I was just progressing based on what was needed.  
+The structs pointing to each other are not my idea, this is how the Chocolate/ Classic Doom was implemented, and building all those structs from day one would just be confusing and it would be easy to get lost, so I was just progressing based on what was needed.  
 Loading and setup of those structs are done in ``` p_setup.c ``` I didn't copy the same exact structs that DOOM had, I implemented what makes sense to me, (if you didn't notice I like to keep things simple and refactor as needed).  
-The Chocolate / Original Doom does all those loading and setup when in the ``` void P_SetupLevel ( int episode, int map, int playermask, skill_t skill) ```  
+The Chocolate / Original Doom does all that loading and setup in ``` void P_SetupLevel ( int episode, int map, int playermask, skill_t skill) ```  
 
-Here is a some of the function in Chocolate Doom that does the load and setup structures  
+Here are some of the functions in Chocolate Doom that load and set up structures  
 
 ``` cpp
     P_LoadBlockMap (lumpnum+ML_BLOCKMAP);

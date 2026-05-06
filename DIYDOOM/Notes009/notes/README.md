@@ -4,7 +4,7 @@ Reviewers:
 # Notes 009 - Sector and Subsector  
 At this point there is no escape from understanding sectors, sub-sectors, and segs! So, let's start.  
 We know that vertexes and linedefs form walls (Notes002).  
-Using vertexes and lindefs, lets create a very simple room (top 2D view).   
+Using vertexes and linedefs, let's create a very simple room (top 2D view).   
 
 ![Simple Room](./img/singleroom_2d.png)  
 
@@ -22,7 +22,7 @@ A sector has the following properties:
 * Light level  
 * Type  
 
-So, if I want to make areas with different properties, let's say height, we would split that area into two sectors, sector for each height.  
+So, if I want to make areas with different properties, let's say height, we would split that area into two sectors, a sector for each height.  
 
 So, adding a single step to this simple room would need to update the map and split the sector into something like this (top 2D view).  
 
@@ -34,7 +34,7 @@ which would render to
 
 Now, Imagine the power of this! You can keep adding sectors to make stairs, or bring the floor a little higher and ceiling a little lower, creating what would look like a window.  
 
-Now, let’s move to sub-sector, a sector is broken down into small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlaping walls. This convex area is defined by segments of linedefs known as "segs".    
+Now, let’s move to sub-sector, a sector is broken down into small pieces when building the BSP Tree. Those sub-sectors are "convex", which means no overlapping walls. This convex area is defined by segments of linedefs known as "segs".    
 
 ![Convex Segs](./img/subsectors.png)  
 [Image credit Doom Wiki](https://doom.fandom.com/wiki/Subsectori)
@@ -135,11 +135,11 @@ Now let’s run and see what happens.
 
 ![Segs](./img/subsectorsslog.gif)  
 
-You can see that the right side of the root node gets completed first before moving to the leftside.  
+You can see that the right side of the root node gets completed first before moving to the left side.  
 
 ![Node Side](./img/node.png)   
   
-You can also see at any angle to the player the “walls” in front of the player if done before the further way!  
+You can also see at any angle to the player the “walls” in front of the player are drawn before the further away ones!  
 
 Traversing the BSP tree gives us all the sub-sectors, from nearest to and farthest from the player. So, we will need to filter those to the ones that are just within the player's field of view.  
 
@@ -156,7 +156,7 @@ If you are tracing or comparing your code to original/chocolate DOOM, there are 
     R_RenderBSPNode (bsp->children[side^1]);
 ```
 
-This will remove the optimization and will force the traversal though the BSP tree. This should not impact rendering output, it just makes comparing the output from chocolate DOOM and your code easier.  
+This will remove the optimization and will force the traversal through the BSP tree. This should not impact rendering output, it just makes comparing the output from chocolate DOOM and your code easier.  
 
 It is amazing how much impact on performance that optimization is, I did some testing with E1M1 and player being in spawn area.  
  * Without ``` if (R_CheckBBox (bsp->bbox[side^1])) ``` all the sub-sectors gets traversed 477 sub-sectors.  

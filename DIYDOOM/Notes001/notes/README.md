@@ -13,7 +13,7 @@ Doom creators came up with this format to make it easy to modify the game.
 ## WAD File Anatomy  
 The WAD file has 3 main parts, header, lumps, and directories.  
 1. Header  
-   This contains basic information about the WAD file and where are the directories offset.  
+   This contains basic information about the WAD file and where the directories are offset.  
 2. Lumps  
    This is where the game assets get stored, map data, sprites, music, etc.  
 3. Directories  
@@ -25,7 +25,7 @@ The WAD file has 3 main parts, header, lumps, and directories.
 | Field Size | Data Type    | Content                                                        |  
 |------------|--------------|----------------------------------------------------------------|  
 | 0x00-0x03  | 4 ASCII char | *Must* be an ASCII string (either "IWAD" or "PWAD").           |  
-| 0x04-0x07  | unsigned int | The number entries in the directory.                           |  
+| 0x04-0x07  | unsigned int | The number of entries in the directory.                        |  
 | 0x08-0x0b  | unsigned int | Offset in bytes to the directory in the WAD file.              |  
 
 ### Directories Format  
@@ -68,10 +68,10 @@ public:
 
 protected:
     bool OpenAndLoad();     // Open the file and load it to memory
-    bool ReadDirectories(); // A function what will iterate though the directory section 
+    bool ReadDirectories(); // A function that will iterate through the directory section 
 
     std::string m_sWADFilePath; // Store the file name passed to the constructor 
-    std::ifstream m_WADFile;    // The file stream that will pint to the WAD file.
+    std::ifstream m_WADFile;    // The file stream that will point to the WAD file.
     uint8_t *m_WADData;         // let's load the file and keep it in memory! It is just a few MBs!
     std::vector<Directory> m_WADDirectories; //let's store all the directories in this vector.
 };
@@ -94,7 +94,7 @@ if (!m_WADFile.is_open())
 }
 ```
 
-if all is going fine and we were able to find and open the file, we need to know the file size so we can allocate memory to copy the file to.  
+If all is going fine and we were able to find and open the file, we need to know the file size so we can allocate memory to copy the file to.  
 
 ``` cpp
 m_WADFile.seekg(0, m_WADFile.end);
@@ -117,8 +117,8 @@ m_WADFile.read((char *)m_WADData, length); // read the file and place it in m_WA
 m_WADFile.close();
 ```
 
-Maybe you have noticed that I have used unint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using unint8_t guarantees the size of a byte (8 bits which are hinted by the name).  
-If we want to allocate 2 bytes (16 bits) we would use unint16_t, which we will come across later! Using such types makes it platform independent.  
+Maybe you have noticed that I have used uint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using uint8_t guarantees the size of a byte (8 bits which are hinted by the name).  
+If we want to allocate 2 bytes (16 bits) we would use uint16_t, which we will come across later! Using such types makes it platform independent.  
 Just to clarify, if we use "int" the actual size of the int in memory is implementation-defined. On most modern compilers and platforms you will usually see 4 bytes (32 bits), but this can vary by target and ABI.  
 
 Let's give this a quick test and see if things are working! but before we do that, we will need to implement LoadWAD.  
@@ -137,7 +137,7 @@ bool WADLoader::LoadWAD()
 ```
 
 And in our main function we will create an instance of our class and try and load the WAD  
-The supplied WAD is the DOOM Shareware verion, you can replace it with the steam version.
+The supplied WAD is the DOOM Shareware version, you can replace it with the steam version.
 
 ``` cpp
 int main()
@@ -152,7 +152,7 @@ __You might need to type in the correct path of your WAD file.__
 Let's run it!  
 
 Oh! A console window that just opens for a few seconds! Nothing much to see... hmm did it work?  
-I have an idea! Let's look at the memory and see how it looks like! Maybe we can see something special there!  
+I have an idea! Let's look at the memory and see what it looks like! Maybe we can see something special there!  
 First, let's place a breakpoint by double-clicking on the left of the line number, you should see something like this.  
 
 ![Breakpoint](./img/breakpoint.png)
@@ -287,14 +287,14 @@ I think we are good for today!
 
 ## Other Notes
 * At some point I thought using a vector to store the directories might not be smart! Why not use a Map? It will be faster to retrieve data than linearly searching the vector. That is a bad idea. Using a map will not keep track of the directory’s entry order, and we need that information later to retrieve the correct data.  
-Also, one final miss conception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
-* Loading all the WAD files to memory is not the optimal way to do this. It would make more sense to just read the header and directories to memory, then based on the code flow needs we would go back to the WAD file and load the recourses from the disk. Hopefully at some point we learn more about caching.  
+Also, one final misconception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
+* Loading all the WAD files to memory is not the optimal way to do this. It would make more sense to just read the header and directories to memory, then based on the code flow needs we would go back to the WAD file and load the resources from the disk. Hopefully at some point we learn more about caching.  
 
-In Chocolate DOOM, tracing the WAD loading and reading might be a little hard if you have no experience with C, but let me share what is going on. In the game main loop ```D_DoomMain``` a sequence of steps happen so that the correct WAD file is located and loaded, here is a simple break down of what happens
+In Chocolate DOOM, tracing the WAD loading and reading might be a little hard if you have no experience with C, but let me share what is going on. In the game main loop ```D_DoomMain``` a sequence of steps happen so that the correct WAD file is located and loaded, here is a simple breakdown of what happens
 * D_FindIWAD is called and checks if the EXE was started with ```-iwad``` argument.
-    * If ```-iwad``` argument if specified it uses that file 
+    * If ```-iwad``` argument is specified it uses that file 
     * If not, it starts searching for a WAD file and this is what the function ```SearchDirectoryForIWAD``` does.
-* Once a WAD file is found, its open in the function ```W_AddFile``` and assigned to the variable ```wad_file``` which is of type ```wad_file_t```, which you will find defined in ```w_file.h```.
+* Once a WAD file is found, it's opened in the function ```W_AddFile``` and assigned to the variable ```wad_file``` which is of type ```wad_file_t```, which you will find defined in ```w_file.h```.
 
 ``` cpp
 typedef struct _wad_file_s wad_file_t;
@@ -331,7 +331,7 @@ struct _wad_file_s
 ```
 Now here is the tricky part, you will notice at the end the structs are of type ```wad_file_class_t``` which holds pointers to functions, open, close and reading a file. 
 
-But why is this complexity there? What is the advantage? The answer is there is a difference in behavior when it comes to running Chocolate DOOM under linux, and windows. Linux supports memory mapped files [MMAP](https://en.wikipedia.org/wiki/Mmap). So at compile time, the compiler takes a decision which version of open, close and read is baked into the EXE, based on what is defined in your complier settings.
+But why is this complexity there? What is the advantage? The answer is there is a difference in behavior when it comes to running Chocolate DOOM under linux, and windows. Linux supports memory mapped files [MMAP](https://en.wikipedia.org/wiki/Mmap). So at compile time, the compiler makes a decision which version of open, close and read is baked into the EXE, based on what is defined in your compiler settings.
 
 ```
 extern wad_file_class_t stdc_wad_file;

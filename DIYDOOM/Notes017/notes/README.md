@@ -16,11 +16,11 @@ If you spent some time navigating the map you would have noticed that the player
 * Set player eye level based on sector height  
 
 ## Code
-Implementing player height calculation, was much easier that I expected, if you have gone thought Notes 006, 007, 008 you will find this a piece of cake.  
+Implementing player height calculation was much easier than I expected, if you have gone through Notes 006, 007, 008 you will find this a piece of cake.  
 
 Remember the part where you search for the sector the player is in? Once you find the sector, find out its height and add the player eye level to it.  
 
-So simple implement the search of player exactly like what we have done previously  
+So simply implement the search of the player exactly like what we have done previously  
 
 ``` cpp
 int Map::GetPlayerSubSectorHieght()
@@ -47,7 +47,7 @@ int Map::GetPlayerSubSectorHieght()
 }
 ```
 
-Once you found the sector return the floor height, this is where the player is standing! now all you must do is simply add the player eye level to that height (which is 41 in DOOM)  
+Once you found the sector return the floor height, this is where the player is standing! Now all you must do is simply add the player eye level to that height (which is 41 in DOOM)  
 
 ``` cpp
 void Player::Think(int iSubSectorHieght)
@@ -78,9 +78,9 @@ a look at E1M3
 Next, I will start exploring how we could read the textures from the WAD files and see if we could possibly give the walls some texture. 
 
 ## Other Notes
-Update: Originally this notes was titled "History", I have rolled back those code change and updated the notes. I just found it is better to stick to what was implemented in DOOM, and not to cause confusion at later notes. You can go back in git history and check the old version.
+Update: Originally this notes was titled "History", I have rolled back those code changes and updated the notes. I just found it is better to stick to what was implemented in DOOM, and not to cause confusion at later notes. You can go back in git history and check the old version.
 
-Now looking at my code, it is very obvious that the design is missed up, there is allot of stuff happening in ViewRenderer class, we should have a separate class to handle a segment and draw it (similar to DOOM code), also having the player as a separate class is not a good idea. I see that we should have a Things class, then the player should be sub-class. All things will need to know its sector height, they will also need to move around.  
+Now looking at my code, it is very obvious that the design is messed up, there is a lot of stuff happening in ViewRenderer class, we should have a separate class to handle a segment and draw it (similar to DOOM code), also having the player as a separate class is not a good idea. I see that we should have a Things class, then the player should be a sub-class. All things will need to know their sector height, they will also need to move around.  
 
 ## Source code
 [Source code](../src)  

@@ -2,10 +2,10 @@ Reviewers:
 *  Marl [@DOOMReboot](https://twitter.com/DOOMReboot)  
 
 # Notes 002 - Basic Map Data
-Now that we can read a WAD file, let’s try to make use of the data we read. Maybe it would be nice to see if we can read any of the Mission (world/level) data and if we could put it to some use. The Mission Lumps can be somewhat complex and tricky. So, we will have to go step by step to build our knowledge and confidence. So, as our first small step let’s build something like the Automap feature. If you are not aware of what is an automap it is a bird's eye, 2D view of the map. For now, let’s see what is inside the Mission Lump.  
+Now that we can read a WAD file, let’s try to make use of the data we read. Maybe it would be nice to see if we can read any of the Mission (world/level) data and if we could put it to some use. The Mission Lumps can be somewhat complex and tricky. So, we will have to go step by step to build our knowledge and confidence. So, as our first small step let’s build something like the Automap feature. If you are not aware of what an automap is, it is a bird's eye, 2D view of the map. For now, let’s see what is inside the Mission Lump.  
   
 ## Map Anatomy  
-First things first, DOOM missions are represented very similarly to a 2D blueprint with lines representing the walls.  However, each wall takes the heights of the floor and ceiling in order to have 3D coordinates (XY is the plane you on which you move around horizontally, while Z is the height which allows you to move up and down when performing actions such as riding a lift or jumping down from a platform.  These three components of a coordinate are used to render the Mission as a 3D world.  However, the engine has certain constraints such as no overlapping rooms and the inability to look up and down. Another interesting fact to consider is that the player's projectiles, such as the rocket, will rise vertically to hit a target which is on a higher platform.  
+First things first, DOOM missions are represented very similarly to a 2D blueprint with lines representing the walls.  However, each wall takes the heights of the floor and ceiling in order to have 3D coordinates (XY is the plane on which you move around horizontally, while Z is the height which allows you to move up and down when performing actions such as riding a lift or jumping down from a platform).  These three components of a coordinate are used to render the Mission as a 3D world.  However, the engine has certain constraints such as no overlapping rooms and the inability to look up and down. Another interesting fact to consider is that the player's projectiles, such as the rocket, will rise vertically to hit a target which is on a higher platform.  
 
 These curiosities have been the cause of innumerable casualties in the holy war fought over whether DOOM is a 2D or 3D engine.  A diplomatic compromise was reached, and many lives were saved when the description of DOOM being "2.5D" was found to be mutually acceptable.
 
@@ -13,8 +13,8 @@ To simplify our task and to bring us back on topic, let’s try to just read tha
   
 With some investigation, each Mission is composed of a set of Lumps. Those Lumps always show in the same sequence within the original DOOM WAD.
 1. **VERTEXES:** Are the endpoints of a wall in 2D. Two connected VERTEXES form one LINEDEF.  Three connected VERTEXES form two walls/LINEDEFS, and so on and so forth. Just think about it as a meeting point of two or more walls. (Yes, most people prefer the term "Vertices". Both are perfectly acceptable according to [merriam-webster](https://www.merriam-webster.com/dictionary/vertexes).
-2. **LINEDEFS:** These are the lines forming the connections between VERTEXES, forming walls. Not all lines (walls) behave the same, there is flags that define the behavior of those lines.  
-3. **SIDEDDEFS:** In real life there is two sides of a wall, the one you are facing, and the one on the other side. Those two sides of the wall could have different textures, SIDEDEFS is a lump which holds the texture information for a wall (LINEDEF).  
+2. **LINEDEFS:** These are the lines forming the connections between VERTEXES, forming walls. Not all lines (walls) behave the same, there are flags that define the behavior of those lines.  
+3. **SIDEDEFS:** In real life there are two sides of a wall, the one you are facing, and the one on the other side. Those two sides of the wall could have different textures, SIDEDEFS is a lump which holds the texture information for a wall (LINEDEF).  
 4. **SECTORS:** SECTORs are the "rooms" created by connecting LINEDEFs together.  Each sector contains information such as the floor and ceiling heights and textures, and light value, special actions such as moving floors/platforms/elevators.  Some of these settings will also affect how walls are rendered such as the light level and calculation of texture mapping coordinates.
 5. **SSECTORS:** SSECTORS (subsectors) form convex areas within a sector which are used to aid in rendering and in tandem with traversal of the BSP which also aids in determining exactly where the player is within a level.  This is quite useful and a very common usage of this is to determine the vertical position of the player.  Each SSECTOR consists of connected fractions of a sector, such as the walls that make up a corner.   
 6. **SEGS:** Segs are fractions of a wall/LINEDEF; to put it another way, they are "segments" of a wall/LINEDEF.  The world is rendered by traversing a BSP tree in order to determine which walls to draw first, closest first. These SEGs are then used to render walls rather than the LINEDEFs themselves.  Each SSECTOR's geometry is defined by the segs which it contains.  
@@ -97,7 +97,7 @@ public:
     Map(std::string sName);
     ~Map();
 
-    std::string GetName(); // Incase someone need to know the map name
+    std::string GetName(); // In case someone needs to know the map name
     void AddVertex(Vertex &v); // Wrapper class to append to the vertexes vector
     void AddLinedef(Linedef &l); // Wrapper class to append to the linedef vector
 
@@ -108,7 +108,7 @@ protected:
 };
 ```
   
-Now let’s add structs so we would can read those new fields. Since we have already done this a few times, let’s add both at once this time.  
+Now let’s add structs so we can read those new fields. Since we have already done this a few times, let’s add both at once this time.  
   
 ``` cpp
 struct Vertex
@@ -152,7 +152,7 @@ void WADReader::ReadLinedefData(const uint8_t *pWADData, int offset, Linedef &li
   
 I don't think there is anything new up to this point, and as you guessed by now, we need to call those functions from the WADLoader class!
 
-Let me state some facts, the sequence of the lumps does matter, we will find the map name in the directory lump, then all maps related lumps will follow in the given order. To makes things easier for us and not to keep track of lumps index individually I have added an enum to avoid magic numbers.
+Let me state some facts, the sequence of the lumps does matter, we will find the map name in the directory lump, then all map-related lumps will follow in the given order. To make things easier for us and not to keep track of lumps index individually I have added an enum to avoid magic numbers.
   
 ``` cpp
 enum EMAPLUMPSINDEX
@@ -171,7 +171,7 @@ enum EMAPLUMPSINDEX
 };
 ```
   
-Also, I will be adding a function to find the map in by name in the directory list. We will likely improve performance for this later by using a map data structure instead as there are a significant number of entries and we will have to iterate through them quite frequently, particularly when we start loading media such as textures, sprites, sounds, and so forth.
+Also, I will be adding a function to find the map by name in the directory list. We will likely improve performance for this later by using a map data structure instead as there are a significant number of entries and we will have to iterate through them quite frequently, particularly when we start loading media such as textures, sprites, sounds, and so forth.
   
 ``` cpp
 int WADLoader::FindMapIndex(Map &map)
@@ -250,14 +250,14 @@ bool WADLoader::LoadMapData(Map &map)
 }
 ```
   
-Now let’s update the main function and see if things run, oh I want to load the Map "E1M1" which I will pass in the to the map object.
+Now let’s update the main function and see if things run, oh I want to load the Map "E1M1" which I will pass in to the map object.
   
 ``` cpp
     Map map("E1M1");
     wadloader.LoadMapData(map);
 ```
   
-Now let’s run this! Wow! lots of cool number, but are they correct? Let’s check!  
+Now let’s run this! Wow! lots of cool numbers, but are they correct? Let’s check!  
 let’s see if slade can help us here again.
   
 We can locate the map in the slade menu and look at the lump’s details, let’s compare numbers.
@@ -301,7 +301,7 @@ Comparing both with the address of the WAD that is loaded in memory
 ![Debug](./img/debug.png)  
 
 One final thing for today, we have seen all those vertexes numbers, is there an easy way to plot those without writing the code, I don’t want to invest time then find out we were not working in the right direction.  
-For sure someone out there implemented graph plotter. Surely, I googled "draw points on a graph" and first result was a website called [Plot Points - Desmos](https://www.desmos.com/calculator), you can paste from your clipboard with multiple points and it should draw them for you. We will need to format as flowing "(x, y)". That is easy just let’s change our print function to do that for us.  
+For sure someone out there implemented a graph plotter. Surely, I googled "draw points on a graph" and the first result was a website called [Plot Points - Desmos](https://www.desmos.com/calculator), you can paste from your clipboard with multiple points and it should draw them for you. We will need to format as following "(x, y)". That is easy just let’s change our print function to do that for us.  
 
 ``` cpp
 cout << "("  << vertex.XPosition << "," << vertex.YPosition << ")" << endl;
@@ -311,7 +311,7 @@ Wow! That is a resemblance of E1M1! We are up to something!
   
 ![E1M1 Plot Points](./img/plot.PNG) 
 
-If your lazy to do that here is a link with the vertex being populated  
+If you're too lazy to do that here is a link with the vertex being populated  
 
 [Plot Vertex](https://www.desmos.com/calculator/jatccysan2)
 

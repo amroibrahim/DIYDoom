@@ -12,18 +12,18 @@ Things will start getting serious, our main goal is to render a 3D view of what 
 *  Render what the player is seeing. Later notes  
 
 If you have been an ID Software fan you mostly know by now how Wolfenstein 3D rendering works, and the big shift between Wolf3D and DOOM was the utilization of a BSP Tree (BSP was used in Wolf3D SNES version). 
-How things worked in Wolf 3D was using [ray casting](https://en.wikipedia.org/wiki/Ray_casting) technology. But using such a technology has a lot of limitations. This is where BSP trees comes in. BSP trees are used to help us know which walls are closest to the player. So, let us get started. 
+How things worked in Wolf 3D was using [ray casting](https://en.wikipedia.org/wiki/Ray_casting) technology. But using such a technology has a lot of limitations. This is where BSP trees come in. BSP trees are used to help us know which walls are closest to the player. So, let us get started. 
 
-It is time to have a better understanding of BSP and how they are they the secret behind the success of DOOM.  
-All we know now is that BSP is just a tree that split the map to smaller pieces. Those small pieces (sub-sector), are organized in a tree that makes searching and traversing easy and fast. Sub-sectors are convex, which means walls in the sub-sector will not overlap. But how can this be usefully? The BSP tree is used in visible-surface determination (VSP), in simple words, which wall is visible to the player.
+It is time to have a better understanding of BSP and how they are the secret behind the success of DOOM.  
+All we know now is that BSP is just a tree that splits the map into smaller pieces. Those small pieces (sub-sector), are organized in a tree that makes searching and traversing easy and fast. Sub-sectors are convex, which means walls in the sub-sector will not overlap. But how can this be useful? The BSP tree is used in visible-surface determination (VSD), in simple words, which wall is visible to the player.
 
-Using the BSP tree you can traverse all the walls in a map ether from furthest to the player to closest (Back to front) or closest to the player to the furthest (front to back).  
+Using the BSP tree you can traverse all the walls in a map either from furthest from the player to closest (Back to front) or closest to the player to the furthest (front to back).  
 
-DOOM could have used a simple furthest to closest approach (Back to front) which will be an implementation of [Painter's algorithm](https://en.wikipedia.org/wiki/Painter%27s_algorithm). This would have rendered the seen correctly, but the side effect of this is that we will be forced to traverse the complete tree, and redraw part of the screen that have already been drawn by the furthest walls (which translates to performance cost). This approach is simple, no need to maintain what is drawn on the screen just draw every single wall you see in the tree.  
+DOOM could have used a simple furthest to closest approach (Back to front) which will be an implementation of [Painter's algorithm](https://en.wikipedia.org/wiki/Painter%27s_algorithm). This would have rendered the scene correctly, but the side effect of this is that we will be forced to traverse the complete tree, and redraw parts of the screen that have already been drawn by the furthest walls (which translates to performance cost). This approach is simple, no need to maintain what is drawn on the screen just draw every single wall you see in the tree.  
 
-What DOOM does is draw the closest to the player to the furthest (front to back), but with this approach, extra work has to be done to maintain what is already drawn on the screen so it wont be overdrawn later. Also there is a big advantage for font to back, we can skip traversing big chunk of the BSP since we are maintaining what is drawn on the screen.  
+What DOOM does is draw from the closest to the player to the furthest (front to back), but with this approach, extra work has to be done to maintain what is already drawn on the screen so it won't be overdrawn later. Also there is a big advantage for front to back, we can skip traversing big chunks of the BSP since we are maintaining what is drawn on the screen.  
 
-What we will implement is a font to back as DOOM does but wont be implementing the function that would make us skip chunks of the BSP tree. 
+What we will implement is a front to back as DOOM does but won't be implementing the function that would make us skip chunks of the BSP tree. 
 
 With all the info we have from the binary tree traversal it should be easy to understand BSPs. The BSP traversal is based on the modified algorithm we discussed in Notes007, with the only difference being that the map space is being split instead of numbers.  
 
@@ -44,11 +44,11 @@ Here is an image to visualize how sub-sectors would look. All the pieces with th
 
 I see BSP traversal as two stage actions
 1. Find which sub-sector the player is in
-2. What are the sub-sectors close to the sub-sector the playing is in?
+2. What are the sub-sectors close to the sub-sector the player is in?
 
-But before we start there is one missing key part that we have not discussed yet! How in the world will I know if a player to the right or left a splitter line? The answer is "cross product".   
+But before we start there is one missing key part that we have not discussed yet! How in the world will I know if a player is to the right or left of a splitter line? The answer is "cross product".   
 
-First, let us quickly go over a what a vector is.
+First, let us quickly go over what a vector is.
 A vector is an object that has both a magnitude and a direction. We can visualize a vector as a line in a specific direction, where we know its length and magnitude. 
   
 ![Vector](./img/vector.png)  
@@ -59,9 +59,9 @@ Cross product is a mathematical operation on two vectors and the output is anoth
 
 ![Cross product](./img/crossproduct.gif)
 
-Notice in the above example that if vector b is on the left of an output vector points up, and when b the right of an output vector points down. We can use this to our advantage.  
+Notice in the above example that if vector b is on the left, the output vector points up, and when b is on the right, the output vector points down. We can use this to our advantage.  
 
-So, lets create our two vectors
+So, let's create our two vectors
 1. Splitter V1 to the position of the player.  
 2. Splitter V1 to its V2.  
   
