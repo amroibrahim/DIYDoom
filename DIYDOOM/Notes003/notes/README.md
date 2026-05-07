@@ -6,7 +6,7 @@ Now that we have read some data from the WAD, we need to draw something on the s
 The console window is nice, but it is text based (it can be hacked to draw graphics), but we need a window where we can draw some graphics. We can use Windows APIs but that will add Windows as a dependency for us, which I don’t want. This is where SDL comes into play.  
 
 ## SDL  
-SDL is a cross platform library to provide a hardware, and OS abstraction for multimedia components. In the previous Notes, we could have used SDL in opening and reading the WAD file, and endian conversion.  
+SDL is a cross-platform library that provides OS/hardware abstraction for multimedia (windowing, input, audio, etc.). In previous notes, we could have used SDL for file I/O and endian conversion, too.  
 For now, we will use SDL to create a window and draw some graphics.  
 
 ## Goals  
@@ -16,18 +16,18 @@ For now, we will use SDL to create a window and draw some graphics.
 *  Cleanup code to pass around some objects using pointers  
 
 ## Design    
-First let’s start by adding Game class that would wrap the game's major steps in simple functions.  
-Adding DoomEngine that would hold game objects and be aware of the game internals.  
-Update DIYDoom.cpp to create and call the Game class, to create a game loop.  
+First, let’s add a `Game` class that wraps the game’s major steps in simple functions.  
+Then add a `DoomEngine` class that holds game objects and understands the game internals.  
+Finally, update `DIYDoom.cpp` to create/call the `Game` class and run a game loop.  
 
 ## Coding
-First you will need to download SDL libraries which can be found [here](https://www.libsdl.org/).  
-At the time of writing SDL2 v2.0.9 is the latest stable version, remember to download the Development Libraries version in my case "SDL2-devel-2.0.9-VC.zip". Unzip this anywhere you like but keep things organized. I have a SDKs directory on D drive where I keep all my SDKs.  
+First you will need to download SDL libraries from [libsdl.org](https://www.libsdl.org/).  
+At the time of writing, SDL2 v2.0.9 is the latest stable version. Download the Development Libraries package (for example: "SDL2-devel-2.0.9-VC.zip"). Unzip it somewhere reasonable and keep things organized.  
 
 ![SDK](./img/sdlfolder.PNG)  
 
 You will need to note where include and lib directories are.  
-Now let’s go to our project and update the settings to see and use the SDL library. Right click on DIYDoom project and select Properties. 
+Now let’s go to our project and update the settings to use SDL. Right-click on the `DIYDoom` project and select Properties.  
    
 ![Properties](./img/properties.PNG)  
 
@@ -44,7 +44,7 @@ Finally, under Linker > Input, edit Additional Dependencies and add SDL2main.lib
 ![Lib2](./img/lib2.PNG)  
 
 ### DoomEngine Class  
-DoomEngine class will be a class that knows the internals of our Doom clone. It will keep track of the player, the game status, what map is loaded etc. The list will grow as we implement more of the game.  
+`DoomEngine` will know the internals of our Doom clone. It will keep track of the player, game status, what map is loaded, etc. The list will grow as we implement more of the game.  
   
 ``` cpp
 class DoomEngine
@@ -121,13 +121,13 @@ void DoomEngine::Render(SDL_Renderer *pRenderer)
 ```
   
 ### Game Class and Game Loop
-So, we need to add a basic game loop that would do some basic functionally for our game. Let’s start with a basic one for now (we tune that at later point when we need to).  
+We need a basic game loop. Let’s start with something simple (we’ll tune it later when needed).  
 So, our simple game loop will follow this simple logic.  
   
 1. Read input  
 2. Update our world  
 3. Display the new updated world  
-4. Lock the refresh rate to max 60 per sec (by waiting)  
+4. Lock the refresh rate to at most 60 FPS (by waiting)  
   
 Let’s create some functions that represent this high-level functionality to our Game class
   
@@ -156,10 +156,10 @@ protected:
 };
 ```
   
-Let’s implement those functions to achieve what their name claim.  
+Let’s implement those functions to do what their names imply.  
 Let’s start with the init function. This function should initialize the SDL library, create a Window, and a renderer!  
 If you've noticed, the window size differs from the renderer resolution.  
-This keeps display resolution independent from internal game resolution. I have set the logical (whatever we render) to be on a 320*200 resolution, to match the original game design.  
+This keeps display resolution independent from internal game resolution. I set the logical render size to 320x200 to match the original game’s internal resolution.  
   
 ``` cpp
 bool Game::Init()
@@ -194,8 +194,8 @@ bool Game::Init()
         return false;
     }
 
-    // Sets the logical size of the screen, that means we can draw on a specific render size then, SDL will 
-    // automatically stretch it to the window size. This will make the development independent from window resolution
+    // Sets the logical render size. SDL will automatically scale it to the window size.
+    // This keeps development independent of the window resolution.
     if (SDL_RenderSetLogicalSize(m_pRenderer, m_pDoomEngine->GetRenderWidth(), m_pDoomEngine->GetRenderHeight()) != 0)
     {
         std::cout << "SDL failed to set logical size! SDL_Error: " << SDL_GetError() << std::endl;
@@ -206,7 +206,7 @@ bool Game::Init()
 }
 ```
   
-one more function I would like to go over in Game class is ProcessInput  
+One more function I would like to go over in `Game` is `ProcessInput`.  
   
 ``` cpp
 // All process input needs to do is just forward the events to the 
@@ -235,7 +235,7 @@ void Game::ProcessInput()
 }
 ```
 
-With Game class being created our main function needs to call those function.  
+With `Game` created, our `main` function just needs to call those functions.  
 
 ``` cpp
 Game game;

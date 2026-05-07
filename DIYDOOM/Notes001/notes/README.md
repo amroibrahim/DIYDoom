@@ -4,16 +4,16 @@ Reviewers:
 
 # Notes 001 - WAD Files  
 Before we do any coding, let's spend some time setting some goals and think through what we want to achieve.  
-As a start let's see if we can read DOOM assets file. All DOOM assets and resources are in the WAD file.  
+As a start, let's see if we can read DOOM’s asset file. All DOOM assets and resources are stored in a WAD file.  
 
 ## What is a WAD file?  
 "Where is All my Data"? It is in the WAD! WAD is an archive of all the assets in DOOM (and DOOM based games) in one file.  
 Doom creators came up with this format to make it easy to modify the game.  
 
 ## WAD File Anatomy  
-The WAD file has 3 main parts, header, lumps, and directories.  
+The WAD file has 3 main parts: header, lumps, and directories.  
 1. Header  
-   This contains basic information about the WAD file and where the directories are offset.  
+   This contains basic information about the WAD file, including the directory offset.  
 2. Lumps  
    This is where the game assets get stored, map data, sprites, music, etc.  
 3. Directories  
@@ -26,7 +26,7 @@ The WAD file has 3 main parts, header, lumps, and directories.
 |------------|--------------|----------------------------------------------------------------|  
 | 0x00-0x03  | 4 ASCII char | *Must* be an ASCII string (either "IWAD" or "PWAD").           |  
 | 0x04-0x07  | unsigned int | The number of entries in the directory.                        |  
-| 0x08-0x0b  | unsigned int | Offset in bytes to the directory in the WAD file.              |  
+| 0x08-0x0B  | unsigned int | Offset in bytes to the directory in the WAD file.              |  
 
 ### Directories Format  
 | Field Size | Data Type    | Content                                                        |  
@@ -50,7 +50,7 @@ We will also need a simple main function that calls those classes.
 Note: this design might not be optimal but let's tune it as we need to.  
 
 ## Coding  
-So, let's start by creating an empty C++ Project, in a visual studio just click File-> New -> Project. let's name it "DIYDoom".  
+So, let's start by creating an empty C++ project. In Visual Studio, click File -> New -> Project. Let’s name it "DIYDoom".  
 
 ![New Project](./img/newproject.PNG)  
 
@@ -77,13 +77,14 @@ protected:
 };
 ```
 Implementing the constructor should be straight forward, just initialize the data pointer and keep a copy of the WAD file path that is passed.  
+Implementing the constructor should be straightforward: initialize the data pointer and keep a copy of the WAD file path.  
 
 ``` cpp
 WADLoader::WADLoader(string sWADFilePath) : m_WADData(NULL), m_sWADFilePath(sWADFilePath)
 {
 }
 ```
-Now let's start implementing the helper load function OpenAndLoad, and try to open the file as binary, and print an error if we fail.  
+Now let's start implementing the helper load function `OpenAndLoad`, open the file as binary, and print an error if we fail.  
 
 ``` cpp
 m_WADFile.open(m_sWADFilePath, ifstream::binary);
@@ -94,20 +95,20 @@ if (!m_WADFile.is_open())
 }
 ```
 
-If all is going fine and we were able to find and open the file, we need to know the file size so we can allocate memory to copy the file to.  
+If everything is going fine and we were able to open the file, we need to know the file size so we can allocate memory and copy the file into it.  
 
 ``` cpp
 m_WADFile.seekg(0, m_WADFile.end);
 size_t length = m_WADFile.tellg();
 ```
 
-Now we know how many bytes the full WAD is let's allocate memory.  
+Now we know the WAD size in bytes, so let's allocate memory.  
 
 ``` cpp
 m_WADData = new uint8_t[length]; 
 ```
 
-and copy the file content to that memory location.  
+And copy the file contents into that memory location.  
 
 ``` cpp
 // remember to know the file size we had to move the file pointer all the way to the end! We need to move it back to the beginning.
@@ -117,12 +118,12 @@ m_WADFile.read((char *)m_WADData, length); // read the file and place it in m_WA
 m_WADFile.close();
 ```
 
-Maybe you have noticed that I have used uint8_t as a data type for the m_WADData. This means I want an exact array of 1 byte (1 byte * length). Using uint8_t guarantees the size of a byte (8 bits which are hinted by the name).  
+Maybe you noticed that I used `uint8_t` for `m_WADData`. This means I want an array of exact 1-byte elements (1 byte * length). Using `uint8_t` guarantees an 8-bit unsigned integer.  
 If we want to allocate 2 bytes (16 bits) we would use uint16_t, which we will come across later! Using such types makes it platform independent.  
-Just to clarify, if we use "int" the actual size of the int in memory is implementation-defined. On most modern compilers and platforms you will usually see 4 bytes (32 bits), but this can vary by target and ABI.  
+Just to clarify, if we use `int`, the size is implementation-defined. On most modern compilers/platforms it’s usually 4 bytes (32 bits), but it can vary by target and ABI.  
 
-Let's give this a quick test and see if things are working! but before we do that, we will need to implement LoadWAD.  
-For now, LoadWAD will call "OpenAndLoad"  
+Let's give this a quick test and see if things are working! But before we do that, we need to implement `LoadWAD`.  
+For now, `LoadWAD` will call `OpenAndLoad`.  
 
 ``` cpp
 bool WADLoader::LoadWAD()
@@ -136,8 +137,8 @@ bool WADLoader::LoadWAD()
 }
 ```
 
-And in our main function we will create an instance of our class and try and load the WAD  
-The supplied WAD is the DOOM Shareware version, you can replace it with the steam version.
+And in our `main` function, we’ll create an instance of our class and try to load the WAD.  
+The supplied WAD is the DOOM Shareware version; you can replace it with the Steam version.
 
 ``` cpp
 int main()
@@ -151,23 +152,23 @@ int main()
 __You might need to type in the correct path of your WAD file.__  
 Let's run it!  
 
-Oh! A console window that just opens for a few seconds! Nothing much to see... hmm did it work?  
+Oh! A console window that opens for a few seconds. Nothing much to see... did it work?  
 I have an idea! Let's look at the memory and see what it looks like! Maybe we can see something special there!  
 First, let's place a breakpoint by double-clicking on the left of the line number, you should see something like this.  
 
 ![Breakpoint](./img/breakpoint.png)
 
 I placed my breakpoint just after reading all the bytes from the file, so I can look at that array in memory and see what is loaded in it.  
-Now let's click run again!  
+Now let's click Run again.  
 In the auto window, I can see the first few bytes! It is reading "IWAD" in the first 4 bytes! WOW! It is working! I never thought this day would come!  
 Come on! Pull yourself together there is still more to do!  
 
 ![Debug](./img/debug.png)
 
 ## Reading the header
-The header has a total of 12 bytes (0x00 to 0x0b), this 12-bytes is divided to 3 groups, first 4 bytes is the WAD type and usually it is either "IWAD" or "PWAD", IWAD Should be official WAD released officially by ID Software, "PWAD" should be used by Mods. In other words, it is just a way to identify if this WAD file is an official release or is it made by modders. Note the string is not NULL terminated so be careful!  
-Next 4 bytes is an unsigned int that will hold the total count of directories at the end of the file.
-Next 4 bytes will represent the offset of the first directory.  
+The header is 12 bytes (0x00 to 0x0B). It’s divided into 3 fields: the first 4 bytes are the WAD type (usually "IWAD" or "PWAD"). "IWAD" indicates an official game WAD, while "PWAD" is generally used for user-created add-ons. Note that the string is not NULL-terminated, so be careful.  
+The next 4 bytes are an unsigned int holding the number of directory entries.  
+The final 4 bytes are the byte offset of the directory.  
 
 Now add a struct that will hold this information for us. I'm adding a new header file called "DataTypes.h" there we will define any structs we need.  
 
@@ -180,9 +181,9 @@ struct Header
 };
 ```
 
-Now we need to implement the WADReader class, this class will read data from the loaded WAD bytes array.  
+Now we need to implement the `WADReader` class. This class will read data from the loaded WAD byte array.  
 
-Let's add 2 functions to read 16 or 32 bit values from the byte array. 
+Let's add 2 functions to read 16-bit or 32-bit values from the byte array.  
 
 ``` cpp
 uint16_t WADReader::Read2Bytes(const uint8_t *pWADData, int offset)
@@ -220,7 +221,7 @@ void WADReader::ReadHeaderData(const uint8_t *pWADData, int offset, Header &head
 }
 ```
 
-now stitch everything together and call those functions to print out the results  
+Now stitch everything together and call those functions to print out the results.  
 
 ``` cpp
 bool WADLoader::ReadDirectories()
@@ -237,10 +238,10 @@ bool WADLoader::ReadDirectories()
     return true;
 }
 ```
-let's run and see if this is working!
+Let’s run and see if this is working!  
 ![Run 1](./img/run1.PNG)
 
-Cool! It is easy to validate the IWAD string, but do the other 2 numbers look correct, let's try to read the directories using that offset and see if it works!  
+Cool! It’s easy to validate the "IWAD" string, but do the other 2 numbers look correct? Let’s try to read the directories using that offset and see if it works.  
 
 We will have to add a new struct to handle the directory matching the specs listed above  .
 
@@ -253,8 +254,8 @@ struct Directory
 };
 ```
 
-Now let's update the ReadDirectories function to read the offset and print them!  
-In each iteration, we multiply i * 16 to move to the next directory offset increment.  
+Now let's update `ReadDirectories` to read directory entries and print them.  
+In each iteration, we add \(i * 16\) to move to the next directory entry (each entry is 16 bytes).  
 
 ``` cpp
 Directory directory;
@@ -277,7 +278,7 @@ Wow! A big list of directories.
 
 ![Run 2](./img/run2.PNG)  
 
-From the lump name, we can assume that we were able to read the data correctly, but maybe there is a better way to validate this.  
+From the lump names, we can assume we read the data correctly but let’s validate it.  
 We can have a look at the WAD Directory entries using Slade3.  
 
 ![Slade](./img/slade.PNG)  
@@ -286,15 +287,15 @@ It seems the name, and the lump size matches the output of our code.
 I think we are good for today!  
 
 ## Other Notes
-* At some point I thought using a vector to store the directories might not be smart! Why not use a Map? It will be faster to retrieve data than linearly searching the vector. That is a bad idea. Using a map will not keep track of the directory’s entry order, and we need that information later to retrieve the correct data.  
-Also, one final misconception, Map in C++ is internally implemented as Red-Black trees with O(log N) lookup and iterating through the map will always give you ascending order of the keys. If you want a data structure that gives an average of O(1) and the worst case of O(N) you will have to use unordered map.  
+* At some point I thought using a vector to store the directories might not be smart. Why not use a map for faster lookup than a linear search? That’s not ideal here: a `std::map` won’t preserve directory entry order, and we’ll need that later.  
+Also, one common misconception: `std::map` is typically implemented as a balanced tree (commonly a red-black tree), so lookup is \(O(\log N)\), and iteration yields keys in sorted order. If you want average \(O(1)\) lookup (worst case \(O(N)\)), use `std::unordered_map`.  
 * Loading all the WAD files to memory is not the optimal way to do this. It would make more sense to just read the header and directories to memory, then based on the code flow needs we would go back to the WAD file and load the resources from the disk. Hopefully at some point we learn more about caching.  
 
-In Chocolate DOOM, tracing the WAD loading and reading might be a little hard if you have no experience with C, but let me share what is going on. In the game main loop ```D_DoomMain``` a sequence of steps happen so that the correct WAD file is located and loaded, here is a simple breakdown of what happens
-* D_FindIWAD is called and checks if the EXE was started with ```-iwad``` argument.
-    * If ```-iwad``` argument is specified it uses that file 
-    * If not, it starts searching for a WAD file and this is what the function ```SearchDirectoryForIWAD``` does.
-* Once a WAD file is found, it's opened in the function ```W_AddFile``` and assigned to the variable ```wad_file``` which is of type ```wad_file_t```, which you will find defined in ```w_file.h```.
+In Chocolate Doom, tracing the WAD loading might be a little hard if you have no experience with C, so here’s a high-level overview. In the main entry point `D_DoomMain`, a sequence of steps happens so the correct WAD file is located and loaded:
+* `D_FindIWAD` checks whether the executable was started with the `-iwad` argument.
+    * If `-iwad` is specified, it uses that file.
+    * Otherwise, it searches for an IWAD (e.g. via `SearchDirectoryForIWAD`).
+* Once a WAD file is found, it’s opened in `W_AddFile` and assigned to the variable `wad_file` (type `wad_file_t`, defined in `w_file.h`).
 
 ``` cpp
 typedef struct _wad_file_s wad_file_t;
@@ -329,9 +330,9 @@ struct _wad_file_s
     const char *path;
 };
 ```
-Now here is the tricky part, you will notice at the end the structs are of type ```wad_file_class_t``` which holds pointers to functions, open, close and reading a file. 
+Here’s the tricky part: the file backend is represented by a `wad_file_class_t`, which holds function pointers for opening, closing, and reading a file.  
 
-But why is this complexity there? What is the advantage? The answer is there is a difference in behavior when it comes to running Chocolate DOOM under linux, and windows. Linux supports memory mapped files [MMAP](https://en.wikipedia.org/wiki/Mmap). So at compile time, the compiler makes a decision which version of open, close and read is baked into the EXE, based on what is defined in your compiler settings.
+Why the complexity? Because behavior differs across platforms. Some platforms support memory-mapped files (`mmap` on POSIX systems). At compile time, the build selects which file backend(s) are available based on platform macros and configuration.  
 
 ```
 extern wad_file_class_t stdc_wad_file;

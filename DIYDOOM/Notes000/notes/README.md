@@ -1,9 +1,9 @@
 # Notes 000 - Introduction  
-The goal of this project is to understand how Chocolate DOOM engine works, I will be testing my implementation using the assets released with the DOOM Shareware and Ultimate DOOM ([steam version](https://store.steampowered.com/app/2280/Ultimate_Doom/)). I will be including the shareware WAD with the source code.  
+The goal of this project is to understand how the Chocolate Doom engine works. I will be testing my implementation using the assets released with the DOOM Shareware and Ultimate DOOM ([Steam version](https://store.steampowered.com/app/2280/Ultimate_Doom/)). Where allowed, I will include the shareware WAD with the source code.  
 
-I will be sharing all my notes and my findings, I'm not looking to squeeze performance with my code, I hope to get a working version and later tune and optimize it.    
+I will be sharing all my notes and findings. I’m not looking to squeeze performance out of the code yet I’m aiming for a working version first, then tuning and optimizing later.  
 
-I'm not a graphics/game programmer, so if you spot an error you're welcome to correct me, suggest changes, or share your concerns and views. You can open an issue or ping me on [twitter](https://twitter.com/AngryCPPCoder)
+I’m not a graphics/game programmer, so if you spot an error you’re welcome to correct me, suggest changes, or share your concerns and views. You can open an issue or ping me on [Twitter](https://twitter.com/AngryCPPCoder).
 
 Here is a list of resources and references.  
 [Graphics Programming Black Book By Michael Abrash](https://www.drdobbs.com/parallel/graphics-programming-black-book/184404919) (Chapters 59, 60, 61, 62)  
@@ -13,7 +13,7 @@ Here is a list of resources and references.
 [Chocolate Doom Source Code](https://github.com/chocolate-doom/chocolate-doom)  
 
 ### Requirements  
-* Visual Studio: Any IDE should work; I will use Visual Studio 2017.  
+* Visual Studio: Any IDE should work; I’m using Visual Studio 2017.  
 * SDL2: Libraries (will include with source).  
 
 ### Optional  
@@ -21,11 +21,11 @@ Here is a list of resources and references.
 * Slade3: This will be a good tool to verify some of our work.  
 
 ### Thoughts  
-I don't know if I can complete this project, but I will try my best. I always believe I can.  
-My target platform will be windows, but since I'm using SDL, it should be easy to get this to work under other platforms.  
+I don’t know if I can complete this project, but I’ll try my best.  
+My target platform is Windows, but since I’m using SDL, it should be straightforward to port to other platforms.  
 
 ### Special Thanks
-Through this journey, a handful of people has reached out to me pointing me to mistakes or even rewriting paragraphs of my notes, I can’t thank them enough! Sharing your knowledge doesn't take anything from you, and remember we are looking into DOOM code just because John Carmack shared his knowledge by open sourcing DOOM!  
+Through this journey, a handful of people have reached out to me pointing out mistakes or even rewriting paragraphs of my notes. I can’t thank them enough! Sharing your knowledge doesn’t take anything from you, and remember: we’re looking into DOOM’s code because John Carmack shared his knowledge by open-sourcing DOOM.  
 __DOOMReboot__  
 __Luke Jones__  
 __Matt__  
