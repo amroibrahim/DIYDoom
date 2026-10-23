@@ -43,7 +43,7 @@ In the shareware version only TEXTURE1 lump exists, but for retail it also gets 
 | 0x0E-0x0F	 |  2   | unsigned short | Texture height                                                            |  
 | 0x10-0x13  |  4   | unsigned int   | Ignored                                                                   |  
 | 0x14-0x15  |  2   | unsigned short | Number of patches used by the textures                                    |  
-| 0x16-0x17  |  10\* | Patch layout  | A structure that formats how the patch is drawn on the texture            |  
+| 0x16-0x1F  |  10\* | Patch layout  | A structure that formats how the patch is drawn on the texture            |  
 
 ### Patch layout
 This is how the patch should be drawn on the texture, the order affects final texture.
@@ -60,7 +60,7 @@ This is how the patch should be drawn on the texture, the order affects final te
 | Field Size | Size | Data Type      | Content                               |  
 |------------|------|----------------|---------------------------------------|  
 | 0x00-0x03  |  4   | unsigned int   | Number of patches                     |  
-| 0x04-0x0A  |  8\* | unsigned short | Patch name, maximum 8 characters      |  
+| 0x04-0x0B  |  8\* | ASCII          | Patch name, maximum 8 characters      |  
 
 Visualizing all the above
 
